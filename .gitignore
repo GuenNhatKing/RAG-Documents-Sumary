@@ -3,3 +3,5 @@
 .openclaude/
 .env
 __pycache__/
+
+data/
