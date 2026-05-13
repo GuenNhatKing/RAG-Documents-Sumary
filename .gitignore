@@ -2,3 +2,4 @@
 .openclaude-profile.json
 .openclaude/
 .env
+__pycache__/
