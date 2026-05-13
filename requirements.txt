@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+google-generativeai
+tenacity
+pageindex
+redis
+celery
+pymupdf
+pdfplumber
+python-docx
+pytesseract
+pillow
