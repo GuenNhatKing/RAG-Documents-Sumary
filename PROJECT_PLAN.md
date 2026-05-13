@@ -5,7 +5,7 @@
 Triển khai hệ thống Agentic Vectorless Retrieval-Augmented Generation (RAG) sử dụng:
 
 - PageIndex (Semantic Tree)
-- Gemini 1.5 Flash
+- OpenRouter API
 
 Kiến trúc này loại bỏ hoàn toàn:
 
@@ -41,18 +41,17 @@ Khởi tạo cấu trúc backend FastAPI bao gồm:
 - SQLAlchemy
 - Redis
 - Celery
-- Gemini SDK
+- OpenRouter Integration
 - PageIndex
 - OCR libraries
 
 ### requirements.txt
 
-```txt
 fastapi
 uvicorn
 sqlalchemy
 alembic
-google-generativeai
+requests
 tenacity
 pageindex
 redis
@@ -62,20 +61,17 @@ pdfplumber
 python-docx
 pytesseract
 pillow
-```
 
 ### Done Condition
 
-- `pip install -r requirements.txt` chạy thành công.
-- `uvicorn app.main:app --reload` hoạt động.
+- pip install -r requirements.txt chạy thành công.
+- uvicorn app.main:app --reload hoạt động.
 - Redis kết nối thành công.
 - Celery worker start thành công.
 
 ---
 
 # PHASE 1 — DOCUMENT INGESTION & SEMANTIC TREE
-
----
 
 ## Task 1.1 — Xây dựng Upload Pipeline
 
@@ -91,21 +87,17 @@ File upload:
 
 File được lưu vào:
 
-```text
 data/raw/
-```
 
 Ví dụ:
 
-```text
 data/raw/luat-xay-dung.pdf
-```
 
 ### Done Condition
 
 - Upload API hoạt động.
 - File được lưu chính xác.
-- DB tạo document record trạng thái `pending`.
+- DB tạo document record trạng thái pending.
 
 ---
 
@@ -115,24 +107,18 @@ data/raw/luat-xay-dung.pdf
 
 Raw document từ:
 
-```text
 data/raw/
-```
 
 ### Output
 
 Extract toàn bộ text từng trang và lưu vào:
 
-```text
 data/extracted_text/<document_id>/
-```
 
 Ví dụ:
 
-```text
 page_001.txt
 page_002.txt
-```
 
 ### Important Rules
 
@@ -148,7 +134,7 @@ page_002.txt
 
 ---
 
-## Task 1.3 — Build `run_pageindex.py`
+## Task 1.3 — Build run_pageindex.py
 
 ### Input
 
@@ -156,13 +142,11 @@ PDF path.
 
 ### Output
 
-Generate Semantic Tree JSON bằng thư viện `pageindex`.
+Generate Semantic Tree JSON bằng thư viện pageindex.
 
 Lưu tại:
 
-```text
 data/semantic_trees/<document_id>.json
-```
 
 ### Semantic Tree Requirements
 
@@ -187,13 +171,12 @@ Mỗi node phải có:
 
 ### Input
 
-SQLAlchemy `Document` model.
+SQLAlchemy Document model.
 
 ### Output
 
 Schema mới:
 
-```python
 class Document(Base):
     id
     filename
@@ -203,16 +186,13 @@ class Document(Base):
     total_pages
     status
     created_at
-```
 
 ### Status Lifecycle
 
-```text
 pending
 processing
 processed
 error
-```
 
 ### Important Rules
 
@@ -233,15 +213,11 @@ KHÔNG sử dụng:
 
 # PHASE 2 — RECURSIVE REASONING RETRIEVAL
 
----
-
 ## Task 2.1 — Tree Navigation Engine
 
 ### File
 
-```text
 app/services/rag.py
-```
 
 ### Input
 
@@ -252,15 +228,13 @@ app/services/rag.py
 
 Function:
 
-```python
 reasoning_search_tree(tree, query)
-```
 
 ### Recursive Reasoning Flow
 
 #### Step 1 — Root-Level Reasoning
 
-Gemini chỉ đọc:
+OpenRouter LLM chỉ đọc:
 
 - Root nodes
 - Chapter titles
@@ -268,7 +242,7 @@ Gemini chỉ đọc:
 
 KHÔNG load toàn bộ tree.
 
-Gemini xác định chapter liên quan.
+LLM xác định chapter liên quan.
 
 ---
 
@@ -278,9 +252,7 @@ Chỉ load subtree liên quan.
 
 Ví dụ:
 
-```text
 Chương 2 → Mục 2.1
-```
 
 ---
 
@@ -288,11 +260,7 @@ Chương 2 → Mục 2.1
 
 Chỉ khi tới leaf node mới load:
 
-```text
 data/extracted_text/page_xxx.txt
-```
-
----
 
 ### Important Rules
 
@@ -319,9 +287,7 @@ Leaf nodes từ retrieval engine.
 
 Formatted context:
 
-```text
 [Nguồn: Luat-Xay-Dung.pdf, Trang 12]
-```
 
 ### Responsibilities
 
@@ -339,23 +305,19 @@ Formatted context:
 
 ### Done Condition
 
-- Gemini nhận context sạch.
+- OpenRouter nhận context sạch.
 - Không vượt token limit.
 - Citation mapping chính xác.
 
 ---
 
-# PHASE 3 — GEMINI AGENTIC CHAT
-
----
+# PHASE 3 — OPENROUTER AGENTIC CHAT
 
 ## Task 3.1 — LLM Generation Service
 
 ### File
 
-```text
 app/services/llm.py
-```
 
 ### Input
 
@@ -367,9 +329,7 @@ app/services/llm.py
 
 Final answer generation bằng:
 
-```text
-gemini-1.5-flash
-```
+google/gemini-2.0-flash-001
 
 ### Important Rules
 
@@ -387,30 +347,28 @@ LLM:
 
 ---
 
-## Task 3.2 — POST `/chat/ask`
+## Task 3.2 — POST /chat/ask
 
 ### Input
 
-```json
 {
-  "pdf_name": "string",
-  "question": "string"
+  \"pdf_name\": \"string\",
+  \"question\": \"string\"
 }
-```
 
 ### Output
 
-```json
 {
-  "answer": "string",
-  "sources": [
-    {
-      "page": 12,
-      "file": "luat.pdf"
-    }
-  ]
+  \"result\": {
+    \"answer\": \"string\",
+    \"sources\": [
+      {
+        \"page\": 12,
+        \"file\": \"luat.pdf\"
+      }
+    ]
+  }
 }
-```
 
 ### Done Condition
 
@@ -432,9 +390,7 @@ LLM:
 
 Retry wrappers bằng:
 
-```python
 tenacity
-```
 
 ### Retry Strategy
 
@@ -451,8 +407,6 @@ tenacity
 ---
 
 # PHASE 4 — FRONTEND & UI
-
----
 
 ## Task 4.1 — Upload UI
 
@@ -494,9 +448,7 @@ Upload thành công sẽ tự động:
 
 Click:
 
-```text
 [Trang 12]
-```
 
 sẽ mở PDF đúng trang.
 
@@ -510,15 +462,11 @@ sẽ mở PDF đúng trang.
 
 # PHASE 5 — TESTING & STABILITY
 
----
-
 ## Task 5.1 — Unit Tests
 
 Coverage yêu cầu:
 
-```text
 >= 80%
-```
 
 ### Required Test Areas
 
@@ -527,7 +475,7 @@ Coverage yêu cầu:
 - Recursive traversal
 - Context builder
 - Citation mapping
-- Gemini wrapper
+- OpenRouter wrapper
 - Retry logic
 
 ---
@@ -536,14 +484,12 @@ Coverage yêu cầu:
 
 Test toàn bộ flow:
 
-```text
 Upload PDF
 → OCR
 → Semantic Tree
 → Recursive Retrieval
-→ Gemini
+→ OpenRouter
 → Final Answer
-```
 
 ### Done Condition
 
@@ -564,16 +510,14 @@ Hệ thống phải đảm bảo:
 
 Pipeline hoàn chỉnh:
 
-```text
 PDF Upload
 → OCR
 → Extract Text
 → Semantic Tree
 → Recursive Reasoning
 → Context Builder
-→ Gemini Answer
+→ OpenRouter Answer
 → Citation Output
-```
 
 Hệ thống phải:
 
@@ -582,3 +526,15 @@ Hệ thống phải:
 - Hierarchical reasoning
 - Citation-accurate
 - Production-ready
+
+---
+
+# ENVIRONMENT VARIABLES
+
+```
+DATABASE_URL=sqlite:///./database.db
+REDIS_URL=redis://localhost:6379/0
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemini-2.0-flash-001
+JWT_SECRET=your_jwt_secret_here
+```

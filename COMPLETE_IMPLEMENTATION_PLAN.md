@@ -1,4 +1,5 @@
 # KẾ HOẠCH TRIỂN KHAI HOÀN CHỈNH
+
 # HỆ THỐNG QUẢN LÝ, SỐ HÓA VÀ TRUY XUẤT TÀI LIỆU THÔNG MINH SỬ DỤNG AI RAG
 
 ---
@@ -25,7 +26,7 @@ Xây dựng hệ thống hỗ trợ:
 |---|---|
 | AI Search | Vectorless RAG |
 | Indexing | Semantic Tree (JSON format) qua thư viện PageIndex |
-| LLM & Reasoning | Gemini 1.5 Flash |
+| LLM & Reasoning | OpenRouter API |
 | Backend | FastAPI |
 | Frontend | NextJS + TailwindCSS |
 | Queue | Celery + Redis |
@@ -42,24 +43,23 @@ Cho phép Upload PDF/DOCX/Ảnh scan.
 
 Hệ thống tự động:
 
-- Dùng thư viện `pageindex` phân tích cấu trúc tài liệu.
-- Tạo ra file Cây Ngữ Nghĩa (Semantic Tree) định dạng JSON lưu vào thư mục `data/semantic_trees/`.
+- Dùng thư viện pageindex phân tích cấu trúc tài liệu.
+- Gọi LLM thông qua OpenRouter để hỗ trợ semantic parsing.
+- Tạo ra file Cây Ngữ Nghĩa (Semantic Tree) định dạng JSON lưu vào thư mục data/semantic_trees/.
 
 ## 2.2 Tìm kiếm Agentic & Trích dẫn
 
 Người dùng hỏi:
 
-*\"Điều kiện cấp phép xây dựng?\"*
+\"Điều kiện cấp phép xây dựng?\"
 
 Hệ thống:
 
 - Duyệt JSON Tree (Reasoning).
 - Lấy đúng nội dung Leaf node.
-- Trả lời bằng Gemini kèm citation:
+- Trả lời bằng OpenRouter LLM kèm citation:
 
-```text
 [Nguồn: Luat-Xay-Dung.pdf, Trang 12]
-```
 
 ---
 
@@ -67,7 +67,6 @@ Hệ thống:
 
 ## 3.1 Kiến trúc tổng thể
 
-```text
                 ┌─────────────────┐
                 │   Frontend UI   │
                 └────────┬────────┘
@@ -82,10 +81,9 @@ Hệ thống:
        └──────┬────────┘   └──────┬────────┘
               │                   │
        ┌──────▼────────┐   ┌──────▼────────┐
-       │   JSON Tree   │◄──┤ Gemini 1.5    │
-       │   Storage     │   │ Flash LLM     │
+       │   JSON Tree   │◄──┤ OpenRouter    │
+       │   Storage     │   │ LLM Gateway   │
        └───────────────┘   └───────────────┘
-```
 
 ---
 
@@ -93,24 +91,20 @@ Hệ thống:
 
 ## 4.1 Ingestion Flow (Build Tree)
 
-```text
 Upload PDF
     -> Lưu file
     -> Gọi script run_pageindex.py
     -> Lưu JSON tree vào data/semantic_trees/
     -> Update status vào DB
-```
 
 ## 4.2 RAG Flow (Chat)
 
-```text
 User Query
     -> Load JSON Tree
     -> Reasoning Tree Search
     -> Context Builder
-    -> Gemini
+    -> OpenRouter API
     -> Trả về Answer + Citations
-```
 
 ---
 
@@ -165,10 +159,10 @@ Lưu ý:
 
 ## 6.2 Environment Variables
 
-```env
+```
 DATABASE_URL=sqlite:///./database.db
 REDIS_URL=redis://localhost:6379/0
-GEMINI_API_KEY=your_gemini_api_key_here
-PAGEINDEX_MODEL=gemini/gemini-1.5-flash
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemini-2.0-flash-001
 JWT_SECRET=your_jwt_secret_here
 ```
