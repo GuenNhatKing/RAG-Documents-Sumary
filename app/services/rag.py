@@ -1,95 +1,137 @@
 import json
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set, Union
 from openai import OpenAI
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# OpenRouter client singleton
 _client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1",
 )
 
-
 def _normalize_tree_node(node_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Recursively copy a tree node, keeping only the fields needed for searching."""
+    """Chuẩn hóa cây để gửi cho LLM, giữ cấu trúc cha-con."""
     normalized = {
-        "id": node_data["id"],
-        "title": node_data["title"],
-        "summary": node_data.get("summary", ""),
+        "id": str(node_data.get("node_id", node_data.get("id"))),
+        "title": node_data.get("title", ""),
+        "summary": node_data.get("summary", node_data.get("prefix_summary", "")),
     }
-    # Preserve children if present
     if "children" in node_data:
-        normalized["children"] = _normalize_tree_node(node_data["children"])
-    elif "nodes" in node_data:  # alternative field name
-        normalized["children"] = _normalize_tree_node(node_data["nodes"])
+        normalized["children"] = [_normalize_tree_node(child) for child in node_data["children"]]
+    elif "nodes" in node_data:
+        normalized["children"] = [_normalize_tree_node(child) for child in node_data["nodes"]]
     return normalized
 
+def _get_all_line_numbers(node: Dict[str, Any], line_nums: List[int]):
+    """Helper để lấy tất cả line_num, hỗ trợ cả key 'structure' bọc ngoài."""
+    ln = node.get("line_num")
+    if ln is not None:
+        line_nums.append(int(ln))
+        
+    for child_key in ("structure", "children", "nodes"):
+        if child_key in node:
+            for child in node[child_key]:
+                _get_all_line_numbers(child, line_nums)
 
-def _build_search_prompt(tree_without_text: Dict[str, Any], query: str) -> str:
-    """Create the prompt used to query the LLM."""
-    search_prompt = f"""
-You are an expert document navigator. You are given a question and a tree structure of a document's table of contents.
-Each node contains an id, title, and a corresponding summary.
-Your task is to find all nodes that are likely to contain the exact answer to the question.
+def _find_node_and_boundary(tree_data: Any, target_id: str) -> Dict[str, Any]:
+    """Tìm node theo ID và xác định chính xác dòng bắt đầu/kết thúc."""
+    all_lines = []
+    if isinstance(tree_data, list):
+        for n in tree_data: _get_all_line_numbers(n, all_lines)
+    else:
+        _get_all_line_numbers(tree_data, all_lines)
+    
+    all_lines = sorted(list(set(all_lines)))
+    
+    def _search(node: Dict[str, Any], tid: str):
+        curr_id = str(node.get("node_id") or node.get("id"))
+        if curr_id == tid:
+            start = node.get("line_num")
+            end = None
+            if start is not None:
+                try:
+                    idx = all_lines.index(int(start))
+                    if idx + 1 < len(all_lines):
+                        end = all_lines[idx + 1] - 1
+                except ValueError:
+                    pass
+            return {"start": start, "end": end}
+            
+        for child_key in ("structure", "children", "nodes"):
+            if child_key in node:
+                for child in node[child_key]:
+                    res = _search(child, tid)
+                    if res: return res
+        return None
 
+    nodes_to_check = tree_data if isinstance(tree_data, list) else [tree_data]
+    for root_node in nodes_to_check:
+        result = _search(root_node, target_id)
+        if result: return result
+    return None
+
+def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
+    """Task 2.1: Duyệt cây bằng Reasoning."""
+    if isinstance(tree_data, dict) and "structure" in tree_data:
+        base_data = tree_data["structure"]
+    else:
+        base_data = tree_data
+
+    normalized_tree = {"nodes": [_normalize_tree_node(n) for n in (base_data if isinstance(base_data, list) else [base_data])]}
+    
+    prompt = f"""You are an expert document navigator. Find nodes likely to contain the answer.
 Question: {query}
+Tree Structure:
+{json.dumps(normalized_tree, indent=2, ensure_ascii=False)}
 
-Document tree structure:
-{json.dumps(tree_without_text, indent=2, ensure_ascii=False)}
-
-Please reply EXACTLY in the following JSON format. Do not output any markdown code blocks, just the raw JSON:
+Reply EXACTLY in JSON:
 {{
-    "thinking": "<Your step-by-step reasoning on why these nodes are relevant>",
+    "thinking": "<reasoning>",
     "node_list": ["id_1", "id_2"]
-}}
-"""
-    return search_prompt
+}}"""
 
-
-def reasoning_search_tree(
-    tree_data: Dict[str, Any], query: str
-) -> List[str]:
-    # Existing function body remains unchanged
-    """
-    Given a document tree and a user query, find the most relevant node IDs.
-    The function:
-      1. Normalizes the tree to keep only id, title, and summary fields.
-      2. Sends the normalized tree to a LLM via OpenRouter.
-      3. Parses the JSON response and returns the list of node IDs.
-    Args:
-        tree_data: The full tree structure (may be large) returned by pageindex_service.
-        query:   The user's question/search term.
-    Returns:
-        A list of node IDs (strings) that are most relevant to the query.
-    """
-    # 1️⃣ Normalize the incoming tree – keep hierarchy, drop heavy text fields
-    normalized_tree = _normalize_tree_node(tree_data)
-
-    # 2️⃣ Build the prompt
-    prompt = _build_search_prompt(normalized_tree, query)
-
-    # 3️⃣ Call OpenRouter
     try:
         response = _client.chat.completions.create(
-            model="google/gemini-2.0-flash-exp:free",
+            model="openrouter/free",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1500,
             temperature=0.0,
         )
+        cleaned = response.choices[0].message.content.strip().replace("```json", "").replace("```", "")
+        return json.loads(cleaned).get("node_list", [])
     except Exception as e:
-        # In production you might want richer error handling
-        raise RuntimeError(f"Failed to call OpenRouter: {e}")
+        print(f"Error in reasoning_search_tree: {e}")
+        return []
 
-    raw_output = response.choices[0].message.content.strip()
+def build_context_from_markdown(tree_data: Any, node_list: List[str], markdown_path: str) -> str:
+    """Task 2.2: Trích xuất nội dung theo dòng từ file .md duy nhất."""
+    if not os.path.exists(markdown_path):
+        return f"⚠️ Không tìm thấy file markdown tại: {markdown_path}"
 
-    # 4️⃣ Clean potential markdown fences and parse JSON
-    # Remove accidental ```json or ```python fences
-    cleaned = raw_output.replace("```json", "").replace("```", "").replace("```python", "")
-    try:
-        parsed = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Unable to parse LLM output as JSON: {cleaned}") from exc
+    with open(markdown_path, "r", encoding="utf-8") as f:
+        all_lines = f.readlines()
 
-    return parsed.get("node_list", [])
+    context_parts = []
+    processed_ranges = []
+
+    for nid in node_list:
+        boundary = _find_node_and_boundary(tree_data, nid)
+        if not boundary or boundary["start"] is None:
+            continue
+        
+        start_idx = int(boundary["start"]) - 1
+        # Nếu không tìm thấy node kế tiếp, lấy 20 dòng làm context mặc định
+        end_idx = int(boundary["end"]) if boundary["end"] else start_idx + 20
+        
+        # Đảm bảo không vượt quá số dòng thực tế
+        end_idx = min(end_idx, len(all_lines))
+        
+        # Trích xuất và format
+        segment = all_lines[start_idx:end_idx]
+        if segment:
+            source_tag = f"[Nguồn: {os.path.basename(markdown_path)}, Dòng: {boundary['start']}-{boundary['end'] or '...'}]"
+            context_parts.append(f"{source_tag}\n{''.join(segment).strip()}")
+
+    return "\n\n---\n\n".join(context_parts)
