@@ -15,6 +15,10 @@ from .services.ocr import extract_text
 
 
 app = FastAPI()
+
+# Register chat router
+from app.api import chat
+app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 Base.metadata.create_all(bind=engine)
 
 
