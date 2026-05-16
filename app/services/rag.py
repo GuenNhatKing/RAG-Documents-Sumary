@@ -6,9 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Read OpenRouter configuration from environment with sensible defaults
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+
 _client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+    base_url=OPENROUTER_BASE_URL,
 )
 
 def _normalize_tree_node(node_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -94,7 +99,7 @@ Reply EXACTLY in JSON:
 
     try:
         response = _client.chat.completions.create(
-            model="openrouter/free",
+            model=OPENROUTER_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1500,
             temperature=0.0,

@@ -51,7 +51,7 @@ def split_text_by_paragraphs(text: str, max_words: int = 1024) -> list[str]:
 def process_chunks_with_retry(client: OpenAI, prompt_template: str, text_data: str, stage_name: str) -> str:
     """Xử lý cắt nhỏ văn bản, gọi API với cơ chế retry 12 lần (mỗi lần chờ 30s), và ghép lại."""
     
-    model_name = "openrouter/free" 
+    model_name = os.getenv("OPENROUTER_MODEL")
     
     # Sử dụng hàm chia theo đoạn văn thay vì chia theo từ
     chunks = split_text_by_paragraphs(text_data, max_words=1024)
