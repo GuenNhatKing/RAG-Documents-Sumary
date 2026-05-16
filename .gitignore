@@ -1,6 +1,6 @@
 .venv/
 .openclaude/
+.ollama/
 .env
 __pycache__/
-
 data/
