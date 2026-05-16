@@ -38,9 +38,9 @@ export default function UploadPage() {
 
       setStatus("processing");
       // 2️⃣ Extract text
-      await axios.post(`/documents/${id}/extract-text`);
+      await axios.post(`http://localhost:8000/documents/${id}/extract-text`);
       // 3️⃣ Build semantic tree
-      await axios.post(`/documents/${id}/build-tree`);
+      await axios.post(`http://localhost:8000/documents/${id}/build-tree`);
 
       setStatus("processed");
     } catch (e: any) {
@@ -61,8 +61,8 @@ export default function UploadPage() {
     setStatus("processing");
     setErrorMsg("");
     try {
-      await axios.post(`/documents/${docId}/extract-text`);
-      await axios.post(`/documents/${docId}/build-tree`);
+      await axios.post(`http://localhost:8000/documents/${docId}/extract-text`);
+      await axios.post(`http://localhost:8000/documents/${docId}/build-tree`);
       setStatus("processed");
     } catch (e: any) {
       console.error(e);
@@ -102,10 +102,7 @@ export default function UploadPage() {
           {status === "error" && (
             <div className="text-red-600">
               <p>{errorMsg}</p>
-              <button
-                onClick={retry}
-                className={`mt-2 flex items-center gap-2 ${COLORS.primary} py-2 px-4 rounded`}
-              >
+              <button onClick={retry} className={`mt-2 flex items-center gap-2 ${COLORS.primary} py-2 px-4 rounded`}>
                 <RefreshCcwIcon size={16} /> Retry
               </button>
             </div>
