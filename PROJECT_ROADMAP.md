@@ -356,24 +356,24 @@ LLM:
 
 **Input:**
 
-{
-  \"pdf_name\": \"string\",
-  \"question\": \"string\"
-}
+    {
+      \"pdf_name\": \"string\",
+      \"question\": \"string\"
+    }
 
 **Output:**
 
-{
-  \"result\": {
-    \"answer\": \"string\",
-    \"sources\": [
-      {
-        \"page\": 12,
-        \"file\": \"luat.pdf\"
+    {
+      \"result\": {
+        \"answer\": \"string\",
+        \"sources\": [
+          {
+            \"page\": 12,
+            \"file\": \"luat.pdf\"
+          }
+        ]
       }
-    ]
-  }
-}
+    }
 
 **Done Condition (Task 3.2):**
 
