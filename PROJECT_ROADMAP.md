@@ -357,7 +357,7 @@ LLM:
 **Input:**
 
     {
-      \"pdf_name\": \"string\",
+      \"doc_id\": \"string\",
       \"question\": \"string\"
     }
 
@@ -368,8 +368,8 @@ LLM:
         \"answer\": \"string\",
         \"sources\": [
           {
-            \"page\": 12,
-            \"file\": \"luat.pdf\"
+            \"lines\": \"22-23\",
+            \"file\": \"e651cdac-b5a5-4ffe-bb0b-e7564f1d1a53.md\"
           }
         ]
       }
@@ -378,7 +378,7 @@ LLM:
 **Done Condition (Task 3.2):**
 
 - HTTP 200 thành công.
-- Citation đúng trang.
+- Citation đúng dòng.
 - Response time ổn định.
 
 ---
