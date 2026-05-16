@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 import sys
 sys.path.append('/work/app')
-from models import Base
+from app.models import Base
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

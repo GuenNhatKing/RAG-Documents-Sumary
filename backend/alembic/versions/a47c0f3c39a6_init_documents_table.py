@@ -1,8 +1,8 @@
-"""initial_vectorless_schema
+"""init_documents_table
 
-Revision ID: 5ebff717bd3f
+Revision ID: a47c0f3c39a6
 Revises: 
-Create Date: 2026-05-14 00:18:39.525217
+Create Date: 2026-05-16 06:54:22.882937
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5ebff717bd3f'
+revision: str = 'a47c0f3c39a6'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
