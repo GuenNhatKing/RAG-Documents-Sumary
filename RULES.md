@@ -10,6 +10,7 @@ TRƯỚC KHI CODE, BẮT BUỘC:
 - Đọc `RULES.md`.
 - Đọc `PROJECT_PLAN.md`.
 - Đọc `PROJECT_ROADMAP.md`.
+- Đọc `NOTE.md`.
 - Hiểu chính xác workflow của:
   - `pageindex`
   - recursive reasoning retrieval
