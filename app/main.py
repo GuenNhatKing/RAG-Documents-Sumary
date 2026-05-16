@@ -16,6 +16,16 @@ from .services.ocr import extract_text
 
 app = FastAPI()
 
+# CORS middleware
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Register chat router
 from app.api import chat
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
