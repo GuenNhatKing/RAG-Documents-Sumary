@@ -76,9 +76,8 @@ export default function UploadPage() {
       <h1 className={`${COLORS.textMain} text-3xl font-bold mb-6`}>Upload Document</h1>
       <div
         {...getRootProps()}
-        className={`w-full max-w-xl p-12 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
-          isDragActive ? "border-primary" : "border-gray-300"
-        }`}
+        className={`w-full max-w-xl p-12 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragActive ? "border-primary" : "border-gray-300"
+          }`}
       >
         <input {...getInputProps()} />
         <ArrowUpSquare className="mx-auto mb-4" size={48} />
@@ -90,13 +89,30 @@ export default function UploadPage() {
         <div className="mt-6 text-center">
           {status === "pending" && <p className="text-yellow-600">Uploading…</p>}
           {status === "processing" && (
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
-              <svg className="animate-spin h-8 w-8 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            <div>
+              <svg
+                className="animate-spin h-8 w-8 text-primary mx-auto"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
               </svg>
+
               <p className="mt-2 text-primary">Processing…</p>
-            </motion.div>
+            </div>
           )}
           {status === "processed" && <p className="text-green-600">Document processed successfully!</p>}
           {status === "error" && (
