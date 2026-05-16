@@ -1,46 +1,51 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import shutil
 import os
+import uuid
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from .models import Document, Base
+from .models import Document, Base, DocumentStatus
 from .database import SessionLocal, engine
 from celery import Celery
 
 from .services.pageindex_service import generate_semantic_tree
 from .services.ocr import extract_text 
 
-
 app = FastAPI()
 
-# CORS middleware
-from fastapi.middleware.cors import CORSMiddleware
+# =========================================================
+# CORS MIDDLEWARE (Cấu hình mở cổng kết nối Frontend Next.js)
+# =========================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Cho phép tất cả các nguồn hoặc điền cụ thể ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register chat router
+# =========================================================
+# REGISTER ROUTERS
+# =========================================================
 from app.api import chat
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
+
+# Khởi tạo cấu trúc bảng trong Database nếu chưa tồn tại
 Base.metadata.create_all(bind=engine)
 
-
 # =========================================================
-# CELERY
+# CELERY CONFIGURATION
 # =========================================================
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 celery_app = Celery(__name__, broker=redis_url, backend=redis_url)
 
 
 # =========================================================
-# HEALTH CHECK
+# HEALTH CHECK ENDPOINT
 # =========================================================
 @app.get("/ping")
 async def ping():
@@ -48,71 +53,73 @@ async def ping():
 
 
 # =========================================================
-# UPLOAD FILE
+# TASK 4.1 - UPLOAD FILE ENDPOINT (Đã sửa lỗi raw_file_path & UUID)
 # =========================================================
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     db = SessionLocal()
     try:
-        # 1. Tạo record trong database trước để lấy ID (storage_path tạm để trống)
-        doc = Document(
-            filename=file.filename,
-            storage_path="", 
-            status="pending"
-        )
-        db.add(doc)
-        db.commit()
-        db.refresh(doc) # Lúc này doc đã có ID tự tăng
-
-        # 2. Lấy phần mở rộng của file (extension) và tạo tên mới
-        ext = Path(file.filename).suffix # Lấy đuôi file, ví dụ: .pdf, .docx
-        new_filename = f"{doc.id}{ext}"
+        # 1. Chủ động sinh UUID dạng chuỗi để làm khóa chính đồng bộ hệ thống
+        doc_id = str(uuid.uuid4())
+        ext = Path(file.filename).suffix  # Lấy đuôi file (ví dụ: .pdf)
+        new_filename = f"{doc_id}{ext}"
         
-        # 3. Chuẩn bị thư mục và đường dẫn file
+        # 2. Chuẩn bị thư mục lưu trữ file thô (Raw PDF)
         upload_dir = Path("data/raw")
         upload_dir.mkdir(parents=True, exist_ok=True)
         file_path = upload_dir / new_filename
 
-        # 4. Ghi file xuống ổ cứng với tên mới
+        # 3. Ghi file từ luồng mạng xuống ổ cứng máy chủ
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 5. Cập nhật lại đường dẫn thực tế vào database
-        doc.storage_path = str(file_path)
+        # 4. Lưu bản ghi vào Database (Đồng bộ chính xác tên trường và kiểu Enum)
+        doc = Document(
+            id=doc_id,
+            filename=file.filename,
+            raw_file_path=str(file_path),
+            status=DocumentStatus.PENDING
+        )
+        db.add(doc)
         db.commit()
         db.refresh(doc)
 
+        return {
+            "id": doc.id, 
+            "original_filename": file.filename, 
+            "saved_filename": new_filename
+        }
+
     except Exception as e:
         db.rollback()
-        raise e
+        raise HTTPException(status_code=500, detail=f"Database or Storage error: {str(e)}")
     finally:
         db.close()
 
-    return {
-        "id": doc.id, 
-        "original_filename": file.filename, 
-        "saved_filename": new_filename
-    }
-
 
 # =========================================================
-# EXTRACT TEXT
+# TASK 4.1 - EXTRACT TEXT ENDPOINT (Đã sửa str ID & raw_file_path)
 # =========================================================
 @app.post("/documents/{document_id}/extract-text")
 async def extract_text_api(document_id: str):
     db = SessionLocal()
-
     try:
+        # Tìm tài liệu bằng UUID String
         doc = db.query(Document).filter(Document.id == document_id).first()
 
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        file_path = doc.storage_path
+        # Cập nhật trạng thái sang Đang xử lý
+        doc.status = DocumentStatus.PROCESSING
+        db.commit()
 
+        # Gọi hàm xử lý OCR / Trích xuất text từ file gốc
+        file_path = doc.raw_file_path
         extract_text(file_path, document_id)
 
-        doc.status = "extracted"
+        # Trích xuất thành công, chuyển trạng thái tài liệu
+        doc.status = DocumentStatus.PROCESSED
         db.commit()
 
         return {
@@ -122,18 +129,19 @@ async def extract_text_api(document_id: str):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"OCR Extraction failed: {str(e)}")
     finally:
         db.close()
 
 
 # =========================================================
-# BUILD SEMANTIC TREE
+# TASK 4.1 - BUILD SEMANTIC TREE ENDPOINT
 # =========================================================
 @app.post("/documents/{document_id}/build-tree")
 async def build_tree(document_id: str):
     try:
+        # Gọi hàm sinh cây mục lục phân cấp từ Phase 2
         out_path = await generate_semantic_tree(document_id)
 
         return {
@@ -142,11 +150,11 @@ async def build_tree(document_id: str):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
 
 
 # =========================================================
-# CELERY TEST
+# CELERY WORKER TEST
 # =========================================================
 @celery_app.task
 def add(x: int, y: int) -> int:

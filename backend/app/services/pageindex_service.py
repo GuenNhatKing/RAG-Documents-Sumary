@@ -3,13 +3,18 @@ import json
 import time
 from pathlib import Path
 from openai import OpenAI
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+
 from app.services.pageindex.page_index_md import md_to_tree
 from app.services.pageindex.utils import ConfigLoader
 from dotenv import load_dotenv
+
 load_dotenv()
+
 
 def _log(step: str):
     print(f"[LOG] {step}", flush=True)
+
 
 def split_text_by_paragraphs(text: str, max_words: int = 1024) -> list[str]:
     """
@@ -17,92 +22,95 @@ def split_text_by_paragraphs(text: str, max_words: int = 1024) -> list[str]:
     Gom các đoạn lại thành các khối (chunk) không vượt quá giới hạn từ để tối ưu API,
     đảm bảo không bao giờ cắt ngang giữa câu hoặc giữa đoạn.
     """
-    # Tách văn bản thành các đoạn
     paragraphs = text.split("\n\n")
-    
+
     chunks = []
     current_chunk = []
     current_word_count = 0
-    
+
     for para in paragraphs:
         para = para.strip()
         if not para:
             continue
-            
+
         word_count = len(para.split())
-        
-        # Nếu chunk hiện tại cộng thêm đoạn mới vượt quá max_words (và chunk đã có dữ liệu)
+
         if current_word_count + word_count > max_words and current_chunk:
-            # Chốt chunk hiện tại và bắt đầu chunk mới
             chunks.append("\n\n".join(current_chunk))
             current_chunk = [para]
             current_word_count = word_count
         else:
-            # Thêm đoạn vào chunk hiện tại
             current_chunk.append(para)
             current_word_count += word_count
-            
-    # Đừng quên thêm chunk cuối cùng nếu còn dữ liệu
+
     if current_chunk:
         chunks.append("\n\n".join(current_chunk))
-        
+
     return chunks
 
+
+@retry(
+    stop=stop_after_attempt(12),
+    wait=wait_fixed(30),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def call_openrouter_with_retry(
+    client: OpenAI,
+    model_name: str,
+    prompt: str,
+):
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+    )
+
+    content = response.choices[0].message.content
+
+    if not content:
+        raise ValueError("API trả về None hoặc rỗng (Khả năng do quá tải hoặc filter).")
+
+    return content.strip()
+
+
 def process_chunks_with_retry(client: OpenAI, prompt_template: str, text_data: str, stage_name: str) -> str:
-    """Xử lý cắt nhỏ văn bản, gọi API với cơ chế retry 12 lần (mỗi lần chờ 30s), và ghép lại."""
-    
+    """Xử lý cắt nhỏ văn bản, gọi API với cơ chế retry 12 lần, mỗi lần chờ 30s, và ghép lại."""
+
     model_name = os.getenv("OPENROUTER_MODEL")
-    
-    # Sử dụng hàm chia theo đoạn văn thay vì chia theo từ
+
     chunks = split_text_by_paragraphs(text_data, max_words=1024)
     total_chunks = len(chunks)
-    _log(f"[{stage_name}] Đã gom văn bản thành {total_chunks} phần (nguyên vẹn theo từng đoạn, tối đa ~1024 từ/phần).")
-    
-    successful_results = []
-    max_retries = 12
-    wait_time = 30
-    
-    for idx, chunk_text in enumerate(chunks, start=1):
-        success = False
-        
-        for attempt in range(1, max_retries + 1):
-            try:
-                _log(f"[{stage_name}] Đang xử lý phần {idx}/{total_chunks} (Thử lần {attempt}/{max_retries})...")
-                
-                # Nối prompt với dữ liệu của chunk hiện tại
-                prompt = prompt_template + f"\nINPUT:\n{chunk_text}"
-                
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0,
-                )
-                
-                content = response.choices[0].message.content
-                
-                if content:
-                    successful_results.append(content.strip())
-                    _log(f"[{stage_name}] -> Phần {idx} THÀNH CÔNG.")
-                    success = True
-                    break # Thoát vòng lặp retry nếu thành công
-                else:
-                    raise ValueError("API trả về None hoặc rỗng (Khả năng do quá tải hoặc filter).")
-                    
-            except Exception as e:
-                _log(f"[{stage_name}] -> LỖI ở phần {idx}: {str(e)}")
-                if attempt < max_retries:
-                    _log(f"[{stage_name}] -> Chờ {wait_time}s trước khi thử lại...")
-                    time.sleep(wait_time)
-                else:
-                    _log(f"[{stage_name}] -> THẤT BẠI HOÀN TOÀN phần {idx} sau {max_retries} lần thử. Bỏ qua phần này.")
-        
-        # Nếu sau 12 lần vẫn không thành công, script tự động chuyển sang phần tiếp theo
 
-    # Ghép các phần thành công lại với nhau bằng 2 dấu xuống dòng để giữ chuẩn format paragraph
+    _log(f"[{stage_name}] Đã gom văn bản thành {total_chunks} phần (nguyên vẹn theo từng đoạn, tối đa ~1024 từ/phần).")
+
+    successful_results = []
+
+    for idx, chunk_text in enumerate(chunks, start=1):
+        try:
+            _log(f"[{stage_name}] Đang xử lý phần {idx}/{total_chunks}...")
+
+            prompt = prompt_template + f"\nINPUT:\n{chunk_text}"
+
+            content = call_openrouter_with_retry(
+                client=client,
+                model_name=model_name,
+                prompt=prompt,
+            )
+
+            successful_results.append(content)
+            _log(f"[{stage_name}] -> Phần {idx} THÀNH CÔNG.")
+
+        except Exception as e:
+            _log(f"[{stage_name}] -> THẤT BẠI HOÀN TOÀN phần {idx} sau 12 lần thử. Bỏ qua phần này.")
+            _log(f"[{stage_name}] -> Lỗi cuối cùng: {str(e)}")
+
     final_text = "\n\n".join(successful_results)
+
     _log(f"[{stage_name}] HOÀN THÀNH. Có {len(successful_results)}/{total_chunks} phần thành công.")
-    
+
     return final_text
+
 
 def _clean_and_format_to_markdown(doc_id: str) -> Path:
     _log(f"START markdown pipeline: {doc_id}")
@@ -148,39 +156,64 @@ def _clean_and_format_to_markdown(doc_id: str) -> Path:
     # =============================
     _log("STAGE 1: OCR repair start")
 
-    repair_prompt = """YOU ARE A LOSSLESS OCR CORRECTION ENGINE SPECIALIZING IN VIETNAMESE ADMINISTRATIVE DOCUMENTS.
+    repair_prompt = """YOU ARE A LOSSLESS OCR CORRECTION ENGINE FOR VIETNAMESE ADMINISTRATIVE DOCUMENTS.
+    Rules:
+    - Preserve original meaning exactly.
+    - Do NOT summarize, paraphrase, rewrite, or simplify.
+    - Preserve numbering, clauses, hierarchy, and document structure.
+    - If uncertain, keep original text unchanged.
 
-    CRITICAL RULES (CONTENT PRESERVATION):
-    - DO NOT summarize, shorten, rewrite, or alter the actual content/meaning.
-    - PRESERVE all original numbering (1, 2, a, b...), bullet points, and document structure.
+    Required operations:
 
-    ALLOWED & REQUIRED REPAIR OPERATIONS:
-    1. MERGE BROKEN SENTENCES: OCR often splits a single sentence across multiple lines or paragraphs. You MUST join these broken sentences back together into smooth, continuous paragraphs.
-    2. FIX TYPOS: Correct broken characters and Vietnamese spelling errors caused by OCR (e.g., "thâm quyền" -> "thẩm quyền").
-    3. REMOVE ADMINISTRATIVE NOISE: You MUST DELETE the following artifacts without hesitation:
-    - Digital signature metadata (e.g., "Email:...", "Cơ quan:...", "Người ký:...", "Thời gian ký:...").
-    - Page markers and headers/footers (e.g., "=== PAGE X ===", standalone page numbers like "2", "3").
-    - Random OCR symbols (e.g., ", _", meaningless punctuation).
-    - Repeated headers caused by page breaks (e.g., "CỘNG THỐNG TIN ĐIỆN TỬ CHÍNH PHỦ").
+    1. Merge broken sentences caused by OCR line breaks or page breaks into continuous paragraphs.
 
-    OUTPUT FORMAT:
-    - Clean, continuous plain text.
-    - Standard spacing (do not leave multiple empty lines between joined sentences).
-    - Only retain the actual document content."""
+    2. Repair OCR corruption caused by:
+    - broken Vietnamese diacritics
+    - missing accents
+    - symbol substitution
+    - random inserted characters
+    - mixed encoding
+    - visually similar characters
+    - OCR spelling mistakes
+
+    Examples:
+    - "thâm quyền" -> "thẩm quyền"
+    - "căn cử" -> "căn cứ"
+    - "nghi dinh" -> "nghị định"
+    - "Van b2e" -> "Vấn đề"
+    - "$30" -> "số"
+
+    Use surrounding context to infer intended text.
+    Only correct when highly confident.
+    Prefer semantic consistency over literal character preservation when corruption is obvious.
+
+    3. Remove OCR noise:
+    - digital signature metadata
+    - repeated headers/footers
+    - page markers
+    - standalone page numbers
+    - meaningless OCR symbols
+    - duplicated broken fragments
+
+    Output:
+    - plain clean text only
+    - no markdown
+    - no explanations
+    - no comments
+    - preserve meaningful paragraphs and punctuation"""
 
     start_time_stage_1 = time.time()
-    
+
     cleaned_text = process_chunks_with_retry(
-        client=client, 
-        prompt_template=repair_prompt, 
-        text_data=raw_text, 
+        client=client,
+        prompt_template=repair_prompt,
+        text_data=raw_text,
         stage_name="STAGE 1"
     )
 
     _log(f"STAGE 1 DONE in {time.time() - start_time_stage_1:.2f}s")
     _log(f"Cleaned text length: {len(cleaned_text)}")
 
-    # SAVE NORMALIZED TEXT
     normalized_dir = Path("data/normalized_text")
     normalized_dir.mkdir(parents=True, exist_ok=True)
     normalized_path = normalized_dir / f"{doc_id}.txt"
@@ -237,16 +270,15 @@ def _clean_and_format_to_markdown(doc_id: str) -> Path:
     start_time_stage_2 = time.time()
 
     md_content = process_chunks_with_retry(
-        client=client, 
-        prompt_template=structure_prompt, 
-        text_data=cleaned_text, 
+        client=client,
+        prompt_template=structure_prompt,
+        text_data=cleaned_text,
         stage_name="STAGE 2"
     )
 
     _log(f"STAGE 2 DONE in {time.time() - start_time_stage_2:.2f}s")
     _log(f"Markdown length: {len(md_content)}")
 
-    # SAVE MARKDOWN
     md_dir = Path("data/markdown_docs")
     md_dir.mkdir(parents=True, exist_ok=True)
     md_path = md_dir / f"{doc_id}.md"
@@ -256,11 +288,11 @@ def _clean_and_format_to_markdown(doc_id: str) -> Path:
     _log("Markdown pipeline DONE")
     return md_path
 
+
 async def generate_semantic_tree(document_id: str) -> Path:
     _log(f"START semantic tree: {document_id}")
 
-    # md_path = _clean_and_format_to_markdown(document_id)
-    md_path = "data/markdown_docs/e651cdac-b5a5-4ffe-bb0b-e7564f1d1a53.md"
+    md_path = _clean_and_format_to_markdown(document_id)
     _log(f"Markdown ready: {md_path}")
 
     out_dir = Path("data/semantic_trees")
@@ -270,29 +302,23 @@ async def generate_semantic_tree(document_id: str) -> Path:
     try:
         _log("Bắt đầu parse Markdown bằng PageIndex md_to_tree...")
         start = time.time()
-        
-        # --- BẮT ĐẦU PHẦN TÍCH HỢP TỪ run_pageindex.py ---
-        
-        # 1. Load cấu hình mặc định (từ config.yaml của họ)
+
         config_loader = ConfigLoader()
-        opt = config_loader.load({}) # Truyền dict rỗng để lấy toàn bộ default
+        opt = config_loader.load({})
         _log(f"Model thực tế đang chuẩn bị chạy: {opt.model}")
-        
-        # 2. Chạy hàm md_to_tree (vì nó là async nên phải dùng asyncio.run)
+
         semantic_tree = await md_to_tree(
-            md_path=str(md_path),             # Truyền đường dẫn file
-            if_thinning=False,                # Mặc định theo script là 'no'
-            min_token_threshold=5000,         # Mặc định
+            md_path=str(md_path),
+            if_thinning=False,
+            min_token_threshold=5000,
             if_add_node_summary=opt.if_add_node_summary,
-            summary_token_threshold=200,      # Mặc định
+            summary_token_threshold=200,
             model=opt.model,
             if_add_doc_description=opt.if_add_doc_description,
             if_add_node_text=opt.if_add_node_text,
             if_add_node_id=opt.if_add_node_id
         )
-        
-        # --- KẾT THÚC PHẦN TÍCH HỢP ---
-        
+
         _log(f"TREE DONE in {time.time() - start:.2f}s")
         _log("Saving JSON...")
 
