@@ -1,539 +1,167 @@
-# AI RAG SYSTEM ROADMAP (VECTORLESS RAG)
+# KẾ HOẠCH DỰ ÁN
 
-## Tổng quan
-
-Triển khai hệ thống Agentic Vectorless Retrieval-Augmented Generation (RAG) sử dụng:
-
-- PageIndex (Semantic Tree)
-- OpenRouter API
-
-Kiến trúc này loại bỏ hoàn toàn:
-
-- Vector Database
-- Embedding Similarity Search
-- pgvector
-- pg_trgm
-
-Thay vào đó, hệ thống sử dụng:
-
-- Semantic Tree Traversal
-- Recursive Reasoning
-- Page-Level Retrieval
-- LLM-based Navigation
-
-để điều hướng tài liệu theo cấu trúc phân cấp thực tế.
+## HỆ THỐNG QUẢN LÝ, SỐ HÓA VÀ TRUY XUẤT TÀI LIỆU THÔNG MINH SỬ DỤNG AI RAG
 
 ---
 
-# PHASE 0 — KHỞI TẠO MÔI TRƯỜNG
+## 1. TỔNG QUAN DỰ ÁN
 
-## Task 0.1 — Khởi tạo Backend Core
+### 1.1 Tên hệ thống
 
-### Input
+Hệ thống quản lý, số hóa và truy xuất tài liệu thông minh sử dụng Agentic Vectorless RAG.
 
-Project rỗng.
+### 1.2 Mục tiêu dự án
 
-### Output
+Xây dựng hệ thống hỗ trợ:
 
-Khởi tạo cấu trúc backend FastAPI bao gồm:
+- Số hóa tài liệu hành chính/pháp lý (PDF, DOCX, Image).
+- Xây dựng \"Mục lục thông minh\" (Semantic Tree) tự động bằng PageIndex.
+- Tìm kiếm theo cơ chế suy luận (Reasoning-based Retrieval).
+- Hỏi đáp tài liệu có trích dẫn nguồn chính xác cấp độ trang.
+- Tóm tắt và tổng hợp thông tin từ văn bản phức tạp.
 
-- FastAPI
-- SQLAlchemy
-- Redis
-- Celery
-- OpenRouter Integration
-- PageIndex
-- OCR libraries
+### 1.3 Tổng quan kiến trúc
 
-### requirements.txt
-
-fastapi
-uvicorn
-sqlalchemy
-alembic
-requests
-tenacity
-pageindex
-redis
-celery
-pymupdf
-pdfplumber
-python-docx
-pytesseract
-pillow
-
-### Done Condition
-
-- pip install -r requirements.txt chạy thành công.
-- uvicorn app.main:app --reload hoạt động.
-- Redis kết nối thành công.
-- Celery worker start thành công.
+|Thành phần|Kiến trúc/Công nghệ|
+|---|---|
+|AI Search|Vectorless RAG|
+|Indexing|Semantic Tree (JSON format) qua thư viện PageIndex|
+|LLM & Reasoning|OpenRouter API|
+|Backend|FastAPI|
+|Frontend|NextJS + TailwindCSS|
+|Queue|Celery + Redis|
+|Database Metadata|SQLite + SQLAlchemy ORM (Chỉ lưu user & metadata tài liệu)|
+|Storage|Local / MinIO (Lưu PDF và file JSON Tree)|
 
 ---
 
-# PHASE 1 — DOCUMENT INGESTION & SEMANTIC TREE
+## 2. PHẠM VI DỰ ÁN
 
-## Task 1.1 — Xây dựng Upload Pipeline
+### 2.1 Số hóa & Build Tree tự động
 
-### Input
+Cho phép Upload PDF/DOCX/Ảnh scan.
 
-File upload:
+Hệ thống tự động:
 
-- PDF
-- DOCX
-- PNG/JPG scan
+- Dùng thư viện pageindex phân tích cấu trúc tài liệu.
+- Gọi LLM thông qua OpenRouter để hỗ trợ semantic parsing.
+- Tạo ra file Cây Ngữ Nghĩa (Semantic Tree) định dạng JSON lưu vào thư mục data/semantic_trees/.
 
-### Output
+### 2.2 Tìm kiếm Agentic & Trích dẫn
 
-File được lưu vào:
+Người dùng hỏi:
 
-data/raw/
+\"Điều kiện cấp phép xây dựng?\"
 
-Ví dụ:
+Hệ thống:
 
-data/raw/luat-xay-dung.pdf
-
-### Done Condition
-
-- Upload API hoạt động.
-- File được lưu chính xác.
-- DB tạo document record trạng thái pending.
-
----
-
-## Task 1.2 — OCR & Extract Text Pipeline
-
-### Input
-
-Raw document từ:
-
-data/raw/
-
-### Output
-
-Extract toàn bộ text từng trang và lưu vào:
-
-data/extracted_text/<document_id>/
-
-Ví dụ:
-
-page_001.txt
-page_002.txt
-
-### Important Rules
-
-- Mỗi trang là 1 file riêng.
-- Không gộp toàn bộ text thành 1 file lớn.
-- Hỗ trợ page-level retrieval.
-
-### Done Condition
-
-- PDF scan OCR thành công.
-- Extract text chính xác.
-- Có thể đọc riêng từng trang.
-
----
-
-## Task 1.3 — Build run_pageindex.py
-
-### Input
-
-PDF path.
-
-### Output
-
-Generate Semantic Tree JSON bằng thư viện pageindex.
-
-Lưu tại:
-
-data/semantic_trees/<document_id>.json
-
-### Semantic Tree Requirements
-
-Mỗi node phải có:
-
-- id
-- title
-- summary
-- page_start
-- page_end
-- children
-
-### Done Condition
-
-- PDF lớn được convert thành semantic hierarchy.
-- JSON tree phản ánh cấu trúc tài liệu thực tế.
-- Root → Section → Subsection → Leaf nodes đầy đủ.
-
----
-
-## Task 1.4 — Update Database Schema
-
-### Input
-
-SQLAlchemy Document model.
-
-### Output
-
-Schema mới:
-
-class Document(Base):
-    id
-    filename
-    raw_file_path
-    json_tree_path
-    extracted_text_path
-    total_pages
-    status
-    created_at
-
-### Status Lifecycle
-
-pending
-processing
-processed
-error
-
-### Important Rules
-
-KHÔNG sử dụng:
-
-- pgvector
-- pg_trgm
-- embeddings
-- vector columns
-
-### Done Condition
-
-- Migration chạy thành công.
-- SQLite/PostgreSQL hoạt động bình thường.
-- Không có vector dependency.
-
----
-
-# PHASE 2 — RECURSIVE REASONING RETRIEVAL
-
-## Task 2.1 — Tree Navigation Engine
-
-### File
-
-app/services/rag.py
-
-### Input
-
-- User query
-- Semantic Tree JSON
-
-### Output
-
-Function:
-
-reasoning_search_tree(tree, query)
-
-### Recursive Reasoning Flow
-
-#### Step 1 — Root-Level Reasoning
-
-OpenRouter LLM chỉ đọc:
-
-- Root nodes
-- Chapter titles
-- Summaries
-
-KHÔNG load toàn bộ tree.
-
-LLM xác định chapter liên quan.
-
----
-
-#### Step 2 — Subtree Traversal
-
-Chỉ load subtree liên quan.
-
-Ví dụ:
-
-Chương 2 → Mục 2.1
-
----
-
-#### Step 3 — Leaf Retrieval
-
-Chỉ khi tới leaf node mới load:
-
-data/extracted_text/page_xxx.txt
-
-### Important Rules
-
-- Tuyệt đối không cosine similarity.
-- Không embedding search.
-- Không ANN search.
-- Không semantic vector retrieval.
-
-### Done Condition
-
-- System tìm đúng section bằng reasoning.
-- Chỉ load context cần thiết.
-- Token usage thấp.
-
----
-
-## Task 2.2 — Context Builder
-
-### Input
-
-Leaf nodes từ retrieval engine.
-
-### Output
-
-Formatted context:
+- Duyệt JSON Tree (Reasoning).
+- Lấy đúng nội dung Leaf node.
+- Trả lời bằng OpenRouter LLM kèm citation:
 
 [Nguồn: Luat-Xay-Dung.pdf, Trang 12]
 
-### Responsibilities
+---
 
-- Merge contexts
-- Remove duplicates
-- Sort relevance
-- Compress token
-- Prevent overflow
+## 3. KIẾN TRÚC HỆ THỐNG
 
-### Important Rules
+### 3.1 Kiến trúc tổng thể
 
-- Context phải deterministic.
-- Citation bắt buộc.
-- Không hallucinated source.
-
-### Done Condition
-
-- OpenRouter nhận context sạch.
-- Không vượt token limit.
-- Citation mapping chính xác.
+                ┌─────────────────┐
+                │   Frontend UI   │
+                └────────┬────────┘
+                         │
+                ┌────────▼────────┐
+                │ FastAPI Backend │
+                └────┬───────┬────┘
+                     │       │
+       ┌─────────────▼─┐   ┌─▼─────────────┐
+       │ File Ingestion│   │ RAG Service   │
+       │ (PageIndex)   │   │ (Tree Search) │
+       └──────┬────────┘   └──────┬────────┘
+              │                   │
+       ┌──────▼────────┐   ┌──────▼────────┐
+       │   JSON Tree   │◄──┤ OpenRouter    │
+       │   Storage     │   │ LLM Gateway   │
+       └───────────────┘   └───────────────┘
 
 ---
 
-# PHASE 3 — OPENROUTER AGENTIC CHAT
+## 4. GIAO TIẾP FRONTEND ↔ BACKEND
 
-## Task 3.1 — LLM Generation Service
-
-### File
-
-app/services/llm.py
-
-### Input
-
-- System Prompt
-- Context Builder output
-- User query
-
-### Output
-
-Final answer generation bằng:
-
-google/gemini-2.0-flash-001
-
-### Important Rules
-
-LLM:
-
-- CHỈ được trả lời từ provided context.
-- KHÔNG tự suy diễn ngoài context.
-- Bắt buộc citation.
-
-### Done Condition
-
-- Hallucination giảm tối đa.
-- Citation luôn tồn tại.
-- Output ổn định.
-
----
-
-## Task 3.2 — POST /chat/ask
-
-### Input
-
-{
-  \"pdf_name\": \"string\",
-  \"question\": \"string\"
-}
-
-### Output
-
-{
-  \"result\": {
-    \"answer\": \"string\",
-    \"sources\": [
-      {
-        \"page\": 12,
-        \"file\": \"luat.pdf\"
-      }
-    ]
-  }
-}
-
-### Done Condition
-
-- HTTP 200 thành công.
-- Citation đúng trang.
-- Response time ổn định.
-
----
-
-## Task 3.3 — Retry & Error Handling
-
-### Input
-
-- 429 errors
-- 503 errors
-- Network timeout
-
-### Output
-
-Retry wrappers bằng:
-
-tenacity
-
-### Retry Strategy
-
-- exponential backoff
-- retry_if_exception_type
-- max retry limit
-
-### Done Condition
-
-- Auto retry hoạt động.
-- Graceful degradation.
-- Không crash worker.
-
----
-
-# PHASE 4 — FRONTEND & UI
-
-## Task 4.1 — Upload UI
-
-### Features
-
-- Drag & Drop
-- Upload progress
-- Retry upload
-- Processing status
-
-### Auto Flow
-
-Upload thành công sẽ tự động:
-
-- OCR
-- Extract text
-- Build tree
-
-### Done Condition
-
-- UI realtime update trạng thái.
-- Người dùng thấy:
-  - pending
-  - processing
-  - processed
-  - error
-
----
-
-## Task 4.2 — Chat UI
-
-### Features
-
-- Streaming response
-- Citation rendering
-- Chat history
-
-### Citation Behavior
-
-Click:
-
-[Trang 12]
-
-sẽ mở PDF đúng trang.
-
-### Done Condition
-
-- Citation clickable.
-- PDF jump hoạt động.
-- UX ổn định.
-
----
-
-# PHASE 5 — TESTING & STABILITY
-
-## Task 5.1 — Unit Tests
-
-Coverage yêu cầu:
-
->= 80%
-
-### Required Test Areas
-
-- OCR
-- Tree generation
-- Recursive traversal
-- Context builder
-- Citation mapping
-- OpenRouter wrapper
-- Retry logic
-
----
-
-## Task 5.2 — Integration Tests
-
-Test toàn bộ flow:
+### 4.1 Ingestion Flow (Build Tree)
 
 Upload PDF
-→ OCR
-→ Semantic Tree
-→ Recursive Retrieval
-→ OpenRouter
-→ Final Answer
+    -> Lưu file
+    -> Gọi script run_pageindex.py
+    -> Lưu JSON tree vào data/semantic_trees/
+    -> Update status vào DB
 
-### Done Condition
+### 4.2 RAG Flow (Chat)
 
-- Full pipeline hoạt động.
-- Không token overflow.
-- Citation chính xác.
-
----
-
-# ACCEPTANCE CRITERIA
-
-Hệ thống phải đảm bảo:
-
-- ZERO vector similarity search.
-- ZERO embeddings retrieval.
-- ZERO pgvector.
-- ZERO pg_trgm.
-
-Pipeline hoàn chỉnh:
-
-PDF Upload
-→ OCR
-→ Extract Text
-→ Semantic Tree
-→ Recursive Reasoning
-→ Context Builder
-→ OpenRouter Answer
-→ Citation Output
-
-Hệ thống phải:
-
-- Explainable
-- Token-efficient
-- Hierarchical reasoning
-- Citation-accurate
-- Production-ready
+User Query
+    -> Load JSON Tree
+    -> Reasoning Tree Search
+    -> Context Builder
+    -> OpenRouter API
+    -> Trả về Answer + Citations
 
 ---
 
-# ENVIRONMENT VARIABLES
+## 5. THIẾT KẾ DATABASE & ORM
 
-```
-DATABASE_URL=sqlite:///./database.db
-REDIS_URL=redis://localhost:6379/0
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-JWT_SECRET=your_jwt_secret_here
-```
+Sử dụng SQLAlchemy để đảm bảo tính trừu tượng hóa.
+
+Logic nghiệp vụ sẽ không phụ thuộc vào loại DB cụ thể.
+
+- Database Engine: SQLite (Lưu trữ dạng file database.db).
+- ORM Layer: SQLAlchemy 2.0+.
+- Migrations: Sử dụng Alembic (tùy chọn) để quản lý sự thay đổi schema.
+
+Lưu ý:
+
+- Không dùng DB để lưu Index/Chunking/Vector.
+- SQLite chỉ lưu metadata và thông tin người dùng.
+
+### 5.1 users
+
+|Field|Type|Note|
+|---|---|---|
+|id|UUID|Primary Key|
+|username|VARCHAR|Unique|
+|password_hash|TEXT||
+|role|VARCHAR||
+|created_at|TIMESTAMP||
+
+### 5.2 documents
+
+|Field|Type|Note|
+|---|---|---|
+|id|UUID|Primary Key|
+|filename|VARCHAR||
+|total_pages|INTEGER|Tổng số trang (phục vụ Reasoning)|
+|uploaded_by|UUID|Foreign Key -> users.id|
+|json_tree_path|TEXT||
+|status|ENUM|pending, processed, error|
+|created_at|TIMESTAMP||
+
+(Xóa bỏ bảng page_index khỏi thiết kế cũ)
+
+---
+
+## 6. CÁC BƯỚC SETUP MÔI TRƯỜNG
+
+### 6.1 Cài đặt bắt buộc
+
+- Python 3.11+
+- NodeJS 22+
+- SQLite3 (Tích hợp sẵn trong Python, KHÔNG cần cài đặt thêm server DB)
+
+### 6.2 Environment Variables
+
+    DATABASE_URL=sqlite:///./database.db
+    REDIS_URL=redis://localhost:6379/0
+    OPENROUTER_API_KEY=your_openrouter_api_key_here
+    OPENROUTER_MODEL=google/gemini-2.0-flash-001
+    JWT_SECRET=your_jwt_secret_here
+    

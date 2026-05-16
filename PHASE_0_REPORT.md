@@ -1,4 +1,5 @@
-PHASE 0 REPORT — KHỞI TẠO MÔI TRƯỜNG
+# PHASE 0 REPORT — KHỞI TẠO MÔI TRƯỜNG
+
 [x] OS Dependencies (Tesseract, MuPDF, Redis)
 
 [x] Python Environment (.venv & requirements.txt)

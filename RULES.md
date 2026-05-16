@@ -1,10 +1,6 @@
-# RULES.md
-
 # QUY TẮC KIẾN TRÚC & THỰC THI CHO AI AGENT
 
----
-
-# 0. CORE PRINCIPLES
+## 0. CORE PRINCIPLES
 
 ## 0.1 AI Agent KHÔNG được tự suy đoán kiến trúc
 
@@ -12,10 +8,8 @@ TRƯỚC KHI CODE, BẮT BUỘC:
 
 - Đọc toàn bộ codebase hiện tại.
 - Đọc `RULES.md`.
-- Đọc `COMPLETE_IMPLEMENTATION_PLAN.md`.
-- Đọc `AI_RAG_SYSTEM_ROADMAP.md`.
-- Đọc `PAGE_INDEX_README.md`.
-- Đọc `SEMANTIC_TREE_SCHEMA.md`.
+- Đọc `PROJECT_PLAN.md`.
+- Đọc `PROJECT_ROADMAP.md`.
 - Hiểu chính xác workflow của:
   - `pageindex`
   - recursive reasoning retrieval
@@ -72,21 +66,19 @@ CẤM:
 
 ## 0.3 Thứ tự ưu tiên tuyệt đối
 
-```text
-Correctness
-> Retrieval Accuracy
-> Citation Accuracy
-> Stability
-> Deterministic Retrieval
-> Testability
-> Maintainability
-> Performance
-> Optimization
-```
+  Correctness
+  > Retrieval Accuracy
+  > Citation Accuracy
+  > Stability
+  > Deterministic Retrieval
+  > Testability
+  > Maintainability
+  > Performance
+  > Optimization
 
 ---
 
-# 1. QUY TẮC KIẾN TRÚC VECTORLESS RAG (CRITICAL)
+## 1. QUY TẮC KIẾN TRÚC VECTORLESS RAG (CRITICAL)
 
 ## 1.1 CẤM Vector Database
 
@@ -145,7 +137,7 @@ Hệ thống BẮT BUỘC sử dụng:
 
 Nguồn chính thức:
 
-- https://github.com/VectifyAI/PageIndex
+- [PageIndex on GitHub](https://github.com/VectifyAI/PageIndex)
 
 TRƯỚC KHI CODE:
 
@@ -167,33 +159,31 @@ QUAN TRỌNG:
 
 ## 1.4 Retrieval Flow chuẩn (BẮT BUỘC)
 
-```text
-Upload PDF/DOCX/Image
- ↓
-Store Raw File
- ↓
-OCR / Text Extraction
- ↓
-Store Extracted Page Text
- ↓
-pageindex processing
- ↓
-Semantic Tree JSON
- ↓
-Store Semantic Tree
- ↓
-Root-Level Reasoning
- ↓
-Subtree Traversal
- ↓
-Leaf Node Retrieval
- ↓
-Context Builder
- ↓
-Gemini Answer Generation
- ↓
-Citation Output
-```
+  Upload PDF/DOCX/Image
+   ↓
+  Store Raw File
+   ↓
+  OCR / Text Extraction
+   ↓
+  Store Extracted Page Text
+   ↓
+  pageindex processing
+   ↓
+  Semantic Tree JSON
+   ↓
+  Store Semantic Tree
+   ↓
+  Root-Level Reasoning
+   ↓
+  Subtree Traversal
+   ↓
+  Leaf Node Retrieval
+   ↓
+  Context Builder
+   ↓
+  Gemini Answer Generation
+   ↓
+  Citation Output
 
 CẤM:
 
@@ -218,9 +208,7 @@ CẤM:
 
 Ví dụ CẤM:
 
-```text
-500 tokens/chunk
-```
+  500 tokens/chunk
 
 BẮT BUỘC:
 
@@ -240,13 +228,11 @@ Lý do:
 
 Retrieval PHẢI theo cơ chế:
 
-```text
-Root Nodes
-→ Relevant Chapter
-→ Relevant Section
-→ Leaf Node
-→ Extracted Text
-```
+  Root Nodes
+  → Relevant Chapter
+  → Relevant Section
+  → Leaf Node
+  → Extracted Text
 
 LLM KHÔNG được:
 
@@ -298,9 +284,7 @@ Extracted text mới là nguồn:
 
 BẮT BUỘC:
 
-```text
-data/extracted_text/<document_id>/page_xxx.txt
-```
+    `data/extracted_text/<document_id>/page_xxx.txt`
 
 ---
 
@@ -310,15 +294,11 @@ MỌI câu trả lời AI PHẢI có citation.
 
 Format DUY NHẤT được phép:
 
-```text
-[Nguồn: <filename>, Trang <page_number>]
-```
+  [Nguồn: `<filename>`, Trang `<page_number>`]
 
 Ví dụ:
 
-```text
-[Nguồn: Luat-Xay-Dung.pdf, Trang 12]
-```
+  [Nguồn: Luat-Xay-Dung.pdf, Trang 12]
 
 Citation phải mapping đúng:
 
@@ -336,9 +316,7 @@ Nếu retrieval không đủ context:
 
 BẮT BUỘC trả:
 
-```text
-Không tìm thấy thông tin trong tài liệu.
-```
+  Không tìm thấy thông tin trong tài liệu.
 
 CẤM:
 
@@ -378,9 +356,7 @@ BẮT BUỘC lưu:
 
 Ví dụ:
 
-```text
-data/semantic_trees/<document_id>.json
-```
+    `data/semantic_trees/<document_id>.json`
 
 ---
 
@@ -416,7 +392,7 @@ BẮT BUỘC:
 
 ---
 
-# 2. QUY TẮC DATABASE & STORAGE
+## 2. QUY TẮC DATABASE & STORAGE
 
 ## 2.1 Database CHỈ lưu metadata
 
@@ -444,15 +420,11 @@ CẤM lưu:
 
 BẮT BUỘC:
 
-```text
-data/semantic_trees/
-```
+  data/semantic_trees/
 
 Ví dụ:
 
-```text
-data/semantic_trees/<document_id>.json
-```
+    `data/semantic_trees/<document_id>.json`
 
 ---
 
@@ -460,9 +432,7 @@ data/semantic_trees/<document_id>.json
 
 BẮT BUỘC:
 
-```text
-data/extracted_text/<document_id>/page_001.txt
-```
+    `data/extracted_text/<document_id>/page_001.txt`
 
 CẤM:
 
@@ -474,28 +444,26 @@ CẤM:
 
 ## 2.4 Storage separation bắt buộc
 
-| Data Type | Storage |
+|Data Type|Storage|
 |---|---|
-| Raw PDF/DOCX/Image | `data/raw/` |
-| Semantic Tree JSON | `data/semantic_trees/` |
-| Extracted Page Text | `data/extracted_text/` |
-| Metadata | SQLite/PostgreSQL |
+|Raw PDF/DOCX/Image|`data/raw/`|
+|Semantic Tree JSON|`data/semantic_trees/`|
+|Extracted Page Text|`data/extracted_text/`|
+|Metadata|SQLite/PostgreSQL|
 
 ---
 
-# 3. QUY TẮC BACKEND
+## 3. QUY TẮC BACKEND
 
 ## 3.1 Architecture bắt buộc
 
-```text
-API
- ↓
-Service
- ↓
-Repository
- ↓
-Database
-```
+  API
+   ↓
+  Service
+   ↓
+  Repository
+   ↓
+  Database
 
 ---
 
@@ -503,11 +471,10 @@ Database
 
 CẤM:
 
-```python
-@app.post(\"/upload\")
 def upload():
+  @app.post("/upload")
+  def upload():
     # pageindex logic
-```
 
 Đúng:
 
@@ -518,13 +485,13 @@ def upload():
 
 ## 3.3 Separation of Concerns bắt buộc
 
-| Layer | Responsibility |
+|Layer|Responsibility|
 |---|---|
-| API | HTTP |
-| Service | business logic |
-| Repository | DB metadata access |
-| Model | schema |
-| Worker | async jobs |
+|API|HTTP|
+|Service|business logic|
+|Repository|DB metadata access|
+|Model|schema|
+|Worker|async jobs|
 
 ---
 
@@ -532,9 +499,7 @@ def upload():
 
 Ví dụ:
 
-```python
-def process_document(document_id: UUID) -> ProcessingResult:
-```
+  def process_document(document_id: UUID) -> ProcessingResult:
 
 ---
 
@@ -542,9 +507,7 @@ def process_document(document_id: UUID) -> ProcessingResult:
 
 CẤM:
 
-```python
-API_KEY = \"abc\"
-```
+  API_KEY = "abc"
 
 BẮT BUỘC:
 
@@ -566,21 +529,17 @@ CẤM:
 
 ---
 
-# 4. QUY TẮC TASK EXECUTION
+## 4. QUY TẮC TASK EXECUTION
 
 ## 4.1 Một task chỉ làm MỘT việc
 
 Ví dụ đúng:
 
-```text
-Create upload validator
-```
+  Create upload validator
 
 Ví dụ sai:
 
-```text
-Build entire ingestion pipeline
-```
+  Build entire ingestion pipeline
 
 ---
 
@@ -618,7 +577,7 @@ Nếu chưa hiểu toàn hệ thống:
 
 ---
 
-# 5. QUY TẮC TESTING
+## 5. QUY TẮC TESTING
 
 ## 5.1 Test ngay sau mỗi task
 
@@ -644,15 +603,11 @@ CẤM:
 
 Ví dụ:
 
-```text
-Ask nonexistent regulation
-```
+  Ask nonexistent regulation
 
 Expected:
 
-```text
-Không tìm thấy thông tin trong tài liệu.
-```
+  Không tìm thấy thông tin trong tài liệu.
 
 ---
 
@@ -678,27 +633,25 @@ PHẢI verify:
 
 ---
 
-# 6. QUY TẮC GIT & VERSION CONTROL
+## 6. QUY TẮC GIT & VERSION CONTROL
 
 ## 6.1 Commit sau mỗi task hoàn thành
 
 Workflow bắt buộc:
 
-```text
-Read Task
- ↓
-Implement
- ↓
-Run Tests
- ↓
-Fix Errors
- ↓
-Tests Pass
- ↓
-git diff
- ↓
-Commit
-```
+  Read Task
+   ↓
+  Implement
+   ↓
+  Run Tests
+   ↓
+  Fix Errors
+   ↓
+  Tests Pass
+   ↓
+  git diff
+   ↓
+  Commit
 
 ---
 
@@ -718,17 +671,13 @@ CẤM commit nếu:
 
 Format:
 
-```text
-type(scope): message
-```
+  type(scope): message
 
 Ví dụ:
 
-```bash
-feat(upload): add upload endpoint
-fix(rag): correct leaf node traversal
-docs(pageindex): add semantic tree documentation
-```
+  feat(upload): add upload endpoint
+  fix(rag): correct leaf node traversal
+  docs(pageindex): add semantic tree documentation
 
 ---
 
@@ -759,9 +708,7 @@ BẮT BUỘC:
 
 BẮT BUỘC:
 
-```bash
-git diff
-```
+  git diff
 
 Kiểm tra:
 
@@ -774,12 +721,12 @@ Kiểm tra:
 
 ## 6.7 Branch strategy bắt buộc
 
-| Branch | Purpose |
+|Branch|Purpose|
 |---|---|
-| main | stable |
-| develop | integration |
-| feature/* | features |
-| fix/* | bugfixes |
+|main|stable|
+|develop|integration|
+|feature/*|features|
+|fix/*|bugfixes|
 
 ---
 
@@ -798,29 +745,29 @@ Sau mỗi commit:
 
 ---
 
-# 7. DEFINITION OF DONE
+## 7. DEFINITION OF DONE
 
 Task chỉ được xem là DONE nếu:
 
-| Requirement | Required |
+|Requirement|Required|
 |---|---|
-| Code chạy | ✅ |
-| Tests pass | ✅ |
-| Không có secrets | ✅ |
-| Không có debug code | ✅ |
-| Đúng kiến trúc Vectorless RAG | ✅ |
-| Dùng đúng PageIndex | ✅ |
-| Recursive retrieval đúng | ✅ |
-| Citation đúng | ✅ |
-| Retrieval validated | ✅ |
-| Type hints đầy đủ | ✅ |
-| Error handling đầy đủ | ✅ |
-| Logging đầy đủ | ✅ |
-| Commit đúng format | ✅ |
+|Code chạy|✅|
+|Tests pass|✅|
+|Không có secrets|✅|
+|Không có debug code|✅|
+|Đúng kiến trúc Vectorless RAG|✅|
+|Dùng đúng PageIndex|✅|
+|Recursive retrieval đúng|✅|
+|Citation đúng|✅|
+|Retrieval validated|✅|
+|Type hints đầy đủ|✅|
+|Error handling đầy đủ|✅|
+|Logging đầy đủ|✅|
+|Commit đúng format|✅|
 
 ---
 
-# 8. QUY TẮC QUAN TRỌNG NHẤT
+## 8. QUY TẮC QUAN TRỌNG NHẤT
 
 ## 8.1 Retrieval > Prompt
 
