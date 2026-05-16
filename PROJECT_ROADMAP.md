@@ -222,13 +222,13 @@ app/services/rag.py
 **Input:**
 
 - User query
-- Semantic Tree JSON
+- Semantic Tree JSON (Cấu trúc phân cấp với thuộc tính line_num)
 
 **Output:**
 
 Function:
 
-reasoning_search_tree(tree, query)
+`reasoning_search_tree(tree, query)`
 
 **Recursive Reasoning Flow:**
 
@@ -237,12 +237,11 @@ reasoning_search_tree(tree, query)
 OpenRouter LLM chỉ đọc:
 
 - Root nodes
-- Chapter titles
-- Summaries
+- Chapter/Section titles
+- Summaries (summary hoặc prefix_summary)
 
-KHÔNG load toàn bộ tree.
-
-LLM xác định chapter liên quan.
+KHÔNG load toàn bộ tree hay text thô.
+LLM xác định chapter/section liên quan nhất với câu hỏi.
 
 ---
 
@@ -256,11 +255,12 @@ Chương 2 → Mục 2.1
 
 ---
 
-##### Step 3 — Leaf Retrieval
+##### Step 3 — Leaf Retrieval & Line Boundary Detection
 
-Chỉ khi tới leaf node mới load:
+Khi LLM chốt được các target Node IDs, hệ thống thực hiện Semantic Chunking:
 
-data/extracted_text/page_xxx.txt
+- Tìm dòng bắt đầu (Start Line = `line_num` của node hiện tại).
+- Tìm dòng kết thúc (End Line = `line_num` của node kế tiếp liền kề - 1).
 
 **Important Rules:**
 
@@ -272,42 +272,47 @@ data/extracted_text/page_xxx.txt
 **Done Condition (Task 2.1):**
 
 - System tìm đúng section bằng reasoning.
-- Chỉ load context cần thiết.
-- Token usage thấp.
+- Phân định ranh giới dòng (line boundaries) chính xác.
+- Token usage cực thấp.
 
 ---
 
 ### Task 2.2 — Context Builder
 
+**File:**
+
+app/services/rag.py (Function: `build_context_from_markdown`)
+
 **Input:**
 
-Leaf nodes từ retrieval engine.
+- Danh sách Target Node IDs cùng ranh giới dòng (Start/End).
+- File Markdown gốc: `data/markdown_docs/[doc_id].md`
 
 **Output:**
 
-Formatted context:
+Formatted context string:
 
-[Nguồn: Luat-Xay-Dung.pdf, Trang 12]
+[Nguồn: e651cdac-b5a5-4ffe-bb0b-e7564f1d1a53.md, Dòng: 22-23]
+Nội dung trích xuất...
 
 **Responsibilities:**
 
-- Merge contexts
-- Remove duplicates
-- Sort relevance
-- Compress token
-- Prevent overflow
+- Trích xuất chính xác theo Line Index.
+- Merge contexts (Gộp các đoạn text nếu LLM chọn nhiều Node).
+- Remove overlapping ranges (Khử trùng lặp nếu các dòng giao nhau).
+- Compress token & Prevent overflow (Cắt gọn nội dung lố, lấy đúng "ngăn kéo" thông tin).
 
 **Important Rules:**
 
-- Context phải deterministic.
-- Citation bắt buộc.
-- Không hallucinated source.
+- Context phải deterministic (Trích xuất 100 lần kết quả y như nhau).
+- Citation (Đánh dấu nguồn & số dòng) là bắt buộc ở đầu mỗi đoạn.
+- Không hallucinated source (Chỉ trích xuất text có thật từ file MD).
 
 **Done Condition (Task 2.2):**
 
-- OpenRouter nhận context sạch.
-- Không vượt token limit.
-- Citation mapping chính xác.
+- Trích xuất đúng đoạn hội thoại/điều khoản mà không bị lẹm sang phần khác.
+- OpenRouter nhận context "sạch" và cực kỳ cô đọng.
+- Citation mapping chính xác tới từng số dòng.
 
 ---
 
