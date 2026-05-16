@@ -162,6 +162,6 @@ Lưu ý:
     DATABASE_URL=sqlite:///./database.db
     REDIS_URL=redis://localhost:6379/0
     OPENROUTER_API_KEY=your_openrouter_api_key_here
-    OPENROUTER_MODEL=google/gemini-2.0-flash-001
+    OPENROUTER_MODEL=openrouter/free
     JWT_SECRET=your_jwt_secret_here
     

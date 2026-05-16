@@ -329,7 +329,7 @@ app/services/llm.py
 
 Final answer generation bằng:
 
-google/gemini-2.0-flash-001
+openrouter/free
 
 **Important Rules:**
 
