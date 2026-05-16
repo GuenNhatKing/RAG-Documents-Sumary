@@ -28,7 +28,7 @@ class ChatResponse(BaseModel):
 @router.post("/ask", response_model=ChatResponse)
 async def ask_document(request: ChatRequest):
     json_path = f"/work/backend/data/semantic_trees/{request.doc_id}.json"
-    markdown_path = f"/work/data/markdown_docs/{request.doc_id}.md"
+    markdown_path = f"/work/backend/data/markdown_docs/{request.doc_id}.md"
 
     if not os.path.exists(json_path) or not os.path.exists(markdown_path):
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu (JSON hoặc MD).")

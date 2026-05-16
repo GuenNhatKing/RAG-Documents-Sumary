@@ -153,6 +153,27 @@ async def build_tree(document_id: str):
         raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
 
 
+@app.get("/documents/{doc_id}/markdown")
+def get_document_markdown(doc_id: str):
+    markdown_path = (
+        Path("/work/backend/data/markdown_docs") / f"{doc_id}.md"
+    )
+
+    if not markdown_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Markdown not found for doc_id={doc_id}",
+        )
+
+    markdown = markdown_path.read_text(
+        encoding="utf-8"
+    )
+
+    return {
+        "doc_id": doc_id,
+        "markdown": markdown,
+    }
+
 # =========================================================
 # CELERY WORKER TEST
 # =========================================================

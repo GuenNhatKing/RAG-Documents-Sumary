@@ -15,6 +15,7 @@ const COLORS = {
 type Message = {
   role: "user" | "assistant";
   content: string;
+  sources?: SourceTag[];
 };
 
 type SourceTag = {
@@ -35,7 +36,7 @@ export default function ChatPage({ params }: PageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const [sources, setSources] = useState<SourceTag[]>([]);
+  const [viewerSrc, setViewerSrc] = useState(`/documents/${doc_id}/view`);
 
   const pdfRef = useRef<HTMLIFrameElement>(null);
 
@@ -53,21 +54,26 @@ export default function ChatPage({ params }: PageProps) {
     setError("");
 
     try {
-      const res = await axios.post("/chat/ask", {
+      const res = await axios.post("http://localhost:8000/chat/ask", {
         doc_id,
         question,
       });
 
-      const answer: string = res.data.result.answer;
-      const srcs: SourceTag[] = res.data.result.sources;
+      const rawAnswer: string = res.data.result?.answer ?? "Không có câu trả lời.";
+
+      const answer = rawAnswer
+        .replace(/\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?/g, "")
+        .trim();
+
+      const srcs: SourceTag[] = res.data.result?.sources ?? [];
 
       const assistantMsg: Message = {
         role: "assistant",
         content: answer,
+        sources: srcs,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-      setSources(srcs);
     } catch (e: any) {
       console.error(e);
 
@@ -80,18 +86,12 @@ export default function ChatPage({ params }: PageProps) {
     }
   };
 
-  // Highlight source in viewer
   const handleSourceClick = (tag: SourceTag) => {
-    if (!pdfRef.current) return;
+    const highlight = encodeURIComponent(tag.lines);
 
-    const anchor = `#line-${tag.lines}`;
-
-    pdfRef.current.contentWindow?.location.replace(anchor);
-
-    pdfRef.current.contentWindow?.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    setViewerSrc(
+      `/documents/${doc_id}/view?highlight=${highlight}&t=${Date.now()}`
+    );
   };
 
   const onKeyPress = (
@@ -112,7 +112,7 @@ export default function ChatPage({ params }: PageProps) {
       >
         <iframe
           ref={pdfRef}
-          src={`/documents/${doc_id}/view`}
+          src={viewerSrc}
           className="w-full h-full"
           title="Document viewer"
         />
@@ -130,13 +130,26 @@ export default function ChatPage({ params }: PageProps) {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`p-3 rounded ${
-                msg.role === "assistant"
-                  ? "bg-gray-100"
+              className={`p-3 rounded ${msg.role === "assistant"
+                  ? "bg-gray-100 text-gray-900"
                   : "bg-primary text-white"
-              }`}
+                }`}
             >
-              <p>{msg.content}</p>
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+
+              {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {msg.sources.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSourceClick(s)}
+                      className="bg-accent text-white py-1 px-2 rounded text-sm cursor-pointer"
+                    >
+                      Xem nguồn: dòng {s.lines}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 
@@ -174,21 +187,6 @@ export default function ChatPage({ params }: PageProps) {
             </p>
           )}
         </div>
-
-        {/* Sources */}
-        {sources.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {sources.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => handleSourceClick(s)}
-                className={`${COLORS.accent} py-1 px-2 rounded text-sm cursor-pointer`}
-              >
-                {s.file} – Dòng {s.lines}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Input */}
         <div className="flex gap-2">
