@@ -3,6 +3,8 @@
 import { use, useRef, useState } from "react";
 import axios from "axios";
 import { ArrowLeftRightIcon, RefreshCcwIcon } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Color palette (Tailwind config names)
 const COLORS = {
@@ -135,21 +137,31 @@ export default function ChatPage({ params }: PageProps) {
                   : "bg-primary text-white"
                 }`}
             >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-
-              {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {msg.sources.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSourceClick(s)}
-                      className="bg-accent text-white py-1 px-2 rounded text-sm cursor-pointer"
-                    >
-                      Xem nguồn: dòng {s.lines}
-                    </button>
-                  ))}
+              {msg.role === "assistant" ? (
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
+              ) : (
+                <p className="whitespace-pre-wrap">{msg.content}</p>
               )}
+
+              {msg.role === "assistant" &&
+                msg.sources &&
+                msg.sources.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {msg.sources.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSourceClick(s)}
+                        className="bg-accent text-white py-1 px-2 rounded text-sm cursor-pointer"
+                      >
+                        Xem nguồn: dòng {s.lines}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
           ))}
 

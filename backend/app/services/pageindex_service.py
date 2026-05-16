@@ -436,18 +436,20 @@ LINE BREAK REPAIR:
 - Preserve paragraph breaks only for real structural boundaries.
 - Enumerations like (i), (ii), (iii) inside one sentence must stay in the same logical paragraph.
 
-YOU MUST SPECIFICALLY CHECK:
+YOU MUST SPECIFICALLY CHECK AND FIX:
+- CÔNG HỘ XÃ HỘI -> CỘNG HÒA XÃ HỘI when used in national heading.
+- CÔNG HỘ XÃ HỘI CHỦ NGHĨA VIỆT NAM -> CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM.
+- đề bao gồm -> để bao gồm when context means purpose.
+- dự luận -> dư luận when context means public opinion.
+- RHO CHỦ NHIỆM -> PHÓ CHỦ NHIỆM when context is signature title.
+- một đầu mỗi quản lý -> một đầu mối quản lý.
+- CDS -> CĐS if the same document uses CĐS elsewhere.
+- VPCP-CDS -> VPCP-CĐS if context is Vietnamese document code.
 - Strange symbols: @, ””, ?, random Latin fragments, duplicated punctuation.
-- Broken Vietnamese words and missing accents.
 - So: -> Số: if followed by a legal document code.
 - Naty -> Ngày if context clearly means a date line.
 - thang -> tháng if used in date context.
 - nam -> năm if used in date context.
-- C0NG -> CÔNG.
-- CHiNH -> CHÍNH.
-- Broken administrative headers.
-- Repeated or malformed signature metadata.
-- Lines that are meaningless OCR garbage should be removed only when they carry no legal meaning.
 
 OUTPUT:
 - Plain cleaned Vietnamese text only.
@@ -503,12 +505,17 @@ MANDATORY MARKDOWN FORMATTING:
 Analyze the document hierarchy and insert Markdown headings by adding '# ' at the beginning of relevant lines.
 
 1. LEVEL 1 HEADINGS (#):
-- Document titles/types: CÔNG ĐIỆN, QUYẾT ĐỊNH, CHỈ THỊ, NGHỊ QUYẾT, BÁO CÁO.
+- Document titles/types: CÔNG ĐIỆN, QUYẾT ĐỊNH, CHỈ THỊ, NGHỊ QUYẾT, BÁO CÁO, CÔNG VĂN.
 - Lines starting with PHẦN or CHƯƠNG.
+- Lines containing the main subject after "V/v" if it represents the main document subject.
 
 2. LEVEL 2 HEADINGS (##):
 - Lines starting with MỤC or ĐIỀU.
 - Lines starting with Roman numerals: I., II., III.
+- Lines starting with "Kính gửi:".
+- Lines starting with "Nơi nhận:".
+- Lines starting with "Số:" if the line contains document number/date metadata.
+- Lines introducing instruction body such as "Thủ tướng Chính phủ ... có ý kiến chỉ đạo như sau:".
 
 3. LEVEL 3 HEADINGS (###):
 - Lines starting with numbered major sections: 1., 2., 3.

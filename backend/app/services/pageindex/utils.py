@@ -576,11 +576,45 @@ def add_node_text_with_labels(node, pdf_pages):
 
 
 async def generate_node_summary(node, model=None):
-    prompt = f"""You are given a part of a document, your task is to generate a description of the partial document about what are main points covered in the partial document.
+    prompt = prompt = f"""
+    You are a strict extractive summarization engine for administrative and legal documents.
 
-    Partial Document Text: {node['text']}
-    
-    Directly return the description, do not include any other text.
+    TASK:
+    Create a short retrieval-oriented summary for the NODE below.
+
+    ABSOLUTE RULES:
+    1. Use ONLY information explicitly present in the NODE.
+    2. Do NOT infer.
+    3. Do NOT add external knowledge.
+    4. Do NOT translate the NODE.
+    5. The summary MUST be written in the same language as the NODE.
+    6. If the NODE is Vietnamese, answer in Vietnamese.
+    7. If the NODE is English, answer in English.
+    8. Do NOT explain your process.
+    9. Do NOT write like a chatbot.
+    10. Do NOT use bullet points.
+    11. Do NOT add facts, roles, purposes, or interpretations not present in the NODE.
+    12. Preserve important entities exactly:
+        - agency names
+        - document numbers
+        - dates
+        - deadlines
+        - responsibilities
+        - legal references
+    13. Maximum length: 2 sentences.
+    14. If the NODE is already short, return a near-verbatim shortened version.
+    15. If the NODE contains only a heading/title, return that heading/title.
+
+    BAD EXAMPLES:
+    - Translating Vietnamese text into English.
+    - Starting with "This document..."
+    - Adding "the purpose is..." when not explicitly stated.
+    - Explaining what the node means instead of summarizing what it says.
+
+    NODE:
+    {node.get("text", "") or node.get("title", "")}
+
+    SUMMARY:
     """
     response = await llm_acompletion(model, prompt)
     return response
