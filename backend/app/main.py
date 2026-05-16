@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # Register chat router
-from app.api import chat
+from AIWorkspace.backend.app.api import chat
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 Base.metadata.create_all(bind=engine)
 

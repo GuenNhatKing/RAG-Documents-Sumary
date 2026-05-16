@@ -3,8 +3,8 @@ import json
 import time
 from pathlib import Path
 from openai import OpenAI
-from app.services.pageindex.page_index_md import md_to_tree
-from app.services.pageindex.utils import ConfigLoader
+from AIWorkspace.backend.app.services.pageindex.page_index_md import md_to_tree
+from AIWorkspace.backend.app.services.pageindex.utils import ConfigLoader
 from dotenv import load_dotenv
 load_dotenv()
 

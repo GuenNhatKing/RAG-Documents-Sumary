@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
 
-from app.services.rag import reasoning_search_tree, build_context_from_markdown
-from app.services.llm import generate_final_answer
+from AIWorkspace.backend.app.services.rag import reasoning_search_tree, build_context_from_markdown
+from AIWorkspace.backend.app.services.llm import generate_final_answer
 
 router = APIRouter()
 
