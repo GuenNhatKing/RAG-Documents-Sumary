@@ -16,7 +16,9 @@ from celery import Celery
 from .services.normalized_text import generate_normalized_text
 from .services.markdown_docs import generate_markdown_doc
 from .services.semantic_trees import generate_semantic_tree
-from .services.ocr import extract_text 
+from .services.ocr import extract_text
+
+from .api import upload
 
 app = FastAPI()
 
