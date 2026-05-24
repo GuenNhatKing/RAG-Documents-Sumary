@@ -6,6 +6,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { getPayload, API } from "@/lib/auth";
 
 export default function UploadPage() {
+  // Only admin and can_bo can upload
+  const allowedRoles = ["admin", "can_bo"];
+
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const router = useRouter();
