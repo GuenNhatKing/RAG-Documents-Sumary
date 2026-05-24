@@ -11,20 +11,26 @@ type MenuItem = {
 };
 
 const roleMenus: Record<string, MenuItem[]> = {
-  nguoi_dung: [{ label: "Hỏi đáp", href: "/qa" }],
+  nguoi_dung: [
+    { label: "Hỏi đáp", href: "/qa" },
+    { label: "Lịch sử chat", href: "/chat/sessions" },
+  ],
   can_bo: [
     { label: "Hỏi đáp", href: "/qa" },
+    { label: "Lịch sử chat", href: "/chat/sessions" },
     { label: "Upload tài liệu", href: "/upload" },
     { label: "Quản lý tài liệu", href: "/files" },
   ],
   admin: [
     { label: "Hỏi đáp", href: "/qa" },
+    { label: "Lịch sử chat", href: "/chat/sessions" },
     { label: "Upload tài liệu", href: "/upload" },
     { label: "Quản lý tài liệu", href: "/files" },
     { label: "Thống kê", href: "/stats" },
   ],
   quan_ly: [
     { label: "Hỏi đáp", href: "/qa" },
+    { label: "Lịch sử chat", href: "/chat/sessions" },
     { label: "Thống kê", href: "/stats" },
   ],
 };

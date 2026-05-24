@@ -1,28 +1,20 @@
 "use client";
 
-import { use, useRef, useState } from "react";
-import axios from "axios";
-import { ArrowLeftRightIcon, RefreshCcwIcon } from "lucide-react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import SessionList from "@/components/SessionList";
+import { ChatMessage, getMessages, askQuestion } from "@/lib/chat";
 
-// Color palette (Tailwind config names)
-const COLORS = {
-  bgBase: "bg-bg-base",
-  textMain: "text-text-main",
-  primary: "bg-primary text-white",
-  accent: "bg-accent text-white",
+type SourceTag = {
+  file: string;
+  lines: string;
 };
 
 type Message = {
   role: "user" | "assistant";
   content: string;
   sources?: SourceTag[];
-};
-
-type SourceTag = {
-  file: string;
-  lines: string;
 };
 
 type PageProps = {
@@ -37,68 +29,92 @@ export default function ChatPage({ params }: PageProps) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState<string | undefined>();
   const [viewerSrc, setViewerSrc] = useState(`/documents/${doc_id}/view`);
+  const [showSessions, setShowSessions] = useState(true);
 
-  const pdfRef = useRef<HTMLIFrameElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const loadSession = useCallback(async (sid: string) => {
+    setSessionId(sid);
+    setError("");
+    try {
+      const dbMessages: ChatMessage[] = await getMessages(sid);
+      const converted: Message[] = dbMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        sources: m.sources ? JSON.parse(m.sources) : undefined,
+      }));
+      setMessages(converted);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+      setError("Không thể tải tin nhắn.");
+    }
+  }, []);
+
+  const handleNewSession = useCallback(() => {
+    setSessionId(undefined);
+    setMessages([]);
+    setError("");
+  }, []);
+
+  const handleSelectSession = useCallback(
+    (sid: string) => {
+      loadSession(sid);
+    },
+    [loadSession]
+  );
 
   const sendQuestion = async () => {
-    if (!question.trim()) return;
+    if (!question.trim() || loading) return;
 
-    const userMsg: Message = {
-      role: "user",
-      content: question,
-    };
-
+    const userMsg: Message = { role: "user", content: question };
     setMessages((prev) => [...prev, userMsg]);
-
+    setQuestion("");
     setLoading(true);
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:8000/chat/ask", {
-        doc_id,
-        question,
-      });
+      const data = await askQuestion(doc_id, question, sessionId);
 
-      const rawAnswer: string = res.data.result?.answer ?? "Không có câu trả lời.";
-
-      const answer = rawAnswer
+      const cleanAnswer = data.answer
         .replace(/\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?/g, "")
         .trim();
 
-      const srcs: SourceTag[] = res.data.result?.sources ?? [];
-
       const assistantMsg: Message = {
         role: "assistant",
-        content: answer,
-        sources: srcs,
+        content: cleanAnswer,
+        sources: data.sources,
       };
-
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (e: any) {
-      console.error(e);
 
-      setError(
-        e?.response?.data?.detail || "Chat request failed"
-      );
+      // If this was a new session (no sessionId yet), we might want to refresh
+      // The backend creates a session if session_id is provided, but for new chats
+      // we just keep the in-memory messages
+    } catch (err) {
+      setError("Đã xảy ra lỗi khi gửi câu hỏi.");
+      console.error(err);
     } finally {
       setLoading(false);
-      setQuestion("");
+      inputRef.current?.focus();
     }
   };
 
-  const handleSourceClick = (tag: SourceTag) => {
-    const highlight = encodeURIComponent(tag.lines);
-
-    setViewerSrc(
-      `/documents/${doc_id}/view?highlight=${highlight}&t=${Date.now()}`
-    );
-  };
-
-  const onKeyPress = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendQuestion();
@@ -106,120 +122,154 @@ export default function ChatPage({ params }: PageProps) {
   };
 
   return (
-    <div className={`${COLORS.bgBase} min-h-screen flex`}>
-      {/* Left panel – document viewer */}
-      <div
-        className="w-1/2 border-r border-gray-300 overflow-auto"
-        style={{ backgroundColor: "#fff" }}
-      >
+    <div className="flex h-[calc(100vh-64px)] bg-gray-50">
+      {/* Session List Panel */}
+      {showSessions && (
+        <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200">
+          <SessionList
+            docId={doc_id}
+            currentSessionId={sessionId}
+            onSelect={handleSelectSession}
+            onNewSession={handleNewSession}
+          />
+        </div>
+      )}
+
+      {/* Document Viewer Panel */}
+      <div className="flex-1 flex flex-col border-r border-gray-200">
+        <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-gray-200">
+          <button
+            onClick={() => setShowSessions(!showSessions)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500"
+            title={showSessions ? "Ẩn phiên" : "Hiện phiên"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+          </button>
+          <span className="text-sm text-gray-500">Tài liệu</span>
+          <div className="w-8" />
+        </div>
         <iframe
-          ref={pdfRef}
+          ref={useRef<HTMLIFrameElement>(null)}
           src={viewerSrc}
-          className="w-full h-full"
-          title="Document viewer"
+          className="w-full flex-1"
+          title="PDF Viewer"
         />
       </div>
 
-      {/* Right panel – chat */}
-      <div className="w-1/2 flex flex-col p-4">
-        <h2
-          className={`${COLORS.textMain} text-2xl font-semibold mb-4`}
-        >
-          Chat with Document
-        </h2>
+      {/* Chat Panel */}
+      <div className="w-[420px] flex-shrink-0 flex flex-col bg-white">
+        {/* Chat Header */}
+        <div className="px-4 py-3 border-b border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-700">
+            {sessionId ? "Cuộc trò chuyện" : "Trò chuyện mới"}
+          </h2>
+        </div>
 
-        <div className="flex-1 overflow-y-auto mb-4 space-y-3">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+          {messages.length === 0 && !loading && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-gray-300 mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-sm text-gray-400">
+                Đặt câu hỏi về tài liệu này
+              </p>
+            </div>
+          )}
+
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`p-3 rounded ${msg.role === "assistant"
-                  ? "bg-gray-100 text-gray-900"
-                  : "bg-primary text-white"
-                }`}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "assistant" ? (
-                <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              )}
+              <div
+                className={`
+                  max-w-[85%] rounded-lg px-3 py-2
+                  ${msg.role === "user"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-800"
+                  }
+                `}
+              >
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                )}
 
-              {msg.role === "assistant" &&
-                msg.sources &&
-                msg.sources.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {msg.sources.map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSourceClick(s)}
-                        className="bg-accent text-white py-1 px-2 rounded text-sm cursor-pointer"
-                      >
-                        Xem nguồn: dòng {s.lines}
-                      </button>
-                    ))}
+                {/* Sources */}
+                {msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200/50">
+                    <p className="text-xs font-medium text-gray-500 mb-1">Nguồn:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {msg.sources.map((src, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className="inline-block text-xs bg-white/20 rounded px-1.5 py-0.5"
+                        >
+                          {src.file}:{src.lines}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
+              </div>
             </div>
           ))}
 
           {loading && (
-            <div className="flex items-center space-x-2 text-primary">
-              <svg
-                className="animate-spin h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
-
-              <span>Thinking…</span>
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg px-3 py-2">
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
             </div>
           )}
 
           {error && (
-            <p className="text-red-600">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
               {error}
-            </p>
+            </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
-        <div className="flex gap-2">
-          <textarea
-            value={question}
-            onChange={(e) =>
-              setQuestion(e.target.value)
-            }
-            onKeyDown={onKeyPress}
-            rows={2}
-            className="flex-1 border border-gray-300 rounded p-2 focus:outline-none focus:border-primary"
-            placeholder="Nhập câu hỏi..."
-          />
-
-          <button
-            onClick={sendQuestion}
-            disabled={loading}
-            className={`${COLORS.primary} py-2 px-4 rounded disabled:opacity-50`}
-          >
-            Gửi
-          </button>
+        <div className="px-4 py-3 border-t border-gray-200">
+          <div className="flex items-center space-x-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Đặt câu hỏi..."
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            />
+            <button
+              onClick={sendQuestion}
+              disabled={loading || !question.trim()}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
