@@ -34,9 +34,9 @@ app.add_middleware(
 # =========================================================
 # REGISTER ROUTERS
 # =========================================================
-from app.api import chat
+from app.api import chat, auth
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
-
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 # Khởi tạo cấu trúc bảng trong Database nếu chưa tồn tại
 Base.metadata.create_all(bind=engine)
 
