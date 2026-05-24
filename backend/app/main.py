@@ -9,7 +9,7 @@ from .env import load_backend_env
 
 load_backend_env()
 
-from .models import Document, Base, DocumentStatus
+from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage
 from .database import SessionLocal, engine
 from celery import Celery
 
