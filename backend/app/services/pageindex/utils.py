@@ -10,8 +10,9 @@ import copy
 import asyncio
 import pymupdf
 from io import BytesIO
-from dotenv import load_dotenv
-load_dotenv()
+from app.env import load_backend_env
+
+load_backend_env()
 import logging
 import yaml
 from pathlib import Path

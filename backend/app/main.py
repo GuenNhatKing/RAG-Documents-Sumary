@@ -5,14 +5,17 @@ import shutil
 import os
 import uuid
 
-from dotenv import load_dotenv
-load_dotenv()
+from .env import load_backend_env
+
+load_backend_env()
 
 from .models import Document, Base, DocumentStatus
 from .database import SessionLocal, engine
 from celery import Celery
 
-from .services.pageindex_service import generate_semantic_tree
+from .services.normalized_text import generate_normalized_text
+from .services.markdown_docs import generate_markdown_doc
+from .services.semantic_trees import generate_semantic_tree
 from .services.ocr import extract_text 
 
 app = FastAPI()
@@ -141,17 +144,49 @@ async def extract_text_api(document_id: str):
 @app.post("/documents/{document_id}/build-tree")
 async def build_tree(document_id: str):
     try:
-        # Gọi hàm sinh cây mục lục phân cấp từ Phase 2
-        out_path = await generate_semantic_tree(document_id)
+        # =============================
+        # PHASE 1 - NORMALIZED TEXT
+        # =============================
+        normalized_path = generate_normalized_text(document_id)
+
+        # =============================
+        # PHASE 2 - MARKDOWN DOCS
+        # =============================
+        markdown_path = generate_markdown_doc(
+            document_id=document_id,
+            normalized_path=normalized_path,
+        )
+
+        # =============================
+        # PHASE 3 - SEMANTIC TREE
+        # =============================
+        tree_path = await generate_semantic_tree(document_id)
 
         return {
             "status": "ok",
-            "tree_path": str(out_path)
+            "document_id": document_id,
+            "normalized_path": str(normalized_path),
+            "markdown_path": str(markdown_path),
+            "tree_path": str(tree_path),
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Required file not found: {str(e)}",
+        )
 
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input or configuration: {str(e)}",
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Tree generation failed: {str(e)}",
+        )
 
 @app.get("/documents/{doc_id}/markdown")
 def get_document_markdown(doc_id: str):

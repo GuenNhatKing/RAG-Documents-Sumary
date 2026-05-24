@@ -1,3 +1,6 @@
+# model: "openrouter/openrouter/free"
+# retrieve_model: "openrouter/openrouter/free"
+
 model: "openrouter/openrouter/free"
 retrieve_model: "openrouter/openrouter/free"
 

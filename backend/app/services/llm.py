@@ -1,13 +1,13 @@
 import os
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from dotenv import load_dotenv
+from app.env import load_backend_env
 
-load_dotenv()
+load_backend_env()
 
 _client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("LLM_API_KEY"),
+    base_url=os.getenv("LLM_BASE_URL"),
 )
 
 
@@ -21,7 +21,7 @@ def generate_final_answer(context: str, query: str) -> str:
     if not context.strip():
         return "**Tài liệu không đề cập đến vấn đề này.**"
 
-    model_name = os.getenv("OPENROUTER_MODEL")
+    model_name = os.getenv("LLM_MODEL")
 
     system_prompt = """You are a professional document analysis AI assistant.
 

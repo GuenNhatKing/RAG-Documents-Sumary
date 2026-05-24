@@ -2,19 +2,19 @@ import json
 import os
 from typing import List, Dict, Any
 from openai import OpenAI
-from dotenv import load_dotenv
+from app.env import load_backend_env
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-load_dotenv()
+load_backend_env()
 
-# Read OpenRouter configuration from environment with sensible defaults
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+# Read LLM configuration from environment
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL")
+LLM_MODEL = os.getenv("LLM_MODEL")
 
 _client = OpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url=OPENROUTER_BASE_URL,
+    api_key=LLM_API_KEY,
+    base_url=LLM_BASE_URL,
 )
 
 
@@ -113,7 +113,7 @@ def _find_node_and_boundary(tree_data: Any, target_id: str) -> Dict[str, Any]:
 def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     """Gọi LLM để tìm node liên quan, có retry bằng tenacity."""
     response = _client.chat.completions.create(
-        model=OPENROUTER_MODEL,
+        model=LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1500,
         temperature=0.0,

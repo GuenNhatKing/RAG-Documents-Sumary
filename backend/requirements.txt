@@ -3,6 +3,7 @@ uvicorn
 sqlalchemy
 alembic
 tenacity
+openai
 pageindex
 redis
 celery
