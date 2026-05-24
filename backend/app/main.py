@@ -109,21 +109,17 @@ async def upload_file(file: UploadFile = File(...)):
 async def extract_text_api(document_id: str):
     db = SessionLocal()
     try:
-        # Tìm tài liệu bằng UUID String
         doc = db.query(Document).filter(Document.id == document_id).first()
 
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        # Cập nhật trạng thái sang Đang xử lý
         doc.status = DocumentStatus.PROCESSING
         db.commit()
 
-        # Gọi hàm xử lý OCR / Trích xuất text từ file gốc
         file_path = doc.raw_file_path
         extract_text(file_path, document_id)
 
-        # Trích xuất thành công, chuyển trạng thái tài liệu
         doc.status = DocumentStatus.PROCESSED
         db.commit()
 
@@ -141,55 +137,53 @@ async def extract_text_api(document_id: str):
 
 
 # =========================================================
-# TASK 4.1 - BUILD SEMANTIC TREE ENDPOINT
+# GENERATE MARKDOWN ENDPOINT (Phase A - dừng ở .md, chờ review)
 # =========================================================
-@app.post("/documents/{document_id}/build-tree")
-async def build_tree(document_id: str):
+@app.post("/documents/{document_id}/generate-md")
+async def generate_md_api(document_id: str):
+    db = SessionLocal()
     try:
-        # =============================
-        # PHASE 1 - NORMALIZED TEXT
-        # =============================
+        doc = db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        doc.status = DocumentStatus.PROCESSING
+        db.commit()
+
+        # Phase 1: Normalize text
         normalized_path = generate_normalized_text(document_id)
 
-        # =============================
-        # PHASE 2 - MARKDOWN DOCS
-        # =============================
+        # Phase 2: Generate markdown
         markdown_path = generate_markdown_doc(
             document_id=document_id,
             normalized_path=normalized_path,
         )
 
-        # =============================
-        # PHASE 3 - SEMANTIC TREE
-        # =============================
-        tree_path = await generate_semantic_tree(document_id)
+        # Dừng ở đây — chuyển status sang PENDING_REVIEW
+        doc.status = DocumentStatus.PENDING_REVIEW
+        doc.markdown_path = str(markdown_path)
+        db.commit()
 
         return {
             "status": "ok",
             "document_id": document_id,
-            "normalized_path": str(normalized_path),
             "markdown_path": str(markdown_path),
-            "tree_path": str(tree_path),
+            "message": "Markdown generated. Waiting for review."
         }
 
-    except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Required file not found: {str(e)}",
-        )
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid input or configuration: {str(e)}",
-        )
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Tree generation failed: {str(e)}",
-        )
+        db.rollback()
+        if doc:
+            doc.status = DocumentStatus.ERROR
+            db.commit()
+        raise HTTPException(status_code=500, detail=f"Markdown generation failed: {str(e)}")
+    finally:
+        db.close()
 
+
+# =========================================================
+# GET DOCUMENT MARKDOWN (Review endpoint)
+# =========================================================
 @app.get("/documents/{doc_id}/markdown")
 def get_document_markdown(doc_id: str):
     markdown_path = (
@@ -202,14 +196,127 @@ def get_document_markdown(doc_id: str):
             detail=f"Markdown not found for doc_id={doc_id}",
         )
 
-    markdown = markdown_path.read_text(
-        encoding="utf-8"
-    )
+    markdown = markdown_path.read_text(encoding="utf-8")
 
     return {
         "doc_id": doc_id,
         "markdown": markdown,
     }
+
+
+# =========================================================
+# EDIT DOCUMENT MARKDOWN (Cán bộ sửa .md trước khi confirm)
+# =========================================================
+@app.patch("/documents/{doc_id}/markdown")
+def edit_document_markdown(doc_id: str, body: dict):
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        if doc.status != DocumentStatus.PENDING_REVIEW:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review'"
+            )
+
+        new_markdown = body.get("markdown")
+        if not new_markdown:
+            raise HTTPException(status_code=400, detail="Missing 'markdown' field")
+
+        md_path = Path(doc.markdown_path) if doc.markdown_path else (
+            Path("/work/backend/data/markdown_docs") / f"{doc_id}.md"
+        )
+        md_path.write_text(new_markdown, encoding="utf-8")
+
+        doc.markdown_path = str(md_path)
+        db.commit()
+
+        return {"status": "ok", "doc_id": doc_id, "message": "Markdown updated"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Update failed: {str(e)}")
+    finally:
+        db.close()
+
+
+# =========================================================
+# CONFIRM MARKDOWN & BUILD SEMANTIC TREE (Phase B - cán bộ xác nhận)
+# =========================================================
+@app.post("/documents/{document_id}/confirm-md")
+async def confirm_md_api(document_id: str):
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        if doc.status != DocumentStatus.PENDING_REVIEW:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review'"
+            )
+
+        doc.status = DocumentStatus.PROCESSING
+        db.commit()
+
+        # Build semantic tree từ .md đã được review
+        tree_path = await generate_semantic_tree(document_id)
+
+        doc.status = DocumentStatus.PROCESSED
+        doc.json_tree_path = str(tree_path)
+        db.commit()
+
+        return {
+            "status": "ok",
+            "document_id": document_id,
+            "tree_path": str(tree_path),
+            "message": "Document fully processed."
+        }
+
+    except Exception as e:
+        db.rollback()
+        if doc:
+            doc.status = DocumentStatus.ERROR
+            db.commit()
+        raise HTTPException(status_code=500, detail=f"Confirm failed: {str(e)}")
+    finally:
+        db.close()
+
+
+# =========================================================
+# BUILD TREE ENDPOINT (Legacy - kept for backward compatibility)
+# =========================================================
+@app.post("/documents/{document_id}/build-tree")
+async def build_tree(document_id: str):
+    try:
+        normalized_path = generate_normalized_text(document_id)
+
+        markdown_path = generate_markdown_doc(
+            document_id=document_id,
+            normalized_path=normalized_path,
+        )
+
+        tree_path = await generate_semantic_tree(document_id)
+
+        return {
+            "status": "ok",
+            "document_id": document_id,
+            "normalized_path": str(normalized_path),
+            "markdown_path": str(markdown_path),
+            "tree_path": str(tree_path),
+        }
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"Required file not found: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid input or configuration: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
 
 # =========================================================
 # CELERY WORKER TEST

@@ -11,6 +11,7 @@ class DocumentStatus(enum.Enum):
     """Lifecycle của tài liệu trong Vectorless RAG"""
     PENDING = "pending"
     PROCESSING = "processing"
+    PENDING_REVIEW = "pending_review"  # .md đã tạo, chờ cán bộ xác nhận
     PROCESSED = "processed"
     ERROR = "error"
 
@@ -41,6 +42,9 @@ class Document(Base):
 
     # Đường dẫn thư mục chứa text từng trang (Task 1.2)
     extracted_text_path = Column(String, nullable=True)
+
+    # Đường dẫn file Markdown đã tạo
+    markdown_path = Column(String, nullable=True)
 
     # Tổng số trang PDF
     total_pages = Column(Integer, default=0, nullable=False)
