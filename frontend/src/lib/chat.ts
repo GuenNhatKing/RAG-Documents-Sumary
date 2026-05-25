@@ -1,4 +1,4 @@
-import { API } from "./auth";
+import { API, getToken } from "./auth";
 
 export interface ChatSession {
   id: string;
@@ -18,13 +18,21 @@ export interface ChatMessage {
   created_at: string;
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}
+
 export async function createSession(
   docId: string,
   title?: string
 ): Promise<ChatSession> {
   const res = await fetch(`${API}/chat/sessions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ doc_id: docId, title }),
   });
   if (!res.ok) throw new Error("Failed to create session");
@@ -35,13 +43,18 @@ export async function getSessions(docId?: string): Promise<ChatSession[]> {
   const url = docId
     ? `${API}/chat/sessions?doc_id=${encodeURIComponent(docId)}`
     : `${API}/chat/sessions`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch sessions");
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to fetch sessions (${res.status}): ${err}`);
+  }
   return res.json();
 }
 
 export async function getSession(sessionId: string): Promise<ChatSession> {
-  const res = await fetch(`${API}/chat/sessions/${sessionId}`);
+  const res = await fetch(`${API}/chat/sessions/${sessionId}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error("Failed to fetch session");
   return res.json();
 }
@@ -49,6 +62,7 @@ export async function getSession(sessionId: string): Promise<ChatSession> {
 export async function deleteSession(sessionId: string): Promise<void> {
   const res = await fetch(`${API}/chat/sessions/${sessionId}`, {
     method: "DELETE",
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error("Failed to delete session");
 }
@@ -56,7 +70,9 @@ export async function deleteSession(sessionId: string): Promise<void> {
 export async function getMessages(
   sessionId: string
 ): Promise<ChatMessage[]> {
-  const res = await fetch(`${API}/chat/sessions/${sessionId}/messages`);
+  const res = await fetch(`${API}/chat/sessions/${sessionId}/messages`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error("Failed to fetch messages");
   return res.json();
 }
@@ -68,7 +84,7 @@ export async function askQuestion(
 ): Promise<{ answer: string; sources: { file: string; lines: string }[] }> {
   const res = await fetch(`${API}/chat/ask`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
       doc_id: docId,
       question,

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy.orm import Session
@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.services.rag import reasoning_search_tree, build_context_from_markdown
 from app.services.llm import generate_final_answer
 from app.database import SessionLocal
-from app.models import ChatSession, ChatMessage
+from app.models import ChatSession, ChatMessage, User
+from app.api.auth import get_current_user, TokenData
 
 router = APIRouter()
 
@@ -26,7 +27,22 @@ def get_db():
 
 
 # ============================================================
-# PYDANTIC SCHEMAS — Chat Ask
+# HELPER
+# ============================================================
+def _get_user_id(current_user: TokenData, db: Session) -> str:
+    user = db.query(User).filter(User.username == current_user.username).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    return user.id
+
+
+def _check_ownership(session: ChatSession, user_id: str):
+    if session.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+
+# ============================================================
+# PYDANTIC SCHEMAS
 # ============================================================
 class ChatRequest(BaseModel):
     doc_id: str
@@ -48,9 +64,6 @@ class ChatResponse(BaseModel):
     result: ChatResult
 
 
-# ============================================================
-# PYDANTIC SCHEMAS — Sessions
-# ============================================================
 class CreateSessionRequest(BaseModel):
     doc_id: str
     title: Optional[str] = None
@@ -81,11 +94,16 @@ class MessageResponse(BaseModel):
 
 
 # ============================================================
-# SESSION CRUD ENDPOINTS
+# SESSION CRUD (protected)
 # ============================================================
 @router.post("/sessions", response_model=SessionResponse)
-def create_session(req: CreateSessionRequest, db: Session = Depends(get_db)):
-    session = ChatSession(doc_id=req.doc_id, title=req.title)
+def create_session(
+    req: CreateSessionRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
+    user_id = _get_user_id(current_user, db)
+    session = ChatSession(doc_id=req.doc_id, title=req.title, user_id=user_id)
     db.add(session)
     db.commit()
     db.refresh(session)
@@ -100,8 +118,13 @@ def create_session(req: CreateSessionRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions", response_model=List[SessionResponse])
-def list_sessions(doc_id: Optional[str] = None, db: Session = Depends(get_db)):
-    query = db.query(ChatSession).order_by(ChatSession.updated_at.desc())
+def list_sessions(
+    doc_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
+    user_id = _get_user_id(current_user, db)
+    query = db.query(ChatSession).filter(ChatSession.user_id == user_id).order_by(ChatSession.updated_at.desc())
     if doc_id:
         query = query.filter(ChatSession.doc_id == doc_id)
     sessions = query.all()
@@ -119,10 +142,16 @@ def list_sessions(doc_id: Optional[str] = None, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions/{session_id}", response_model=SessionResponse)
-def get_session(session_id: str, db: Session = Depends(get_db)):
+def get_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
+    user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    _check_ownership(session, user_id)
     return SessionResponse(
         id=session.id,
         user_id=session.user_id,
@@ -134,20 +163,32 @@ def get_session(session_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/sessions/{session_id}")
-def delete_session(session_id: str, db: Session = Depends(get_db)):
+def delete_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
+    user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    _check_ownership(session, user_id)
     db.delete(session)
     db.commit()
     return {"detail": "Session deleted"}
 
 
 @router.get("/sessions/{session_id}/messages", response_model=List[MessageResponse])
-def get_messages(session_id: str, db: Session = Depends(get_db)):
+def get_messages(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
+    user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    _check_ownership(session, user_id)
     messages = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session_id)
@@ -168,10 +209,14 @@ def get_messages(session_id: str, db: Session = Depends(get_db)):
 
 
 # ============================================================
-# CHAT ASK ENDPOINT (with optional session persistence)
+# CHAT ASK (protected, with session persistence)
 # ============================================================
 @router.post("/ask", response_model=ChatResponse)
-async def ask_document(request: ChatRequest, db: Session = Depends(get_db)):
+async def ask_document(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user),
+):
     json_path = f"/work/backend/data/semantic_trees/{request.doc_id}.json"
     markdown_path = f"/work/backend/data/markdown_docs/{request.doc_id}.md"
 
@@ -206,39 +251,23 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db)):
     except Exception as e:
          raise HTTPException(status_code=503, detail=f"Lỗi gọi LLM: {e}")
 
-    # Persist messages to session if session_id provided
     if request.session_id:
+        user_id = _get_user_id(current_user, db)
         session = db.query(ChatSession).filter(ChatSession.id == request.session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
+        _check_ownership(session, user_id)
 
-        # Save user message
-        user_msg = ChatMessage(
-            session_id=request.session_id,
-            role="user",
-            content=request.question,
-        )
+        user_msg = ChatMessage(session_id=request.session_id, role="user", content=request.question)
         db.add(user_msg)
 
-        # Save assistant message
         sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
-        assistant_msg = ChatMessage(
-            session_id=request.session_id,
-            role="assistant",
-            content=answer,
-            sources=sources_json,
-        )
+        assistant_msg = ChatMessage(session_id=request.session_id, role="assistant", content=answer, sources=sources_json)
         db.add(assistant_msg)
 
-        # Auto-generate title from first question
         if not session.title:
             session.title = request.question[:100]
 
         db.commit()
 
-    return ChatResponse(
-        result=ChatResult(
-            answer=answer,
-            sources=sources
-        )
-    )
+    return ChatResponse(result=ChatResult(answer=answer, sources=sources))

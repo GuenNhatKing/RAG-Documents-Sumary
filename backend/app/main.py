@@ -58,6 +58,28 @@ async def ping():
 
 
 # =========================================================
+# LIST DOCUMENTS ENDPOINT
+# =========================================================
+@app.get("/documents")
+def list_documents():
+    db = SessionLocal()
+    try:
+        docs = db.query(Document).order_by(Document.created_at.desc()).all()
+        return [
+            {
+                "id": d.id,
+                "filename": d.filename,
+                "status": d.status.value if hasattr(d.status, 'value') else d.status,
+                "total_pages": d.total_pages,
+                "created_at": d.created_at.isoformat(),
+            }
+            for d in docs
+        ]
+    finally:
+        db.close()
+
+
+# =========================================================
 # TASK 4.1 - UPLOAD FILE ENDPOINT (Đã sửa lỗi raw_file_path & UUID)
 # =========================================================
 @app.post("/upload")
