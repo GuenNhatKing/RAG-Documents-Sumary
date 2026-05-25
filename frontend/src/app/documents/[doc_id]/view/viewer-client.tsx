@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { API, getToken } from "@/lib/auth";
 
 type Props = {
   markdown: string;
   highlight: string;
+  docId?: string;
 };
+
+type ViewMode = "md" | "raw";
 
 function parseLineRange(range: string): Set<number> {
   const result = new Set<number>();
@@ -42,11 +46,23 @@ function parseLineRange(range: string): Set<number> {
 export default function DocumentViewerClient({
   markdown,
   highlight,
+  docId,
 }: Props) {
+  const [viewMode, setViewMode] = useState<ViewMode>("md");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const highlightedLines = parseLineRange(highlight);
 
+  // Revoke object URL on unmount
   useEffect(() => {
-    if (!highlight) return;
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
+  useEffect(() => {
+    if (!highlight || viewMode !== "md") return;
 
     const firstLine = highlight.split(",")[0].split("-")[0];
     const el = document.getElementById(`line-${firstLine}`);
@@ -55,90 +71,181 @@ export default function DocumentViewerClient({
       behavior: "smooth",
       block: "center",
     });
-  }, [highlight]);
+  }, [highlight, viewMode]);
+
+  const loadPdf = async () => {
+    if (pdfUrl) return; // already loaded
+    setPdfLoading(true);
+    setPdfError("");
+    try {
+      const token = getToken();
+      const headers: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+      const res = await fetch(`${API}/documents/${docId}/raw`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+    } catch (err) {
+      console.error("Failed to load PDF:", err);
+      setPdfError("Không thể tải file PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleSwitchToRaw = () => {
+    setViewMode("raw");
+    loadPdf();
+  };
 
   const lines = markdown.split("\n");
 
   return (
-    <main className="bg-white px-10 py-8 text-slate-800">
-      <article className="mx-auto max-w-4xl text-[15px] leading-7">
-        {lines.map((line, index) => {
-          const lineNumber = index + 1;
-          const isEmpty = line.trim() === "";
+    <div className="flex flex-col h-full">
+      {/* Content area */}
+      <div className="flex-1 overflow-auto">
+        {viewMode === "md" ? (
+          <main className="bg-white px-10 py-8 text-slate-800">
+            <article className="mx-auto max-w-4xl text-[15px] leading-7">
+              {lines.map((line, index) => {
+                const lineNumber = index + 1;
+                const isEmpty = line.trim() === "";
 
-          const isHighlighted =
-            highlightedLines.has(lineNumber) && !isEmpty;
+                const isHighlighted =
+                  highlightedLines.has(lineNumber) && !isEmpty;
 
-          return (
-            <div
-              key={lineNumber}
-              id={`line-${lineNumber}`}
-              className={`rounded-md px-2 ${
-                isHighlighted
-                  ? "bg-yellow-100 border-l-4 border-yellow-500"
-                  : ""
-              }`}
-            >
-              {isEmpty ? (
-                <div className="h-5" />
-              ) : (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    h1: ({ children }) => (
-                      <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-950">
-                        {children}
-                      </h1>
-                    ),
-                    h2: ({ children }) => (
-                      <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-900">
-                        {children}
-                      </h2>
-                    ),
-                    h3: ({ children }) => (
-                      <h3 className="mt-8 mb-3 text-xl font-bold text-slate-900">
-                        {children}
-                      </h3>
-                    ),
-                    h4: ({ children }) => (
-                      <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-base font-semibold text-emerald-900">
-                        {children}
-                      </h4>
-                    ),
-                    p: ({ children }) => (
-                      <p className="my-2 text-slate-700">
-                        {children}
-                      </p>
-                    ),
-                    strong: ({ children }) => (
-                      <strong className="font-semibold text-slate-900">
-                        {children}
-                      </strong>
-                    ),
-                    table: ({ children }) => (
-                      <table className="my-4 w-full border-collapse text-sm">
-                        {children}
-                      </table>
-                    ),
-                    th: ({ children }) => (
-                      <th className="border bg-slate-100 px-3 py-2 text-left font-semibold">
-                        {children}
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="border px-3 py-2">
-                        {children}
-                      </td>
-                    ),
-                  }}
-                >
-                  {line}
-                </ReactMarkdown>
-              )}
+                return (
+                  <div
+                    key={lineNumber}
+                    id={`line-${lineNumber}`}
+                    className={`rounded-md px-2 ${
+                      isHighlighted
+                        ? "bg-yellow-100 border-l-4 border-yellow-500"
+                        : ""
+                    }`}
+                  >
+                    {isEmpty ? (
+                      <div className="h-5" />
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-950">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-900">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+                              {children}
+                            </h3>
+                          ),
+                          h4: ({ children }) => (
+                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-base font-semibold text-emerald-900">
+                              {children}
+                            </h4>
+                          ),
+                          p: ({ children }) => (
+                            <p className="my-2 text-slate-700">
+                              {children}
+                            </p>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-slate-900">
+                              {children}
+                            </strong>
+                          ),
+                          table: ({ children }) => (
+                            <table className="my-4 w-full border-collapse text-sm">
+                              {children}
+                            </table>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border bg-slate-100 px-3 py-2 text-left font-semibold">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border px-3 py-2">
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {line}
+                      </ReactMarkdown>
+                    )}
+                  </div>
+                );
+              })}
+            </article>
+          </main>
+        ) : pdfLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin h-8 w-8 border-4 border-emerald-600 border-t-transparent rounded-full" />
+          </div>
+        ) : pdfError ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-red-500">{pdfError}</p>
+          </div>
+        ) : pdfUrl ? (
+          <object
+            data={pdfUrl}
+            type="application/pdf"
+            className="w-full h-full"
+          >
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <p className="text-gray-500">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
+              <a
+                href={pdfUrl}
+                download
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                Tải file PDF
+              </a>
             </div>
-          );
-        })}
-      </article>
-    </main>
+          </object>
+        ) : null}
+      </div>
+
+      {/* Toggle buttons */}
+      {docId && (
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 border-t border-gray-200">
+          <button
+            onClick={() => setViewMode("md")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "md"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Xem Markdown
+          </button>
+          <button
+            onClick={handleSwitchToRaw}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "raw"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            Xem file gốc
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

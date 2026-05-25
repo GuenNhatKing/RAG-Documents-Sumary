@@ -48,6 +48,7 @@ export default async function DocumentViewPage({
     <DocumentViewerClient
       markdown={data.markdown}
       highlight={highlight ?? ""}
+      docId={doc_id}
     />
   );
 }

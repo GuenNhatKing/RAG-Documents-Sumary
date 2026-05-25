@@ -184,7 +184,7 @@ export default function ChatPage({ params }: PageProps) {
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
               </div>
             ) : (
-              <DocumentViewerClient markdown={markdown} highlight={highlight} />
+              <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} />
             )}
           </div>
         </div>

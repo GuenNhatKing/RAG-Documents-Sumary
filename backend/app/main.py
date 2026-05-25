@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import shutil
@@ -224,6 +225,32 @@ def get_document_markdown(doc_id: str):
         "doc_id": doc_id,
         "markdown": markdown,
     }
+
+
+# =========================================================
+# GET DOCUMENT RAW FILE (PDF gốc)
+# =========================================================
+@app.get("/documents/{doc_id}/raw")
+def get_document_raw(doc_id: str):
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        raw_path = Path(doc.raw_file_path)
+        if not raw_path.exists():
+            raise HTTPException(status_code=404, detail="Raw file not found on disk")
+
+        media_type = "application/pdf" if raw_path.suffix.lower() == ".pdf" else "application/octet-stream"
+        return FileResponse(
+            path=str(raw_path),
+            filename=doc.filename,
+            media_type=media_type,
+            headers={"Content-Disposition": f'inline; filename="{doc.filename}"'},
+        )
+    finally:
+        db.close()
 
 
 # =========================================================
