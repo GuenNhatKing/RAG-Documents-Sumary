@@ -60,7 +60,7 @@ export default function DocumentViewerClient({
   const lines = markdown.split("\n");
 
   return (
-    <main className="min-h-screen bg-white px-10 py-8 overflow-auto text-slate-800">
+    <main className="bg-white px-10 py-8 text-slate-800">
       <article className="mx-auto max-w-4xl text-[15px] leading-7">
         {lines.map((line, index) => {
           const lineNumber = index + 1;

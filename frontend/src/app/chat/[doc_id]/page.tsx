@@ -1,10 +1,13 @@
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SessionList from "@/components/SessionList";
+import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
 import { ChatMessage, getMessages, askQuestion } from "@/lib/chat";
+import { API } from "@/lib/auth";
 
 type SourceTag = {
   file: string;
@@ -25,17 +28,38 @@ type PageProps = {
 
 export default function ChatPage({ params }: PageProps) {
   const { doc_id } = use(params);
+  const searchParams = useSearchParams();
+  const initialSessionId = searchParams.get("session") || undefined;
 
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [sessionId, setSessionId] = useState<string | undefined>();
-  const [viewerSrc, setViewerSrc] = useState(`/documents/${doc_id}/view`);
+  const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
   const [showSessions, setShowSessions] = useState(true);
+  const [highlight, setHighlight] = useState("");
+  const [markdown, setMarkdown] = useState<string>("");
+  const [docLoading, setDocLoading] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load document markdown
+  useEffect(() => {
+    setDocLoading(true);
+    fetch(`${API}/documents/${doc_id}/markdown`)
+      .then((r) => r.json())
+      .then((data) => setMarkdown(data.markdown))
+      .catch(() => setMarkdown("# Không thể tải tài liệu"))
+      .finally(() => setDocLoading(false));
+  }, [doc_id]);
+
+  // Load initial session if provided
+  useEffect(() => {
+    if (initialSessionId) {
+      loadSession(initialSessionId);
+    }
+  }, [initialSessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -102,9 +126,10 @@ export default function ChatPage({ params }: PageProps) {
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // If this was a new session (no sessionId yet), we might want to refresh
-      // The backend creates a session if session_id is provided, but for new chats
-      // we just keep the in-memory messages
+      // Auto-highlight first source if available
+      if (data.sources && data.sources.length > 0) {
+        setHighlight(data.sources[0].lines);
+      }
     } catch (err) {
       setError("Đã xảy ra lỗi khi gửi câu hỏi.");
       console.error(err);
@@ -121,8 +146,12 @@ export default function ChatPage({ params }: PageProps) {
     }
   };
 
+  const handleSourceClick = (src: SourceTag) => {
+    setHighlight(src.lines);
+  };
+
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-gray-50">
+    <div className="flex h-[calc(100vh-64px)] bg-gray-50 -m-4">
       {/* Session List Panel */}
       {showSessions && (
         <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200">
@@ -136,7 +165,7 @@ export default function ChatPage({ params }: PageProps) {
       )}
 
       {/* Document Viewer Panel */}
-      <div className="flex-1 flex flex-col border-r border-gray-200">
+      <div className="flex-1 flex flex-col border-r border-gray-200 min-w-0">
         <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-gray-200">
           <button
             onClick={() => setShowSessions(!showSessions)}
@@ -150,16 +179,19 @@ export default function ChatPage({ params }: PageProps) {
           <span className="text-sm text-gray-500">Tài liệu</span>
           <div className="w-8" />
         </div>
-        <iframe
-          ref={useRef<HTMLIFrameElement>(null)}
-          src={viewerSrc}
-          className="w-full flex-1"
-          title="PDF Viewer"
-        />
+        <div className="flex-1 overflow-auto">
+          {docLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <DocumentViewerClient markdown={markdown} highlight={highlight} />
+          )}
+        </div>
       </div>
 
       {/* Chat Panel */}
-      <div className="w-[420px] flex-shrink-0 flex flex-col bg-white">
+      <div className="w-[480px] flex-shrink-0 flex flex-col bg-white">
         {/* Chat Header */}
         <div className="px-4 py-3 border-b border-gray-200">
           <h2 className="text-sm font-semibold text-gray-700">
@@ -212,12 +244,20 @@ export default function ChatPage({ params }: PageProps) {
                     <p className="text-xs font-medium text-gray-500 mb-1">Nguồn:</p>
                     <div className="flex flex-wrap gap-1">
                       {msg.sources.map((src, sIdx) => (
-                        <span
+                        <button
                           key={sIdx}
-                          className="inline-block text-xs bg-white/20 rounded px-1.5 py-0.5"
+                          onClick={() => handleSourceClick(src)}
+                          className={`inline-block text-xs rounded px-1.5 py-0.5 transition-colors cursor-pointer ${
+                            highlight === src.lines
+                              ? "bg-yellow-200 text-yellow-800 font-medium"
+                              : msg.role === "user"
+                                ? "bg-white/20 hover:bg-white/30 text-white"
+                                : "bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-600"
+                          }`}
+                          title={`Highlight dòng ${src.lines} trong tài liệu`}
                         >
                           {src.file}:{src.lines}
-                        </span>
+                        </button>
                       ))}
                     </div>
                   </div>
