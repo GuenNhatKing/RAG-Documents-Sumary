@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 from app.env import load_backend_env
 
 
@@ -72,8 +72,40 @@ OCR_SAVE_REPORTS = os.getenv("OCR_SAVE_REPORTS", "true").lower() == "true"
 # LOGGING / DATA STRUCTURES
 # =========================================================
 
+_log_file = None  # Will be set per pipeline run
+
+
 def _log(step: str) -> None:
-    print(f"[NORMALIZED-ADMIN-SESSION] {step}", flush=True)
+    print(f"[NORMALIZED-SESSION] {step}", flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] {step}\n")
+        _log_file.flush()
+
+
+def _log_stage(stage: str, **kwargs: Any) -> None:
+    """Structured log with stage name and key-value metrics."""
+    extras = " ".join(f"{k}={v}" for k, v in kwargs.items())
+    msg = f"[NORMALIZED-SESSION] [{stage}] {extras}"
+    print(msg, flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [{stage}] {extras}\n")
+        _log_file.flush()
+
+
+def _log_llm_call(stage: str, batch_index: int | None, prompt_chars: int,
+                  response_chars: int, duration_s: float, success: bool,
+                  error: str = "") -> None:
+    """Log LLM call metrics for performance analysis."""
+    status = "OK" if success else "FAIL"
+    batch_str = f"batch={batch_index}" if batch_index is not None else "single"
+    msg = f"LLM {stage} {batch_str} prompt={prompt_chars} response={response_chars} {duration_s:.1f}s {status}"
+    if error:
+        msg += f" error={error[:120]}"
+    full = f"[NORMALIZED-SESSION] [LLM] {msg}"
+    print(full, flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [LLM] {msg}\n")
+        _log_file.flush()
 
 
 def work_dir(document_id: str) -> Path:
@@ -297,10 +329,11 @@ def starts_bullet(text: str) -> bool:
 
 
 def starts_structural_marker(text: str) -> bool:
-    return any([
-        starts_numbered_marker(text), starts_decimal_marker(text), starts_lettered_marker(text),
-        starts_roman_marker(text), starts_article_marker(text), starts_major_admin_marker(text), starts_bullet(text)
-    ])
+    # Use generator for true short-circuit evaluation (avoids calling all 7 checks)
+    return any(fn(text) for fn in (
+        starts_numbered_marker, starts_decimal_marker, starts_lettered_marker,
+        starts_roman_marker, starts_article_marker, starts_major_admin_marker, starts_bullet
+    ))
 
 
 def looks_title_like_line(text: str) -> bool:
@@ -438,10 +471,16 @@ def split_combined_admin_headers(line: str) -> list[str]:
 # PREPARE / MERGE / SEGMENT
 # =========================================================
 
+def _natural_sort_key(path: Path) -> int:
+    """Extract numeric part from page_N.txt for natural sorting."""
+    m = re.search(r"(\d+)", path.stem)
+    return int(m.group(1)) if m else 0
+
+
 def load_raw_extracted_text(document_id: str) -> str:
     base_path = EXTRACTED_TEXT_DIR / document_id
     _log(f"Checking extracted path: {base_path}")
-    page_files = sorted(base_path.glob("page_*.txt"))
+    page_files = sorted(base_path.glob("page_*.txt"), key=_natural_sort_key)
     _log(f"Found pages: {len(page_files)}")
     if not page_files:
         raise FileNotFoundError(f"Không tìm thấy file tại {base_path}")
@@ -697,11 +736,21 @@ def make_client() -> OpenAI:
     return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
 
 
+class EmptyLLMResponseError(Exception):
+    """LLM returned empty or whitespace-only content."""
+    pass
+
+
+class LLMJSONParseError(Exception):
+    """LLM returned content but it could not be parsed as JSON."""
+    pass
+
+
 def _retry_json():
     return retry(
         stop=stop_after_attempt(OCR_JSON_RETRY_ATTEMPTS),
-        wait=wait_fixed(OCR_JSON_RETRY_WAIT_SECONDS),
-        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((EmptyLLMResponseError, LLMJSONParseError)),
         reraise=True,
     )
 
@@ -737,7 +786,6 @@ def build_review_prompt(segments: list[SegmentRecord]) -> str:
 def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] | None = None, document_id: str | None = None, stage: str = "llm", batch_index: int | None = None) -> dict[str, Any]:
     @_retry_json()
     def _call() -> dict[str, Any]:
-        _log(f"LLM JSON call prompt chars={len(prompt)}")
         kwargs: dict[str, Any] = {
             "model": LLM_MODEL,
             "messages": [{"role": "user", "content": prompt}],
@@ -752,11 +800,36 @@ def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] |
         }
         if LLM_USE_RESPONSE_FORMAT and response_format is not None:
             kwargs["response_format"] = response_format
+        t0 = time.time()
         resp = client.chat.completions.create(**kwargs)
         content = resp.choices[0].message.content or ""
+        elapsed = time.time() - t0
+
+        # Detect empty response (common with local LLM timeouts)
+        if not content.strip():
+            _log_llm_call(stage, batch_index, len(prompt), 0, elapsed, False, "empty_response")
+            if document_id:
+                suffix = f".batch_{batch_index:03d}" if batch_index is not None else ""
+                save_json_always(
+                    work_dir(document_id) / "llm_failures" / f"{stage}{suffix}.{int(time.time() * 1000)}.json",
+                    {
+                        "stage": stage,
+                        "batch_index": batch_index,
+                        "error": "LLM returned empty response",
+                        "raw_response": "",
+                        "prompt_preview": prompt[:2500],
+                    },
+                )
+            raise EmptyLLMResponseError(f"LLM returned empty response for {stage} batch={batch_index}")
+
         try:
-            return extract_json_object(content)
+            result = extract_json_object(content)
+            _log_llm_call(stage, batch_index, len(prompt), len(content), elapsed, True)
+            return result
+        except EmptyLLMResponseError:
+            raise
         except Exception as exc:
+            _log_llm_call(stage, batch_index, len(prompt), len(content), elapsed, False, str(exc))
             if document_id:
                 suffix = f".batch_{batch_index:03d}" if batch_index is not None else ""
                 save_json_always(
@@ -765,11 +838,11 @@ def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] |
                         "stage": stage,
                         "batch_index": batch_index,
                         "error": str(exc),
-                        "raw_response": content,
+                        "raw_response": content[:5000],
                         "prompt_preview": prompt[:2500],
                     },
                 )
-            raise
+            raise LLMJSONParseError(f"Could not parse JSON from {stage} batch={batch_index}: {str(exc)[:100]}")
     return _call()
 
 
@@ -859,249 +932,6 @@ def review_segments_with_llm(client: OpenAI, segments: list[SegmentRecord], docu
 # =========================================================
 # SEMANTIC VALIDATION FOR OCR FIXES
 # =========================================================
-
-MEANING_EXPLANATION_PROMPT = """
-You are validating OCR correction alternatives in Vietnamese administrative text.
-
-Task:
-For each fix_id, explain the contextual meaning of the source phrase and each possible replacement candidate.
-Do not decide by probability. Do not apply fixes. Return JSON only.
-
-Return format:
-{
-  "meanings": [
-    {
-      "fix_id": "segment_id:index",
-      "source_meaning": "meaning of source phrase in this sentence/paragraph",
-      "candidate_meanings": [
-        {
-          "replacement": "candidate replacement",
-          "target_meaning": "meaning of this replacement in context",
-          "meaning_change": "NONE" | "ORTHOGRAPHIC_ONLY" | "POSSIBLE_CHANGE" | "CLEAR_CHANGE" | "UNKNOWN",
-          "requires_guessing": "YES" | "NO",
-          "explanation": "short explanation"
-        }
-      ]
-    }
-  ]
-}
-
-Rules:
-- Consider the entire segment context, but prioritize phrase_window and neighboring words.
-- A candidate is safe only when it corrects spelling/diacritics/OCR form while preserving the meaning of the phrase, not just the isolated word.
-- If a candidate adds missing content, changes legal meaning, changes entity names, changes dates/numbers/codes, or guesses intent, mark requires_guessing = YES.
-- If the source is a fragment or ambiguous syllable, mark requires_guessing = YES unless the segment proves it is only OCR/diacritic restoration.
-- If the replacement adds words not present in the source, mark meaning_change = CLEAR_CHANGE.
-- If unsure, use UNKNOWN or POSSIBLE_CHANGE.
-
-Reject-style examples:
-- In "dau tranh", "đấu" may fit "đấu tranh"; "đau" changes meaning and must not be selected.
-- In "dé tổng hợp", "để" fits the phrase; "đề" changes the phrase meaning and must not be selected.
-- In "hang tuần", "hằng" fits the phrase; "hàng" changes the phrase meaning and must not be selected.
-- In "day mạnh", "đẩy" fits the phrase; "đầy" changes the phrase meaning and must not be selected.
-- In "ran đe", "răn" fits the phrase; other forms change the phrase meaning.
-- Replacing "t" with "thực" expands a fragment into missing content; requires_guessing = YES.
-- Replacing "tri tuệ" with "sở hữu trí tuệ" adds words/content; meaning_change = CLEAR_CHANGE.
-- Removing a possible administrative label such as "điện:" changes document content unless context proves it is noise.
-""".strip()
-
-SIMILARITY_EVALUATION_PROMPT = """
-You are choosing the best OCR correction candidate while preserving meaning in Vietnamese administrative text.
-
-Task:
-Using the source phrase, candidate replacements, and prior meaning explanation, choose the best replacement using enums.
-Return JSON only.
-
-Return format:
-{
-  "evaluations": [
-    {
-      "fix_id": "segment_id:index",
-      "best_replacement": "candidate replacement or original source",
-      "similarity": "EXACT_SAME" | "ORTHOGRAPHIC_EQUIVALENT" | "SAME_ADMIN_TERM" | "AMBIGUOUS" | "MEANING_CHANGED" | "UNRELATED",
-      "apply_decision": "ALLOW" | "REJECT" | "MANUAL_REVIEW",
-      "reason": "short reason"
-    }
-  ]
-}
-
-Rules:
-- ALLOW only when the chosen replacement preserves the same phrase-level meaning and only fixes OCR/spelling/diacritics.
-- Use phrase_window and neighboring words to choose between competing Vietnamese words.
-- If the safest option is to keep the original source, set best_replacement to the original source and apply_decision = REJECT.
-- REJECT if all candidates add words/content, change legal meaning, change names/numbers/dates/codes, or change scope.
-- MANUAL_REVIEW if the context is insufficient or ambiguous.
-- Do not use numeric scores.
-
-Reject examples:
-- In "dau tranh", choose "đấu" only if it is available and context clearly supports "đấu tranh"; do not choose "đau".
-- In "dé tổng hợp", choose "để" if available; do not choose "đề".
-- In "hang tuần", choose "hằng" if available; do not choose "hàng".
-- In "day mạnh", choose "đẩy" if available; do not choose "đầy".
-- In "ran đe", choose "răn" if available.
-- "t" -> "thực" is content expansion, not ALLOW.
-- "tri tuệ" -> "sở hữu trí tuệ" adds words/content, not ALLOW.
-- "điện:" -> "" removes possible document content, not ALLOW unless validated as noise elsewhere.
-- Single ambiguous syllables should be MANUAL_REVIEW unless context proves one candidate is orthographic equivalence.
-""".strip()
-
-MEANING_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "ocr_meaning_explanation",
-        "schema": {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "meanings": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "fix_id": {"type": "string"},
-                            "source_meaning": {"type": "string"},
-                            "candidate_meanings": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": False,
-                                    "properties": {
-                                        "replacement": {"type": "string"},
-                                        "target_meaning": {"type": "string"},
-                                        "meaning_change": {"type": "string", "enum": ["NONE", "ORTHOGRAPHIC_ONLY", "POSSIBLE_CHANGE", "CLEAR_CHANGE", "UNKNOWN"]},
-                                        "requires_guessing": {"type": "string", "enum": ["YES", "NO"]},
-                                        "explanation": {"type": "string"},
-                                    },
-                                    "required": ["replacement", "target_meaning", "meaning_change", "requires_guessing", "explanation"],
-                                },
-                            },
-                        },
-                        "required": ["fix_id", "source_meaning", "candidate_meanings"],
-                    },
-                }
-            },
-            "required": ["meanings"],
-        },
-    },
-}
-
-SIMILARITY_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "ocr_similarity_evaluation",
-        "schema": {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "evaluations": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "fix_id": {"type": "string"},
-                            "best_replacement": {"type": "string"},
-                            "similarity": {"type": "string", "enum": ["EXACT_SAME", "ORTHOGRAPHIC_EQUIVALENT", "SAME_ADMIN_TERM", "AMBIGUOUS", "MEANING_CHANGED", "UNRELATED"]},
-                            "apply_decision": {"type": "string", "enum": ["ALLOW", "REJECT", "MANUAL_REVIEW"]},
-                            "reason": {"type": "string"},
-                        },
-                        "required": ["fix_id", "best_replacement", "similarity", "apply_decision", "reason"],
-                    },
-                }
-            },
-            "required": ["evaluations"],
-        },
-    },
-}
-
-ALTERNATIVE_GENERATION_PROMPT = """
-You are generating possible OCR correction replacements for Vietnamese administrative text.
-
-Task:
-For each source phrase marked as a possible OCR/spelling/diacritic error, propose multiple possible replacement candidates.
-Use the full segment context. Return JSON only.
-
-Return format:
-{
-  "alternatives": [
-    {
-      "fix_id": "segment_id:index",
-      "source": "original source phrase",
-      "candidates": [
-        {
-          "replacement": "candidate replacement",
-          "candidate_type": "KEEP_ORIGINAL" | "DIACRITIC_RESTORE" | "SPELLING_FIX" | "OCR_SHAPE_FIX" | "PUNCTUATION_FIX" | "UNSURE",
-          "context_fit": "GOOD" | "POSSIBLE" | "BAD",
-          "changes_meaning": "YES" | "NO" | "UNCLEAR",
-          "reason": "short reason"
-        }
-      ]
-    }
-  ]
-}
-
-Rules:
-- Always include the original source as one candidate with candidate_type KEEP_ORIGINAL.
-- Use phrase_window, left_words, and right_words more strongly than the isolated source token.
-- Include the previous model suggestion only if it is plausible in the phrase context.
-- Propose at most 5 candidates per source.
-- Prefer Vietnamese administrative/legal context.
-- Do not add new content that is not recoverable from the source.
-- Do not guess names, dates, numbers, legal codes, agencies, or document identifiers.
-- Ambiguous short syllables such as "dau", "day", "de", "dé", "hang", "t", "iy" must include KEEP_ORIGINAL and may include multiple possibilities.
-- If no candidate is clearly safe, keep only KEEP_ORIGINAL or mark candidates as UNSURE/POSSIBLE.
-
-Phrase examples:
-- phrase_window "dau tranh" should include "đấu" as a candidate; "đau" is bad in that phrase.
-- phrase_window "dé tổng hợp" should include "để"; "đề" is bad in that phrase.
-- phrase_window "hang tuần" should include "hằng"; "hàng" is bad in that phrase.
-- phrase_window "day mạnh" should include "đẩy"; "đầy" is bad in that phrase.
-- phrase_window "ran đe" should include "răn"; "ran" or "ràn" is bad in that phrase.
-""".strip()
-
-ALTERNATIVE_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "ocr_alternative_generation",
-        "schema": {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "alternatives": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "fix_id": {"type": "string"},
-                            "source": {"type": "string"},
-                            "candidates": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": False,
-                                    "properties": {
-                                        "replacement": {"type": "string"},
-                                        "candidate_type": {"type": "string", "enum": ["KEEP_ORIGINAL", "DIACRITIC_RESTORE", "SPELLING_FIX", "OCR_SHAPE_FIX", "PUNCTUATION_FIX", "UNSURE"]},
-                                        "context_fit": {"type": "string", "enum": ["GOOD", "POSSIBLE", "BAD"]},
-                                        "changes_meaning": {"type": "string", "enum": ["YES", "NO", "UNCLEAR"]},
-                                        "reason": {"type": "string"},
-                                    },
-                                    "required": ["replacement", "candidate_type", "context_fit", "changes_meaning", "reason"],
-                                },
-                            },
-                        },
-                        "required": ["fix_id", "source", "candidates"],
-                    },
-                }
-            },
-            "required": ["alternatives"],
-        },
-    },
-}
-
-
 
 
 SIMPLE_FIX_VALIDATION_PROMPT = """
@@ -1395,7 +1225,9 @@ def generic_fix_shape_is_safe(src: str, dst: str) -> tuple[bool, str]:
         return False, "token count changes too much"
     if len(dst) > len(src) * 2 + 6:
         return False, "replacement expands too much"
-    if re.search(r"\d", src) or re.search(r"\d", dst):
+    src_digits = re.findall(r"\d", src)
+    dst_digits = re.findall(r"\d", dst)
+    if src_digits != dst_digits:
         return False, "numbers/codes are protected"
     if starts_structural_marker(src) or looks_metadata_like_line(src):
         return False, "structural/metadata text is protected"
@@ -1471,67 +1303,6 @@ def collect_fix_candidates(segments: list[SegmentRecord], reviews: list[SegmentR
                 "precheck_reason": reason,
             })
     return candidates
-
-
-def _candidate_context_payload(c: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "fix_id": c["fix_id"],
-        "segment_text": c["segment_text"],
-        "source": c["source"],
-        "phrase_context": c.get("phrase_context", {}),
-        "phrase_window": c.get("phrase_window", c["source"]),
-        "left_words": c.get("left_words", []),
-        "right_words": c.get("right_words", []),
-        "previous_suggestion": c["replacement"],
-        "kind": c["kind"],
-        "scope": c["scope"],
-    }
-
-
-def build_alternative_prompt(candidates: list[dict[str, Any]]) -> str:
-    items = [_candidate_context_payload(c) for c in candidates]
-    payload = {"items": items}
-    prompt = JSON_OUTPUT_RULES + "\n\n" + ALTERNATIVE_GENERATION_PROMPT + "\nINPUT JSON:\n" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
-
-
-def build_meaning_prompt(candidates: list[dict[str, Any]], alternatives: dict[str, dict[str, Any]]) -> str:
-    items = []
-    for c in candidates:
-        alt = alternatives.get(c["fix_id"], {})
-        item = _candidate_context_payload(c)
-        item["candidates"] = alt.get("candidates", [
-            {"replacement": c["source"], "candidate_type": "KEEP_ORIGINAL", "context_fit": "POSSIBLE", "changes_meaning": "NO", "reason": "Original source."},
-            {"replacement": c["replacement"], "candidate_type": "UNSURE", "context_fit": "POSSIBLE", "changes_meaning": "UNCLEAR", "reason": "Previous suggestion."},
-        ])
-        items.append(item)
-
-    payload = {"items": items}
-    prompt = JSON_OUTPUT_RULES + "\n\n" + MEANING_EXPLANATION_PROMPT + "\nINPUT JSON:\n" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
-
-
-def build_similarity_prompt(candidates: list[dict[str, Any]], alternatives: dict[str, dict[str, Any]], meanings: dict[str, dict[str, Any]]) -> str:
-    items = []
-    for c in candidates:
-        alt = alternatives.get(c["fix_id"], {})
-        item = _candidate_context_payload(c)
-        item["candidates"] = alt.get("candidates", [
-            {"replacement": c["source"], "candidate_type": "KEEP_ORIGINAL", "context_fit": "POSSIBLE", "changes_meaning": "NO", "reason": "Original source."},
-            {"replacement": c["replacement"], "candidate_type": "UNSURE", "context_fit": "POSSIBLE", "changes_meaning": "UNCLEAR", "reason": "Previous suggestion."},
-        ])
-        item["meaning"] = meanings.get(c["fix_id"], {})
-        items.append(item)
-
-    payload = {"items": items}
-    prompt = JSON_OUTPUT_RULES + "\n\n" + SIMILARITY_EVALUATION_PROMPT + "\nINPUT JSON:\n" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
 
 
 def chunk_list(items: list[Any], size: int) -> list[list[Any]]:
@@ -1661,8 +1432,8 @@ def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentReco
             for c in passed:
                 report.append({
                     **c,
-                    "apply_decision": "REJECT",
-                    "reason": f"semantic validation failed: {exc}",
+                    "apply_decision": "MANUAL_REVIEW",
+                    "reason": f"semantic validation batch failed: {exc}",
                 })
 
         if document_id:
@@ -1674,16 +1445,21 @@ def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentReco
 def assert_semantic_validation_ready(
     reviews: list[SegmentReview],
     semantic_report: list[dict[str, Any]],
-) -> None:
-    """Fail early if spelling fixes exist but semantic validation produced no report."""
+) -> bool:
+    """Warn if spelling fixes exist but semantic validation produced no report.
+
+    Returns True if semantic validation is ready, False if fallback needed.
+    No longer raises RuntimeError — pipeline continues with all fixes as MANUAL_REVIEW.
+    """
     has_fix_candidates = any(
         r.decision == "APPLY_SMALL_FIXES" and r.risk != "HIGH" and bool(r.fixes)
         for r in reviews
     )
     if OCR_ENABLE_SEMANTIC_VALIDATION and has_fix_candidates and not semantic_report:
-        raise RuntimeError(
-            "OCR_ENABLE_SEMANTIC_VALIDATION=true but semantic_validation report is empty while fix candidates exist."
-        )
+        _log("WARNING: semantic_validation report is empty while fix candidates exist. "
+             "All fixes will be treated as MANUAL_REVIEW.")
+        return False
+    return True
 
 
 def is_short_safe_fix(src: str, dst: str) -> bool:
@@ -1778,7 +1554,6 @@ def apply_reviews_to_segments(
                     "semantic": semantic,
                 })
 
-        text = "\n".join(apply_safe_rule_corrections(line) for line in text.splitlines())
         final_segments.append(text)
         report.append({
             "segment_id": seg.segment_id,
@@ -1829,18 +1604,20 @@ def validate_loss_signal(original_lines: list[LineRecord], normalized_text: str)
         if s in normalized_text or re.sub(r"\s+", " ", s) in compact_norm:
             status = "EXACT_FOUND"
             exact += 1
-        elif normalize_for_compare(s) and normalize_for_compare(s) in comparable_norm:
-            status = "FUZZY_FOUND"
-            fuzzy += 1
         else:
-            status = "MISSING"
-            missing += 1
+            norm_s = normalize_for_compare(s)
+            if norm_s and norm_s in comparable_norm:
+                status = "FUZZY_FOUND"
+                fuzzy += 1
+            else:
+                status = "MISSING"
+                missing += 1
 
         if status != "EXACT_FOUND":
             results.append({
                 **asdict(line),
                 "status": status,
-                "normalized_for_compare": normalize_for_compare(s),
+                "normalized_for_compare": norm_s,
             })
 
     return {
@@ -1987,49 +1764,69 @@ def generate_normalized_text(document_id: str) -> Path:
         data/normalized_work/{document_id}/llm_failures/*.json
         data/normalized_work/{document_id}/batch_reports/*.json
     """
+    global _log_file
     start = time.time()
     ensure_dirs(document_id)
 
     normalized_path = NORMALIZED_TEXT_DIR / f"{document_id}.txt"
 
+    # Open log file for this pipeline run
+    log_path = work_dir(document_id) / "pipeline.log"
+    _log_file = open(log_path, "a", encoding="utf-8")
+
     update_progress(document_id, status="started", output_path=str(normalized_path), work_dir=str(work_dir(document_id)))
     _log(f"START normalized_text pipeline: {document_id}")
-    _log("Effective runtime config / env:")
-    print(json.dumps(get_effective_env(), ensure_ascii=False, indent=2), flush=True)
+    _log_stage("CONFIG", **get_effective_env())
 
     try:
+        t0 = time.time()
         raw_text = load_raw_extracted_text(document_id)
         save_text(work_dir(document_id) / "raw_extracted_text.txt", raw_text)
+        _log_stage("LOAD_RAW", chars=len(raw_text), duration=f"{time.time()-t0:.2f}s")
         update_progress(document_id, status="loaded_raw_text")
 
+        t0 = time.time()
         prepared = prepare_lines(raw_text)
-        _log(f"Prepared lines: {len(prepared)}")
+        _log_stage("PREPARE", lines=len(prepared), duration=f"{time.time()-t0:.2f}s")
         save_session_json(document_id, "prepared_lines.json", [asdict(x) for x in prepared])
         update_progress(document_id, status="prepared_lines", prepared_line_count=len(prepared))
 
+        t0 = time.time()
         merged_lines = merge_visual_wrapped_lines(prepared)
-        _log(f"Merged visual wrapped lines: {len(merged_lines)}")
+        reduction = len(prepared) - len(merged_lines)
+        _log_stage("MERGE", before=len(prepared), after=len(merged_lines), reduction=reduction, duration=f"{time.time()-t0:.2f}s")
         save_session_json(document_id, "merged_lines.json", [asdict(x) for x in merged_lines])
         save_partial_normalized(document_id, "01_after_merge.txt", "\n".join(x.text for x in merged_lines).strip() + "\n")
         update_progress(document_id, status="merged_lines", merged_line_count=len(merged_lines))
 
+        t0 = time.time()
         segments = build_sentence_segments(merged_lines)
-        _log(f"Built sentence/paragraph segments: {len(segments)}")
+        _log_stage("SEGMENT", segments=len(segments), duration=f"{time.time()-t0:.2f}s")
         save_session_json(document_id, "segments.json", [asdict(x) for x in segments])
         update_progress(document_id, status="built_segments", segment_count=len(segments))
 
+        t0 = time.time()
         client = make_client()
 
         reviews = review_segments_with_llm(client, segments, document_id=document_id)
+        llm_duration = time.time() - t0
+        apply_count = sum(1 for r in reviews if r.decision == "APPLY_SMALL_FIXES")
+        keep_count = sum(1 for r in reviews if r.decision == "KEEP")
+        remove_count = sum(1 for r in reviews if r.decision == "REMOVE_NOISE")
+        manual_count = sum(1 for r in reviews if r.decision == "MANUAL_REVIEW")
+        _log_stage("LLM_REVIEW", total=len(reviews), apply=apply_count, keep=keep_count, remove=remove_count, manual=manual_count, duration=f"{llm_duration:.2f}s")
         save_session_json(document_id, "llm_review.json", [asdict(x) for x in reviews])
         update_progress(document_id, status="reviewed_segments", review_count=len(reviews))
 
+        t0 = time.time()
         semantic_allowed, semantic_report = semantic_validate_candidate_fixes(
             client,
             segments,
             reviews,
             document_id=document_id,
         )
+        sem_duration = time.time() - t0
+        _log_stage("SEMANTIC_VALIDATE", candidates=len(semantic_report), allowed=len(semantic_allowed), duration=f"{sem_duration:.2f}s")
         save_session_json(document_id, "semantic_validation.json", semantic_report)
         save_session_json(document_id, "semantic_allowed.json", semantic_allowed)
         update_progress(
@@ -2041,12 +1838,15 @@ def generate_normalized_text(document_id: str) -> Path:
 
         assert_semantic_validation_ready(reviews, semantic_report)
 
+        t0 = time.time()
         noise_allowed, noise_report = semantic_validate_noise_segments(
             client,
             segments,
             reviews,
             document_id=document_id,
         )
+        noise_duration = time.time() - t0
+        _log_stage("NOISE_VALIDATE", candidates=len(noise_report), allowed_removal=len(noise_allowed), duration=f"{noise_duration:.2f}s")
         save_session_json(document_id, "noise_validation.json", noise_report)
         save_session_json(document_id, "noise_allowed.json", noise_allowed)
         update_progress(
@@ -2056,22 +1856,28 @@ def generate_normalized_text(document_id: str) -> Path:
             noise_allowed_count=len(noise_allowed),
         )
 
+        t0 = time.time()
         fixed_segments, review_report = apply_reviews_to_segments(
             segments,
             reviews,
             semantic_allowed=semantic_allowed,
             noise_allowed=noise_allowed,
         )
+        _log_stage("APPLY_FIXES", segments=len(fixed_segments), duration=f"{time.time()-t0:.2f}s")
         save_session_json(document_id, "normalized_report.json", review_report)
 
         joined_fixed = "\n".join(fixed_segments)
         save_partial_normalized(document_id, "02_after_apply_reviews.txt", joined_fixed.strip() + "\n")
         update_progress(document_id, status="applied_reviews", fixed_segment_count=len(fixed_segments))
 
+        t0 = time.time()
         normalized_text = final_merge_and_cleanup(joined_fixed)
+        _log_stage("FINAL_MERGE", chars=len(normalized_text), duration=f"{time.time()-t0:.2f}s")
         save_partial_normalized(document_id, "03_final_normalized_preview.txt", normalized_text)
 
+        t0 = time.time()
         validation = validate_loss_signal(prepared, normalized_text)
+        _log_stage("VALIDATE_LOSS", exact=validation["summary"]["EXACT_FOUND"], fuzzy=validation["summary"]["FUZZY_FOUND"], missing=validation["summary"]["MISSING"], duration=f"{time.time()-t0:.2f}s")
         save_session_json(document_id, "validation.json", validation)
 
         applied_summary = build_applied_fixes_summary(review_report, semantic_report, noise_report)
@@ -2080,19 +1886,34 @@ def generate_normalized_text(document_id: str) -> Path:
         normalized_path.parent.mkdir(parents=True, exist_ok=True)
         normalized_path.write_text(normalized_text, encoding="utf-8")
 
-        # Backward-compatible copies in result directory.
-        # These are controlled by OCR_SAVE_REPORTS.
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.prepared_lines.json", [asdict(x) for x in prepared])
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.merged_lines.json", [asdict(x) for x in merged_lines])
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.segments.json", [asdict(x) for x in segments])
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.llm_review.json", [asdict(x) for x in reviews])
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.semantic_validation.json", semantic_report)
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.noise_validation.json", noise_report)
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.normalized_report.json", review_report)
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.applied_fixes_summary.json", applied_summary)
-        save_json(NORMALIZED_TEXT_DIR / f"{document_id}.validation.json", validation)
+        # Backward-compatible copies in result directory (controlled by OCR_SAVE_REPORTS).
+        if OCR_SAVE_REPORTS:
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.prepared_lines.json", [asdict(x) for x in prepared])
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.merged_lines.json", [asdict(x) for x in merged_lines])
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.segments.json", [asdict(x) for x in segments])
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.llm_review.json", [asdict(x) for x in reviews])
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.semantic_validation.json", semantic_report)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.noise_validation.json", noise_report)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.normalized_report.json", review_report)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.applied_fixes_summary.json", applied_summary)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.validation.json", validation)
 
         duration = round(time.time() - start, 2)
+
+        # Final summary log
+        _log_stage("PIPELINE_COMPLETE",
+            document_id=document_id,
+            duration=f"{duration:.2f}s",
+            input_lines=len(prepared),
+            output_lines=len(normalized_text.splitlines()),
+            output_chars=len(normalized_text),
+            llm_fixes_applied=applied_summary.get("applied_count", 0),
+            llm_fixes_rejected=applied_summary.get("rejected_count", 0),
+            noise_removed=applied_summary.get("removed_noise_count", 0),
+            loss_exact=validation["summary"]["EXACT_FOUND"],
+            loss_fuzzy=validation["summary"]["FUZZY_FOUND"],
+            loss_missing=validation["summary"]["MISSING"],
+        )
 
         if validation["count"]:
             _log(f"Validation warning: possibly missing meaningful lines = {validation['count']}")
@@ -2112,18 +1933,22 @@ def generate_normalized_text(document_id: str) -> Path:
             },
         )
 
-        _log(f"Saved normalized text: {normalized_path}")
-        _log(f"Saved session work dir: {work_dir(document_id)}")
-        _log(f"DONE in {duration:.2f}s")
+        _log(f"DONE in {duration:.2f}s → {normalized_path}")
         return normalized_path
 
     except Exception as exc:
+        duration = round(time.time() - start, 2)
+        _log_stage("PIPELINE_FAILED", document_id=document_id, duration=f"{duration:.2f}s", error=str(exc)[:200])
         update_progress(
             document_id,
             status="failed",
             error=str(exc),
             output_path=str(normalized_path),
             work_dir=str(work_dir(document_id)),
-            duration_seconds=round(time.time() - start, 2),
+            duration_seconds=duration,
         )
         raise
+    finally:
+        if _log_file:
+            _log_file.close()
+            _log_file = None

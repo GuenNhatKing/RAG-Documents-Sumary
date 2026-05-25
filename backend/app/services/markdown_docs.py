@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # =========================================================
 # CONFIG - small by design
@@ -92,8 +92,40 @@ class OutlineNode:
 # =========================================================
 # FILE / LOG
 # =========================================================
+_log_file = None  # Will be set per pipeline run
+
+
 def _log(msg: str) -> None:
-    print(f"[MD-ADMIN-INCREMENTAL] {msg}", flush=True)
+    print(f"[MD-INCREMENTAL] {msg}", flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] {msg}\n")
+        _log_file.flush()
+
+
+def _log_stage(stage: str, **kwargs: Any) -> None:
+    """Structured log with stage name and key-value metrics."""
+    extras = " ".join(f"{k}={v}" for k, v in kwargs.items())
+    msg = f"[MD-INCREMENTAL] [{stage}] {extras}"
+    print(msg, flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [{stage}] {extras}\n")
+        _log_file.flush()
+
+
+def _log_llm_call(stage: str, section_id: int | None, prompt_chars: int,
+                  response_chars: int, duration_s: float, success: bool,
+                  error: str = "") -> None:
+    """Log LLM call metrics for performance analysis."""
+    status = "OK" if success else "FAIL"
+    sec_str = f"section={section_id}" if section_id is not None else "single"
+    msg = f"LLM {stage} {sec_str} prompt={prompt_chars} response={response_chars} {duration_s:.1f}s {status}"
+    if error:
+        msg += f" error={error[:120]}"
+    full = f"[MD-INCREMENTAL] [LLM] {msg}"
+    print(full, flush=True)
+    if _log_file:
+        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [LLM] {msg}\n")
+        _log_file.flush()
 
 def work_dir(document_id: str) -> Path:
     return WORK_DIR / document_id
@@ -120,10 +152,13 @@ def effective_config() -> dict[str, Any]:
         "LLM_BASE_URL": LLM_BASE_URL, "LLM_API_KEY": "***" if LLM_API_KEY else "",
         "LLM_MODEL": LLM_MODEL, "LLM_NUM_CTX": LLM_NUM_CTX, "LLM_THINK": LLM_THINK,
         "LLM_MAX_TOKENS": LLM_MAX_TOKENS, "LLM_TIMEOUT_SECONDS": LLM_TIMEOUT_SECONDS,
+        "LLM_USE_RESPONSE_FORMAT": LLM_USE_RESPONSE_FORMAT, "LLM_KEEP_ALIVE": LLM_KEEP_ALIVE,
         "MD_BATCH_SIZE": MD_BATCH_SIZE, "MD_MAX_PROMPT_CHARS": MD_MAX_PROMPT_CHARS,
         "MD_SECTION_MAX_BLOCKS": MD_SECTION_MAX_BLOCKS, "MD_SECTION_MAX_CHARS": MD_SECTION_MAX_CHARS,
-        "MD_BLOCK_TEXT_CHARS": MD_BLOCK_TEXT_CHARS, "MD_ALLOW_PARTIAL": MD_ALLOW_PARTIAL,
-        "MD_SAVE_REPORTS": MD_SAVE_REPORTS,
+        "MD_BLOCK_TEXT_CHARS": MD_BLOCK_TEXT_CHARS, "MD_MAX_HEADING_LEVEL": MD_MAX_HEADING_LEVEL,
+        "MD_ALLOW_PARTIAL": MD_ALLOW_PARTIAL, "MD_SAVE_REPORTS": MD_SAVE_REPORTS,
+        "MD_JSON_RETRY_ATTEMPTS": MD_JSON_RETRY_ATTEMPTS,
+        "MD_JSON_RETRY_WAIT_SECONDS": MD_JSON_RETRY_WAIT_SECONDS,
     }
 
 def update_progress(doc_id: str, **data: Any) -> None:
@@ -433,7 +468,8 @@ def block_payload(b: BlockRecord) -> dict[str,Any]:
     return {"block_id":b.block_id,"lines":[b.start_line_id,b.end_line_id],"first":clip(b.first_line,120),"text":clip(b.text,MD_BLOCK_TEXT_CHARS),"features":f}
 
 def ensure_prompt(prompt: str) -> str:
-    if len(prompt)>MD_MAX_PROMPT_CHARS: raise ValueError(f"Prompt too long: {len(prompt)} chars > {MD_MAX_PROMPT_CHARS}")
+    if len(prompt) > MD_MAX_PROMPT_CHARS:
+        raise ValueError(f"Prompt too long: {len(prompt)} chars > {MD_MAX_PROMPT_CHARS}")
     return prompt
 
 def outline_prompt(blocks: list[BlockRecord], section: SectionRecord) -> str:
@@ -441,23 +477,45 @@ def outline_prompt(blocks: list[BlockRecord], section: SectionRecord) -> str:
         "section": asdict(section),
         "blocks": [block_payload(b) for b in blocks],
     }
-    return ensure_prompt(JSON_RULES + "\n" + OUTLINE_PROMPT + "\n" + cj(payload))
+    prompt = ensure_prompt(JSON_RULES + "\n" + OUTLINE_PROMPT + "\n" + cj(payload))
+    return prompt
+
+class EmptyLLMResponseError(Exception):
+    """LLM returned empty or whitespace-only content."""
+    pass
+
+
+class LLMJSONParseError(Exception):
+    """LLM returned content but it could not be parsed as JSON."""
+    pass
+
 
 def client() -> OpenAI: return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
-def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), wait=wait_fixed(MD_JSON_RETRY_WAIT_SECONDS), retry=retry_if_exception_type(Exception), reraise=True)
+def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), wait=wait_exponential(multiplier=1, min=2, max=30), retry=retry_if_exception_type((EmptyLLMResponseError, LLMJSONParseError)), reraise=True)
 
 def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, fmt: dict|None) -> dict[str,Any]:
     @retry_json()
     def _call():
-        _log(f"LLM JSON stage={stage} section={secid} chars={len(prompt)}")
         kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.1,"max_tokens":LLM_MAX_TOKENS,"extra_body":{"think":LLM_THINK,"keep_alive":LLM_KEEP_ALIVE,"options":{"num_ctx":LLM_NUM_CTX,"temperature":0,"top_p":0.1,"top_k":1}}}
         if LLM_USE_RESPONSE_FORMAT and fmt: kw["response_format"]=fmt
+        t0 = time.time()
         resp=c.chat.completions.create(**kw)
         content=resp.choices[0].message.content or ""
-        try: return extract_json_object(content)
-        except Exception as e:
-            save_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":str(e),"raw_response":content,"prompt_preview":prompt[:2500]})
+        elapsed = time.time() - t0
+        if not content.strip():
+            _log_llm_call(stage, secid, len(prompt), 0, elapsed, False, "empty_response")
+            save_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":"LLM returned empty response","raw_response":"","prompt_preview":prompt[:2500]})
+            raise EmptyLLMResponseError(f"LLM returned empty response for {stage} section={secid}")
+        try:
+            result = extract_json_object(content)
+            _log_llm_call(stage, secid, len(prompt), len(content), elapsed, True)
+            return result
+        except EmptyLLMResponseError:
             raise
+        except Exception as e:
+            _log_llm_call(stage, secid, len(prompt), len(content), elapsed, False, str(e))
+            save_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":str(e),"raw_response":content[:5000],"prompt_preview":prompt[:2500]})
+            raise LLMJSONParseError(f"Could not parse JSON from {stage} section={secid}: {str(e)[:100]}")
     return _call()
 
 # =========================================================
@@ -856,37 +914,79 @@ def build_tree_nodes(nodes: list[OutlineNode]) -> list[dict[str, Any]]:
 # MAIN
 # =========================================================
 def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None) -> Path:
+    global _log_file
     start=time.time(); ensure_dirs(document_id)
     inp=Path(normalized_path) if normalized_path else NORMALIZED_DIR/f"{document_id}.txt"
     outp=MARKDOWN_DIR/f"{document_id}.md"
     if not inp.exists(): raise FileNotFoundError(f"Normalized text not found: {inp}")
-    _log(f"Input: {inp}"); _log(f"Output: {outp}"); _log(f"Model: {LLM_MODEL}")
-    print(json.dumps(effective_config(),ensure_ascii=False,indent=2),flush=True)
-    lines=read_lines(inp); blocks=build_blocks(lines); byid={b.block_id:b for b in blocks}; sections=build_sections(blocks)
-    _log(f"Loaded {len(lines)} lines; built {len(blocks)} blocks; built {len(sections)} sections")
-    root=work_dir(document_id)
-    save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
-    c=client(); results=[]; completed=[]; failed=[]
-    update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=[], failed_sections=[])
-    for sec in sections:
-        _log(f"Section {sec.section_id}/{len(sections)} blocks={len(sec.block_ids)} reason={sec.reason}")
-        try: res=process_section(c,document_id,sec,blocks,byid)
-        except Exception as e:
-            _log(f"Section {sec.section_id} hard fallback: {e}")
-            secblocks=[byid[i] for i in sec.block_ids if i in byid]
-            roles=parse_roles({}, {}, secblocks); cands=py_candidates(secblocks,roles); nodes=structural_postprocess(nodes_from_candidates(cands,byid,sec.section_id),byid)
-            res={"section_id":sec.section_id,"status":"failed_but_rendered","error":str(e),"roles":list(roles.values()),"candidates":cands,"outline":nodes}
-        results.append(res)
-        save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
-        save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
-        completed.append(sec.section_id) if res["status"] in {"done","done_with_fallback","failed_but_rendered"} else failed.append({"section_id":sec.section_id,"error":res["error"]})
-        update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=completed, failed_sections=failed, current_section=sec.section_id, updated_at=time.time())
-        if res["status"]=="failed" and not MD_ALLOW_PARTIAL: raise RuntimeError(res["error"])
-    merged=[]
-    for r in results: merged.extend(r["outline"])
-    merged=structural_postprocess(merged,byid); checked=structural_postprocess(hierarchical_validation(merged),byid); checked=sorted({n.block_id:n for n in checked}.values(),key=lambda n:n.line_id)
-    save_json(root/"merged_outline.json", [asdict(x) for x in merged]); save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked]); save_json(root/"tree_nodes.json", build_tree_nodes(checked))
-    md=render_markdown(lines,checked); save_json(root/"lossless_validation.json", validate_lossless(lines,md)); save_text(root/"final.md", md); outp.write_text(md,encoding="utf-8")
-    update_progress(document_id, status="done", total_sections=len(sections), completed_sections=completed, failed_sections=failed, output_path=str(outp), duration_seconds=round(time.time()-start, 2))
-    _log(f"Saved Markdown: {outp}"); _log(f"DONE in {time.time()-start:.2f}s")
-    return outp
+    log_path = work_dir(document_id) / "pipeline.log"
+    _log_file = open(log_path, "a", encoding="utf-8")
+    sections = []
+    completed = []
+    failed = []
+    try:
+        _log_stage("START", input=str(inp), output=str(outp), model=LLM_MODEL)
+        _log_stage("CONFIG", **effective_config())
+
+        t0=time.time()
+        lines=read_lines(inp); blocks=build_blocks(lines); byid={b.block_id:b for b in blocks}; sections=build_sections(blocks)
+        _log_stage("PARSE", lines=len(lines), blocks=len(blocks), sections=len(sections), duration=f"{time.time()-t0:.2f}s")
+
+        root=work_dir(document_id)
+        save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
+        c=client(); results=[]; completed=[]; failed=[]
+
+        t_llm_start=time.time()
+        update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=[], failed_sections=[])
+        for i, sec in enumerate(sections, 1):
+            t_sec=time.time()
+            try: res=process_section(c,document_id,sec,blocks,byid)
+            except Exception as e:
+                _log(f"Section {sec.section_id} hard fallback: {e}")
+                secblocks=[byid[i] for i in sec.block_ids if i in byid]
+                roles=parse_roles({}, {}, secblocks); cands=py_candidates(secblocks,roles); nodes=structural_postprocess(nodes_from_candidates(cands,byid,sec.section_id),byid)
+                res={"section_id":sec.section_id,"status":"failed_but_rendered","error":str(e),"roles":list(roles.values()),"candidates":cands,"outline":nodes}
+            results.append(res)
+            save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
+            save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
+            sec_duration=time.time()-t_sec
+            node_count=len(res["outline"])
+            status_str=res["status"]
+            _log_stage("SECTION", id=sec.section_id, total=len(sections), blocks=len(sec.block_ids), nodes=node_count, status=status_str, duration=f"{sec_duration:.2f}s")
+            completed.append(sec.section_id) if res["status"] in {"done","done_with_fallback","failed_but_rendered"} else failed.append({"section_id":sec.section_id,"error":res["error"]})
+            update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=completed, failed_sections=failed, current_section=sec.section_id, updated_at=time.time())
+            if res["status"]=="failed" and not MD_ALLOW_PARTIAL: raise RuntimeError(res["error"])
+        t_llm_total=time.time()-t_llm_start
+
+        t0=time.time()
+        merged=[]
+        for r in results: merged.extend(r["outline"])
+        # Single structural_postprocess + hierarchical_validation pass (no redundant double-call)
+        merged=structural_postprocess(merged,byid)
+        checked=hierarchical_validation(merged)
+        checked=sorted({n.block_id:n for n in checked}.values(),key=lambda n:n.line_id)
+        _log_stage("OUTLINE_MERGE", raw_nodes=len(merged), final_nodes=len(checked), duration=f"{time.time()-t0:.2f}s")
+        save_json(root/"merged_outline.json", [asdict(x) for x in merged]); save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked]); save_json(root/"tree_nodes.json", build_tree_nodes(checked))
+
+        t0=time.time()
+        md=render_markdown(lines,checked)
+        validation=validate_lossless(lines,md)
+        _log_stage("RENDER", md_chars=len(md), md_lines=len(md.splitlines()), missing=validation["missing_count"], duration=f"{time.time()-t0:.2f}s")
+        save_json(root/"lossless_validation.json", validation); save_text(root/"final.md", md); outp.write_text(md,encoding="utf-8")
+
+        total_duration=round(time.time()-start, 2)
+        ok_sections=len([s for s in completed if s not in [f.get("section_id") for f in failed]])
+        _log_stage("PIPELINE_COMPLETE", document_id=document_id, duration=f"{total_duration:.2f}s", llm_duration=f"{t_llm_total:.2f}s", sections_ok=ok_sections, sections_failed=len(failed), outline_nodes=len(checked), md_chars=len(md), missing_lines=validation["missing_count"])
+
+        update_progress(document_id, status="done", total_sections=len(sections), completed_sections=completed, failed_sections=failed, output_path=str(outp), duration_seconds=total_duration)
+        _log(f"DONE in {total_duration:.2f}s → {outp}")
+        return outp
+    except Exception as exc:
+        duration = round(time.time() - start, 2)
+        _log_stage("PIPELINE_FAILED", document_id=document_id, duration=f"{duration:.2f}s", error=str(exc)[:200])
+        update_progress(document_id, status="failed", total_sections=len(sections), completed_sections=completed, failed_sections=failed, output_path=str(outp), duration_seconds=duration)
+        raise
+    finally:
+        if _log_file:
+            _log_file.close()
+            _log_file = None
