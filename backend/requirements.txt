@@ -7,11 +7,12 @@ openai
 redis
 celery
 pymupdf
-pdfplumber
-python-docx
 pytesseract
 pillow
 litellm
 PyPDF2
 python-dotenv
 pyyaml
+passlib
+PyJWT
+pycryptodome
