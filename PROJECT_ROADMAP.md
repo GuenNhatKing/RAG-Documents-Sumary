@@ -5,7 +5,7 @@
 Triển khai hệ thống Agentic Vectorless Retrieval-Augmented Generation (RAG) sử dụng:
 
 - PageIndex (Semantic Tree)
-- OpenRouter API
+- Local LLM API
 
 Kiến trúc này loại bỏ hoàn toàn:
 
@@ -41,7 +41,7 @@ Khởi tạo cấu trúc backend FastAPI bao gồm:
 - SQLAlchemy
 - Redis
 - Celery
-- OpenRouter Integration
+- Local LLM Integration
 - PageIndex
 - OCR libraries
 
@@ -234,7 +234,7 @@ Function:
 
 #### Step 1 — Root-Level Reasoning
 
-OpenRouter LLM chỉ đọc:
+Local LLM LLM chỉ đọc:
 
 - Root nodes
 - Chapter/Section titles
@@ -311,12 +311,12 @@ Nội dung trích xuất...
 **Done Condition (Task 2.2):**
 
 - Trích xuất đúng đoạn hội thoại/điều khoản mà không bị lẹm sang phần khác.
-- OpenRouter nhận context "sạch" và cực kỳ cô đọng.
+- Local LLM nhận context "sạch" và cực kỳ cô đọng.
 - Citation mapping chính xác tới từng số dòng.
 
 ---
 
-## PHASE 3 — OPENROUTER AGENTIC CHAT
+## PHASE 3 — Local LLM AGENTIC CHAT
 
 ### Task 3.1 — LLM Generation Service
 
@@ -334,7 +334,7 @@ app/services/llm.py
 
 Final answer generation bằng:
 
-openrouter/free
+Local LLM/free
 
 **Important Rules:**
 
@@ -480,7 +480,7 @@ Coverage yêu cầu:
 - Recursive traversal
 - Context builder
 - Citation mapping
-- OpenRouter wrapper
+- Local LLM wrapper
 - Retry logic
 
 ---
@@ -493,7 +493,7 @@ Upload PDF
 → OCR
 → Semantic Tree
 → Recursive Retrieval
-→ OpenRouter
+→ Local LLM
 → Final Answer
 
 **Done Condition (Task 5.2):**
@@ -521,7 +521,7 @@ PDF Upload
 → Semantic Tree
 → Recursive Reasoning
 → Context Builder
-→ OpenRouter Answer
+→ Local LLM Answer
 → Citation Output
 
 Hệ thống phải:
@@ -538,5 +538,5 @@ Hệ thống phải:
 
   DATABASE_URL=sqlite:///./database.db
   REDIS_URL=redis://localhost:6379/0
-  OPENROUTER_API_KEY=your_openrouter_api_key_here
+  Local LLM_API_KEY=your_Local LLM_api_key_here
   JWT_SECRET=your_jwt_secret_here

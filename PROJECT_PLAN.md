@@ -26,7 +26,7 @@ Xây dựng hệ thống hỗ trợ:
 |---|---|
 |AI Search|Vectorless RAG|
 |Indexing|Semantic Tree (JSON format) qua thư viện PageIndex|
-|LLM & Reasoning|OpenRouter API|
+|LLM & Reasoning|Local LLM API|
 |Backend|FastAPI|
 |Frontend|NextJS + TailwindCSS|
 |Queue|Celery + Redis|
@@ -44,7 +44,7 @@ Cho phép Upload PDF/DOCX/Ảnh scan.
 Hệ thống tự động:
 
 - Dùng thư viện pageindex phân tích cấu trúc tài liệu.
-- Gọi LLM thông qua OpenRouter để hỗ trợ semantic parsing.
+- Gọi LLM thông qua Local LLM để hỗ trợ semantic parsing.
 - Tạo ra file Cây Ngữ Nghĩa (Semantic Tree) định dạng JSON lưu vào thư mục data/semantic_trees/.
 
 ### 2.2 Tìm kiếm Agentic & Trích dẫn
@@ -57,7 +57,7 @@ Hệ thống:
 
 - Duyệt JSON Tree (Reasoning).
 - Lấy đúng nội dung Leaf node.
-- Trả lời bằng OpenRouter LLM kèm citation:
+- Trả lời bằng Local LLM LLM kèm citation:
 
 [Nguồn: Luat-Xay-Dung.pdf, Trang 12]
 
@@ -81,7 +81,7 @@ Hệ thống:
        └──────┬────────┘   └──────┬────────┘
               │                   │
        ┌──────▼────────┐   ┌──────▼────────┐
-       │   JSON Tree   │◄──┤ OpenRouter    │
+       │   JSON Tree   │◄──┤ Local LLM    │
        │   Storage     │   │ LLM Gateway   │
        └───────────────┘   └───────────────┘
 
@@ -103,7 +103,7 @@ User Query
     -> Load JSON Tree
     -> Reasoning Tree Search
     -> Context Builder
-    -> OpenRouter API
+    -> Local LLM API
     -> Trả về Answer + Citations
 
 ---
@@ -161,7 +161,7 @@ Lưu ý:
 
     DATABASE_URL=sqlite:///./database.db
     REDIS_URL=redis://localhost:6379/0
-    OPENROUTER_API_KEY=your_openrouter_api_key_here
-    OPENROUTER_MODEL=openrouter/free
+    Local LLM_API_KEY=your_Local LLM_api_key_here
+    Local LLM_MODEL=Local LLM/free
     JWT_SECRET=your_jwt_secret_here
     
