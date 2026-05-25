@@ -100,7 +100,7 @@ export default function DocumentViewerClient({
     loadPdf();
   };
 
-  const lines = markdown.split("\n");
+  const lines = (markdown ?? "").split("\n");
 
   return (
     <div className="flex flex-col h-full">
