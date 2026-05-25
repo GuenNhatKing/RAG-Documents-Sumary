@@ -72,3 +72,16 @@ export async function rebuildTree(docId: string): Promise<boolean> {
   });
   return res.ok;
 }
+
+export async function renameDocument(docId: string, filename: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API}/documents/${docId}/filename`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ filename }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

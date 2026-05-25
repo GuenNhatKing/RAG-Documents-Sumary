@@ -407,6 +407,33 @@ def get_document_detail(doc_id: str, current_user: TokenData = Depends(get_curre
 
 
 # =========================================================
+# RENAME DOCUMENT (admin/can_bo only)
+# =========================================================
+@app.patch("/documents/{doc_id}/filename")
+def rename_document(doc_id: str, body: dict, current_user: TokenData = Depends(get_current_user)):
+    if current_user.role not in ("admin", "can_bo"):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+        new_name = body.get("filename", "").strip()
+        if not new_name:
+            raise HTTPException(status_code=400, detail="Missing 'filename' field")
+        doc.filename = new_name
+        db.commit()
+        return {"status": "ok", "doc_id": doc_id, "filename": new_name}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
+    finally:
+        db.close()
+
+
+# =========================================================
 # DELETE DOCUMENT (admin/can_bo only)
 # =========================================================
 @app.delete("/documents/{doc_id}")

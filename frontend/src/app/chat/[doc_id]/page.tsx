@@ -9,6 +9,7 @@ import SessionList from "@/components/SessionList";
 import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
 import { ChatMessage, getMessages, askQuestion } from "@/lib/chat";
 import { API, getToken } from "@/lib/auth";
+import { getDocumentDetail } from "@/lib/documents";
 
 type SourceTag = {
   file: string;
@@ -41,6 +42,7 @@ export default function ChatPage({ params }: PageProps) {
   const [highlight, setHighlight] = useState("");
   const [markdown, setMarkdown] = useState<string>("");
   const [docLoading, setDocLoading] = useState(true);
+  const [docFilename, setDocFilename] = useState(doc_id);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +58,10 @@ export default function ChatPage({ params }: PageProps) {
       .then((data) => setMarkdown(data.markdown ?? "# Không thể tải tài liệu"))
       .catch(() => setMarkdown("# Không thể tải tài liệu"))
       .finally(() => setDocLoading(false));
+    // Fetch real filename
+    getDocumentDetail(doc_id).then((doc) => {
+      if (doc) setDocFilename(doc.filename);
+    });
   }, [doc_id]);
 
   useEffect(() => {
@@ -256,7 +262,7 @@ export default function ChatPage({ params }: PageProps) {
                             }`}
                             title={`Highlight dòng ${src.lines} trong tài liệu`}
                           >
-                            {src.file}:{src.lines}
+                            {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
                           </button>
                         ))}
                       </div>

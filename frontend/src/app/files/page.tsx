@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { getDocuments, deleteDocument, type DocumentItem } from "@/lib/documents";
+import { getDocuments, deleteDocument, renameDocument, type DocumentItem } from "@/lib/documents";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "Chờ xử lý", color: "bg-gray-100 text-gray-600" },
@@ -16,6 +16,8 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 export default function FilesPage() {
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   const loadDocs = useCallback(async () => {
     setLoading(true);
@@ -27,6 +29,33 @@ export default function FilesPage() {
   useEffect(() => {
     loadDocs();
   }, [loadDocs]);
+
+  const handleRenameStart = (docId: string, currentName: string) => {
+    setEditingId(docId);
+    setEditingName(currentName);
+  };
+
+  const handleRenameSave = async (docId: string) => {
+    const trimmed = editingName.trim();
+    if (!trimmed) {
+      setEditingId(null);
+      return;
+    }
+    const ok = await renameDocument(docId, trimmed);
+    if (ok) {
+      setDocs((prev) =>
+        prev.map((d) => (d.id === docId ? { ...d, filename: trimmed } : d))
+      );
+    } else {
+      alert("Đổi tên thất bại.");
+    }
+    setEditingId(null);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent, docId: string) => {
+    if (e.key === "Enter") handleRenameSave(docId);
+    if (e.key === "Escape") setEditingId(null);
+  };
 
   const handleDelete = async (docId: string, filename: string) => {
     if (!confirm(`Xác nhận xóa tài liệu "${filename}"?`)) return;
@@ -87,8 +116,26 @@ export default function FilesPage() {
                   const cfg = statusConfig[doc.status] ?? statusConfig.pending;
                   return (
                     <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm text-gray-800 truncate max-w-xs">
-                        {doc.filename}
+                      <td className="px-4 py-3 text-sm text-gray-800">
+                        {editingId === doc.id ? (
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
+                            onBlur={() => handleRenameSave(doc.id)}
+                            className="w-full px-2 py-1 border border-blue-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            className="cursor-pointer hover:text-blue-600 truncate max-w-xs inline-block"
+                            title="Nhấp để đổi tên"
+                            onClick={() => handleRenameStart(doc.id, doc.filename)}
+                          >
+                            {doc.filename}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -126,6 +173,12 @@ export default function FilesPage() {
                               Xem
                             </Link>
                           )}
+                          <button
+                            onClick={() => handleRenameStart(doc.id, doc.filename)}
+                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200"
+                          >
+                            Đổi tên
+                          </button>
                           <button
                             onClick={() => handleDelete(doc.id, doc.filename)}
                             className="px-3 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"

@@ -99,6 +99,7 @@ class DocResult(BaseModel):
 
 class GlobalAskRequest(BaseModel):
     question: str
+    session_id: Optional[str] = None
 
 
 class GlobalAskResponse(BaseModel):
@@ -235,7 +236,7 @@ def search_docs(req: SearchRequest, current_user: TokenData = Depends(get_curren
 # GLOBAL ASK — cross-document (protected)
 # ============================================================
 @router.post("/ask-global", response_model=GlobalAskResponse)
-def ask_global(req: GlobalAskRequest, current_user: TokenData = Depends(get_current_user)):
+def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     from app.services.master_tree import search_master_tree
 
     relevant_docs = search_master_tree(req.question)
@@ -272,6 +273,22 @@ def ask_global(req: GlobalAskRequest, current_user: TokenData = Depends(get_curr
         answer = generate_final_answer(combined_context, req.question)
     except Exception:
         answer = "Lỗi khi tạo câu trả lời."
+
+    # Save messages to session if session_id provided
+    if req.session_id:
+        user_id = _get_user_id(current_user, db)
+        session = db.query(ChatSession).filter(ChatSession.id == req.session_id).first()
+        if session and session.user_id == user_id:
+            db.add(ChatMessage(session_id=req.session_id, role="user", content=req.question))
+            sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
+            relevant_json = json.dumps([{"doc_id": d["doc_id"], "filename": d["filename"]} for d in relevant_docs[:3]])
+            db.add(ChatMessage(
+                session_id=req.session_id, role="assistant", content=answer,
+                sources=sources_json,
+            ))
+            if not session.title:
+                session.title = req.question[:100]
+            db.commit()
 
     return GlobalAskResponse(
         answer=answer,

@@ -9,6 +9,8 @@ import {
   getSessions,
   ChatSession,
   deleteSession,
+  createSession,
+  getMessages,
   askGlobal,
   DocSearchResult,
 } from "@/lib/chat";
@@ -37,6 +39,7 @@ export default function ChatMasterPage() {
   const [globalMessages, setGlobalMessages] = useState<GlobalMsg[]>([]);
   const [globalQuestion, setGlobalQuestion] = useState("");
   const [globalLoading, setGlobalLoading] = useState(false);
+  const [globalSessionId, setGlobalSessionId] = useState<string | null>(null);
   const globalEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,6 +116,27 @@ export default function ChatMasterPage() {
       doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+  // doc_id → filename lookup
+  const docNameMap = new Map(documents.map((d) => [d.id, d.filename]));
+
+  const handleSessionClick = async (session: ChatSession, e: React.MouseEvent) => {
+    if (session.doc_id === "__global__") {
+      e.preventDefault();
+      setGlobalSessionId(session.id);
+      try {
+        const msgs = await getMessages(session.id);
+        const loaded: GlobalMsg[] = msgs.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          sources: m.sources ? JSON.parse(m.sources) : undefined,
+        }));
+        setGlobalMessages(loaded);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   const handleGlobalSend = async () => {
     if (!globalQuestion.trim() || globalLoading) return;
     const q = globalQuestion;
@@ -120,7 +144,15 @@ export default function ChatMasterPage() {
     setGlobalQuestion("");
     setGlobalLoading(true);
     try {
-      const data = await askGlobal(q);
+      // Create session on first message if needed
+      let sid = globalSessionId;
+      if (!sid) {
+        const session = await createSession("__global__", q.slice(0, 100));
+        sid = session.id;
+        setGlobalSessionId(sid);
+        setSessions((prev) => [session, ...prev]);
+      }
+      const data = await askGlobal(q, sid);
       setGlobalMessages((prev) => [
         ...prev,
         {
@@ -195,39 +227,49 @@ export default function ChatMasterPage() {
                 Lịch sử trò chuyện
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {sessions.slice(0, 9).map((session) => (
-                  <Link
-                    key={session.id}
-                    href={`/chat/${session.doc_id}?session=${session.id}`}
-                    className="group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-primary hover:shadow-md transition-all"
-                  >
-                    <button
-                      onClick={(e) => handleDeleteSession(session.id, e)}
-                      className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
-                      title="Xóa phiên"
+                {sessions.slice(0, 9).map((session) => {
+                  const isGlobal = session.doc_id === "__global__";
+                  const docName = isGlobal
+                    ? "Chat tổng hợp"
+                    : docNameMap.get(session.doc_id) || session.doc_id;
+                  return (
+                    <Link
+                      key={session.id}
+                      href={isGlobal ? "/chat" : `/chat/${session.doc_id}?session=${session.id}`}
+                      onClick={(e) => handleSessionClick(session, e)}
+                      className="group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-primary hover:shadow-md transition-all"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      <button
+                        onClick={(e) => handleDeleteSession(session.id, e)}
+                        className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
+                        title="Xóa phiên"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                    <h3 className="font-medium text-gray-800 truncate pr-6">
-                      {session.title || "Cuộc trò chuyện"}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formatDate(session.updated_at)}
-                    </p>
-                  </Link>
-                ))}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                      <p className="text-xs text-primary font-medium truncate pr-6">
+                        {docName}
+                      </p>
+                      <h3 className="font-medium text-gray-800 truncate pr-6 mt-0.5">
+                        {session.title || "Cuộc trò chuyện"}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDate(session.updated_at)}
+                      </p>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -380,7 +422,7 @@ export default function ChatMasterPage() {
                                 : "bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-600"
                             }`}
                           >
-                            {doc.filename}
+                            {docNameMap.get(doc.doc_id) || doc.filename}
                           </Link>
                         ))}
                       </div>
@@ -403,7 +445,11 @@ export default function ChatMasterPage() {
                                 : "bg-white text-gray-500"
                             }`}
                           >
-                            {src.file}:{src.lines}
+                            {(() => {
+                              const srcId = src.file.replace(/\.md$/i, "");
+                              const realName = docNameMap.get(srcId);
+                              return realName ? `${realName}:${src.lines}` : `${src.file}:${src.lines}`;
+                            })()}
                           </span>
                         ))}
                       </div>

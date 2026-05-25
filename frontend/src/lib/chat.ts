@@ -118,7 +118,8 @@ export async function searchMasterTree(
 }
 
 export async function askGlobal(
-  question: string
+  question: string,
+  sessionId?: string
 ): Promise<{
   answer: string;
   sources: { file: string; lines: string }[];
@@ -127,7 +128,7 @@ export async function askGlobal(
   const res = await fetch(`${API}/chat/ask-global`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, session_id: sessionId }),
   });
   if (!res.ok) throw new Error("Global ask failed");
   return res.json();

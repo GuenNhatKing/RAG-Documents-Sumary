@@ -181,7 +181,7 @@ Reply EXACTLY in JSON:
         return []
 
 
-def build_context_from_markdown(tree_data: Any, node_list: List[str], markdown_path: str) -> str:
+def build_context_from_markdown(tree_data: Any, node_list: List[str], markdown_path: str, display_name: str = "") -> str:
     """Task 2.2: Trích xuất nội dung theo dòng từ file .md duy nhất."""
     if not os.path.exists(markdown_path):
         return f"⚠️ Không tìm thấy file markdown tại: {markdown_path}"
@@ -210,8 +210,9 @@ def build_context_from_markdown(tree_data: Any, node_list: List[str], markdown_p
         segment = all_lines[start_idx:end_idx]
 
         if segment:
+            source_file = display_name if display_name else os.path.basename(markdown_path)
             source_tag = (
-                f"[Nguồn: {os.path.basename(markdown_path)}, "
+                f"[Nguồn: {source_file}, "
                 f"Dòng: {boundary['start']}-{boundary['end'] or '...'}]"
             )
             context_parts.append(f"{source_tag}\n{''.join(segment).strip()}")
