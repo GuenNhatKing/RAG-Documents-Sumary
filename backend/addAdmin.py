@@ -24,6 +24,6 @@ def add_user(username: str, password: str, role: str):
     print(f"Created {role} user: {username}")
 
 if __name__ == "__main__":
-    add_user("alice", "secret", "admin")
-    add_user("david", "secret", "can_bo")
-    add_user("carol", "secret", "quan_ly")
+    add_user("admin", "12345678", "admin")
+    add_user("canbo", "12345678", "can_bo")
+    add_user("quanly", "12345678", "quan_ly")
