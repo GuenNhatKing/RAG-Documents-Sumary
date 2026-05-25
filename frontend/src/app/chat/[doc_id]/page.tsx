@@ -47,9 +47,13 @@ export default function ChatPage({ params }: PageProps) {
 
   useEffect(() => {
     setDocLoading(true);
-    fetch(`${API}/documents/${doc_id}/markdown`)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const headers: Record<string, string> = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+    fetch(`${API}/documents/${doc_id}/markdown`, { headers })
       .then((r) => r.json())
-      .then((data) => setMarkdown(data.markdown))
+      .then((data) => setMarkdown(data.markdown ?? "# Không thể tải tài liệu"))
       .catch(() => setMarkdown("# Không thể tải tài liệu"))
       .finally(() => setDocLoading(false));
   }, [doc_id]);

@@ -1,38 +1,46 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import DocumentViewerClient from "./viewer-client";
+import { API, getToken } from "@/lib/auth";
 
-type PageProps = {
-  params: Promise<{
-    doc_id: string;
-  }>;
-  searchParams: Promise<{
-    highlight?: string;
-  }>;
-};
+export default function DocumentViewPage() {
+  const params = useParams<{ doc_id: string }>();
+  const searchParams = useSearchParams();
+  const docId = params.doc_id;
+  const highlight = searchParams.get("highlight") ?? "";
 
-type DocumentMarkdownResponse = {
-  doc_id: string;
-  markdown: string;
-};
+  const [markdown, setMarkdown] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
-export default async function DocumentViewPage({
-  params,
-  searchParams,
-}: PageProps) {
-  const { doc_id } = await params;
-  const { highlight } = await searchParams;
-
-  const res = await fetch(
-    `http://127.0.0.1:8000/documents/${doc_id}/markdown`,
-    {
-      method: "GET",
-      headers: {
+  useEffect(() => {
+    async function load() {
+      const token = getToken();
+      const headers: Record<string, string> = {
         Accept: "application/json",
-      },
-      cache: "no-store",
-    }
-  );
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-  if (!res.ok) {
+      try {
+        const res = await fetch(
+          `${API}/documents/${docId}/markdown`,
+          { headers, cache: "no-store" }
+        );
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+        const data = await res.json();
+        setMarkdown(data.markdown);
+      } catch {
+        setError(true);
+      }
+    }
+    load();
+  }, [docId]);
+
+  if (error) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-white p-8">
         <p className="text-red-600 text-xl">
@@ -42,13 +50,19 @@ export default async function DocumentViewPage({
     );
   }
 
-  const data = (await res.json()) as DocumentMarkdownResponse;
+  if (markdown === null) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-white p-8">
+        <p className="text-gray-500">Đang tải tài liệu…</p>
+      </main>
+    );
+  }
 
   return (
     <DocumentViewerClient
-      markdown={data.markdown}
-      highlight={highlight ?? ""}
-      docId={doc_id}
+      markdown={markdown}
+      highlight={highlight}
+      docId={docId}
     />
   );
 }

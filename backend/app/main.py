@@ -1,6 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from pathlib import Path
 import shutil
 import os
@@ -18,10 +19,17 @@ from .services.normalized_text import generate_normalized_text
 from .services.markdown_docs import generate_markdown_doc
 from .services.semantic_trees import generate_semantic_tree
 from .services.ocr import extract_text
+from .services.master_tree import remove_doc_from_master_tree
+from .api.auth import get_current_user, TokenData
 
 from .api import upload
 
 app = FastAPI()
+
+# =========================================================
+# AUTH HELPER
+# =========================================================
+auth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # =========================================================
 # CORS MIDDLEWARE (Cấu hình mở cổng kết nối Frontend Next.js)
@@ -59,13 +67,17 @@ async def ping():
 
 
 # =========================================================
-# LIST DOCUMENTS ENDPOINT
+# LIST DOCUMENTS ENDPOINT (auth required, role-filtered)
 # =========================================================
 @app.get("/documents")
-def list_documents():
+def list_documents(current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
-        docs = db.query(Document).order_by(Document.created_at.desc()).all()
+        query = db.query(Document).order_by(Document.created_at.desc())
+        # nguoi_dung/quan_ly only see processed documents
+        if current_user.role not in ("admin", "can_bo"):
+            query = query.filter(Document.status == DocumentStatus.PROCESSED)
+        docs = query.all()
         return [
             {
                 "id": d.id,
@@ -73,6 +85,8 @@ def list_documents():
                 "status": d.status.value if hasattr(d.status, 'value') else d.status,
                 "total_pages": d.total_pages,
                 "created_at": d.created_at.isoformat(),
+                "markdown_path": d.markdown_path,
+                "json_tree_path": d.json_tree_path,
             }
             for d in docs
         ]
@@ -84,7 +98,7 @@ def list_documents():
 # TASK 4.1 - UPLOAD FILE ENDPOINT (Đã sửa lỗi raw_file_path & UUID)
 # =========================================================
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         # 1. Chủ động sinh UUID dạng chuỗi để làm khóa chính đồng bộ hệ thống
@@ -129,7 +143,7 @@ async def upload_file(file: UploadFile = File(...)):
 # TASK 4.1 - EXTRACT TEXT ENDPOINT (Đã sửa str ID & raw_file_path)
 # =========================================================
 @app.post("/documents/{document_id}/extract-text")
-async def extract_text_api(document_id: str):
+async def extract_text_api(document_id: str, current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == document_id).first()
@@ -163,7 +177,7 @@ async def extract_text_api(document_id: str):
 # GENERATE MARKDOWN ENDPOINT (Phase A - dừng ở .md, chờ review)
 # =========================================================
 @app.post("/documents/{document_id}/generate-md")
-async def generate_md_api(document_id: str):
+async def generate_md_api(document_id: str, current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == document_id).first()
@@ -208,7 +222,7 @@ async def generate_md_api(document_id: str):
 # GET DOCUMENT MARKDOWN (Review endpoint)
 # =========================================================
 @app.get("/documents/{doc_id}/markdown")
-def get_document_markdown(doc_id: str):
+def get_document_markdown(doc_id: str, current_user: TokenData = Depends(get_current_user)):
     markdown_path = (
         Path("/work/backend/data/markdown_docs") / f"{doc_id}.md"
     )
@@ -231,7 +245,7 @@ def get_document_markdown(doc_id: str):
 # GET DOCUMENT RAW FILE (PDF gốc)
 # =========================================================
 @app.get("/documents/{doc_id}/raw")
-def get_document_raw(doc_id: str):
+def get_document_raw(doc_id: str, current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == doc_id).first()
@@ -257,7 +271,7 @@ def get_document_raw(doc_id: str):
 # EDIT DOCUMENT MARKDOWN (Cán bộ sửa .md trước khi confirm)
 # =========================================================
 @app.patch("/documents/{doc_id}/markdown")
-def edit_document_markdown(doc_id: str, body: dict):
+def edit_document_markdown(doc_id: str, body: dict, current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == doc_id).first()
@@ -297,7 +311,7 @@ def edit_document_markdown(doc_id: str, body: dict):
 # CONFIRM MARKDOWN & BUILD SEMANTIC TREE (Phase B - cán bộ xác nhận)
 # =========================================================
 @app.post("/documents/{document_id}/confirm-md")
-async def confirm_md_api(document_id: str):
+async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == document_id).first()
@@ -341,7 +355,7 @@ async def confirm_md_api(document_id: str):
 # BUILD TREE ENDPOINT (Legacy - kept for backward compatibility)
 # =========================================================
 @app.post("/documents/{document_id}/build-tree")
-async def build_tree(document_id: str):
+async def build_tree(document_id: str, current_user: TokenData = Depends(get_current_user)):
     try:
         normalized_path = generate_normalized_text(document_id)
 
@@ -366,6 +380,85 @@ async def build_tree(document_id: str):
         raise HTTPException(status_code=400, detail=f"Invalid input or configuration: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
+
+
+# =========================================================
+# GET DOCUMENT DETAIL (auth required)
+# =========================================================
+@app.get("/documents/{doc_id}")
+def get_document_detail(doc_id: str, current_user: TokenData = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return {
+            "id": doc.id,
+            "filename": doc.filename,
+            "status": doc.status.value if hasattr(doc.status, 'value') else doc.status,
+            "total_pages": doc.total_pages,
+            "created_at": doc.created_at.isoformat(),
+            "markdown_path": doc.markdown_path,
+            "json_tree_path": doc.json_tree_path,
+            "raw_file_path": doc.raw_file_path,
+        }
+    finally:
+        db.close()
+
+
+# =========================================================
+# DELETE DOCUMENT (admin/can_bo only)
+# =========================================================
+@app.delete("/documents/{doc_id}")
+def delete_document(doc_id: str, current_user: TokenData = Depends(get_current_user)):
+    if current_user.role not in ("admin", "can_bo"):
+        raise HTTPException(status_code=403, detail="Not authorized to delete documents")
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        # Delete files from disk
+        for path_str in [doc.raw_file_path, doc.markdown_path, doc.json_tree_path]:
+            if path_str:
+                p = Path(path_str)
+                if p.exists():
+                    p.unlink()
+
+        # Delete extracted_text directory
+        extract_dir = Path(f"data/extracted_text/{doc_id}")
+        if extract_dir.exists():
+            shutil.rmtree(extract_dir)
+
+        # Delete extract_work directory
+        work_dir = Path(f"data/extract_work/{doc_id}")
+        if work_dir.exists():
+            shutil.rmtree(work_dir)
+
+        # Delete chat sessions for this document (and their messages via ORM cascade)
+        sessions = db.query(ChatSession).filter(ChatSession.doc_id == doc_id).all()
+        for s in sessions:
+            db.delete(s)
+
+        # Remove from master tree
+        try:
+            remove_doc_from_master_tree(doc_id)
+        except Exception:
+            pass
+
+        # Delete document DB record
+        db.delete(doc)
+        db.commit()
+        return {"detail": "Document deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+    finally:
+        db.close()
+
 
 # =========================================================
 # CELERY WORKER TEST
