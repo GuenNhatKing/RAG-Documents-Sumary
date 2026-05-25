@@ -35,10 +35,12 @@ MD_SECTION_MAX_CHARS = int(os.getenv("MD_SECTION_MAX_CHARS", "5000"))
 MD_BLOCK_TEXT_CHARS = int(os.getenv("MD_BLOCK_TEXT_CHARS", "140"))
 MD_MAX_HEADING_LEVEL = int(os.getenv("MD_MAX_HEADING_LEVEL", "4"))
 MD_SAVE_REPORTS = os.getenv("MD_SAVE_REPORTS", "true").lower() == "true"
+SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 MD_ALLOW_PARTIAL = os.getenv("MD_ALLOW_PARTIAL", "true").lower() == "true"
 MD_JSON_RETRY_ATTEMPTS = int(os.getenv("MD_JSON_RETRY_ATTEMPTS", "3"))
 MD_JSON_RETRY_WAIT_SECONDS = int(os.getenv("MD_JSON_RETRY_WAIT_SECONDS", "2"))
 MD_MAX_WORKERS = int(os.getenv("MD_MAX_WORKERS", "4"))
+SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 
 # =========================================================
 # DATA
@@ -148,7 +150,14 @@ def save_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
+def _save_debug_json(path: Path, data: Any) -> None:
+    """Always save, regardless of SAVE_DEBUG_FILES. Used for llm_failures only."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
 def save_text(path: Path, text: str) -> None:
+    if not MD_SAVE_REPORTS:
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
 
@@ -515,7 +524,7 @@ def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, f
         elapsed = time.time() - t0
         if not content.strip():
             _log_llm_call(stage, secid, len(prompt), 0, elapsed, False, "empty_response")
-            save_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":"LLM returned empty response","raw_response":"","prompt_preview":prompt[:2500]})
+            _save_debug_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":"LLM returned empty response","raw_response":"","prompt_preview":prompt[:2500]})
             raise EmptyLLMResponseError(f"LLM returned empty response for {stage} section={secid}")
         try:
             result = extract_json_object(content)
@@ -525,7 +534,7 @@ def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, f
             raise
         except Exception as e:
             _log_llm_call(stage, secid, len(prompt), len(content), elapsed, False, str(e))
-            save_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":str(e),"raw_response":content[:5000],"prompt_preview":prompt[:2500]})
+            _save_debug_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":str(e),"raw_response":content[:5000],"prompt_preview":prompt[:2500]})
             raise LLMJSONParseError(f"Could not parse JSON from {stage} section={secid}: {str(e)[:100]}")
     return _call()
 
@@ -944,7 +953,8 @@ def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None)
         _log_stage("PARSE", lines=len(lines), blocks=len(blocks), sections=len(sections), duration=f"{time.time()-t0:.2f}s")
 
         root=work_dir(document_id)
-        save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
+        if SAVE_DEBUG_FILES:
+            save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
         c=client(); results=[None]*len(sections); completed=[]; failed=[]
 
         t_llm_start=time.time()
@@ -968,8 +978,9 @@ def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None)
                 idx, res, sec_duration = fut.result()
                 sec=sections[idx]
                 results[idx]=res
-                save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
-                save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
+                if SAVE_DEBUG_FILES:
+                    save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
+                    save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
                 node_count=len(res["outline"])
                 status_str=res["status"]
                 _log_stage("SECTION", id=sec.section_id, total=len(sections), blocks=len(sec.block_ids), nodes=node_count, status=status_str, duration=f"{sec_duration:.2f}s")
@@ -986,13 +997,17 @@ def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None)
         checked=hierarchical_validation(merged)
         checked=sorted({n.block_id:n for n in checked}.values(),key=lambda n:n.line_id)
         _log_stage("OUTLINE_MERGE", raw_nodes=len(merged), final_nodes=len(checked), duration=f"{time.time()-t0:.2f}s")
-        save_json(root/"merged_outline.json", [asdict(x) for x in merged]); save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked]); save_json(root/"tree_nodes.json", build_tree_nodes(checked))
+        if SAVE_DEBUG_FILES:
+            save_json(root/"merged_outline.json", [asdict(x) for x in merged]); save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked]); save_json(root/"tree_nodes.json", build_tree_nodes(checked))
 
         t0=time.time()
         md=render_markdown(lines,checked)
         validation=validate_lossless(lines,md)
         _log_stage("RENDER", md_chars=len(md), md_lines=len(md.splitlines()), missing=validation["missing_count"], duration=f"{time.time()-t0:.2f}s")
-        save_json(root/"lossless_validation.json", validation); save_text(root/"final.md", md); outp.write_text(md,encoding="utf-8")
+        if SAVE_DEBUG_FILES:
+            save_json(root/"lossless_validation.json", validation)
+            save_text(root/"final.md", md)
+        outp.write_text(md,encoding="utf-8")
 
         total_duration=round(time.time()-start, 2)
         ok_sections=len([s for s in completed if s not in [f.get("section_id") for f in failed]])

@@ -4,6 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from app import models
+
 _BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 

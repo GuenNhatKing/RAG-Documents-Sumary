@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -18,6 +19,7 @@ EXTRACT_WORK_DIR = DATA_DIR / "extract_work"
 
 OCR_LANG = "vie+eng"
 OCR_DPI = 300
+SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 MIN_NATIVE_TEXT_CHARS = 500
 
 SIGNATURE_NOISE_KEYWORDS = (
@@ -207,10 +209,11 @@ def extract_text(file_path: str, document_id: str) -> None:
 
                 reports.append(report)
 
-                _save_json(
-                    _work_dir(document_id) / "pages" / f"page_{page_index:03d}.json",
-                    asdict(report),
-                )
+                if SAVE_DEBUG_FILES:
+                    _save_json(
+                        _work_dir(document_id) / "pages" / f"page_{page_index:03d}.json",
+                        asdict(report),
+                    )
 
                 _update_progress(
                     document_id,
@@ -233,17 +236,19 @@ def extract_text(file_path: str, document_id: str) -> None:
 
                 reports.append(report)
 
-                _save_json(
-                    _work_dir(document_id) / "errors" / f"page_{page_index:03d}.json",
-                    asdict(report),
-                )
+                if SAVE_DEBUG_FILES:
+                    _save_json(
+                        _work_dir(document_id) / "errors" / f"page_{page_index:03d}.json",
+                        asdict(report),
+                    )
 
                 _log(f"Page {page_index} failed: {exc}")
 
-        _save_json(
-            _work_dir(document_id) / "report.json",
-            [asdict(report) for report in reports],
-        )
+        if SAVE_DEBUG_FILES:
+            _save_json(
+                _work_dir(document_id) / "report.json",
+                [asdict(report) for report in reports],
+            )
 
         _update_progress(
             document_id,

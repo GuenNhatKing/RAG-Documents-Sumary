@@ -1,4 +1,4 @@
-# addAdmin.py
+# initUser.py
 """Script to insert privileged users (admin, can_bo, quan_ly) into the database.
 Run this once after the tables are created.
 """

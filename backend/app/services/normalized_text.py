@@ -66,6 +66,7 @@ OCR_ENABLE_LLM_REVIEW = os.getenv("OCR_ENABLE_LLM_REVIEW", "true").lower() == "t
 OCR_ENABLE_SEMANTIC_VALIDATION = os.getenv("OCR_ENABLE_SEMANTIC_VALIDATION", "true").lower() == "true"
 OCR_SEMANTIC_BATCH_SIZE = int(os.getenv("OCR_SEMANTIC_BATCH_SIZE", "3"))
 OCR_SAVE_REPORTS = os.getenv("OCR_SAVE_REPORTS", "false").lower() == "true"
+SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 
 
 # =========================================================
@@ -946,8 +947,9 @@ def review_segments_with_llm(client: OpenAI, segments: list[SegmentRecord], docu
             out.extend(batch_reviews)
 
         if document_id:
-            save_json_always(work_dir(document_id) / "batch_reports" / f"segment_review_{batch_index:03d}.json", [asdict(x) for x in batch_reviews])
-            save_json_always(work_dir(document_id) / "llm_review.partial.json", [asdict(x) for x in sorted(out, key=lambda r: r.segment_id)])
+            if SAVE_DEBUG_FILES:
+                save_json_always(work_dir(document_id) / "batch_reports" / f"segment_review_{batch_index:03d}.json", [asdict(x) for x in batch_reviews])
+                save_json_always(work_dir(document_id) / "llm_review.partial.json", [asdict(x) for x in sorted(out, key=lambda r: r.segment_id)])
             update_progress(
                 document_id,
                 status="reviewing_segments",
@@ -1224,7 +1226,8 @@ def semantic_validate_noise_segments(
                 report.append({**c, "remove_decision": "MANUAL_REVIEW", "can_remove": False, "reason": f"noise validation failed: {exc}"})
 
         if document_id:
-            save_json_always(work_dir(document_id) / "noise_validation.partial.json", report)
+            if SAVE_DEBUG_FILES:
+                save_json_always(work_dir(document_id) / "noise_validation.partial.json", report)
             update_progress(document_id, status="validating_noise", completed_noise_batches=batch_index)
 
     return allowed, report
@@ -1507,7 +1510,8 @@ def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentReco
                 })
 
         if document_id:
-            save_json_always(work_dir(document_id) / "semantic_validation.partial.json", report)
+            if SAVE_DEBUG_FILES:
+                save_json_always(work_dir(document_id) / "semantic_validation.partial.json", report)
             update_progress(document_id, status="validating_semantic_fixes", completed_semantic_batches=batch_index)
 
     return allowed, report
@@ -1851,28 +1855,32 @@ def generate_normalized_text(document_id: str) -> Path:
     try:
         t0 = time.time()
         raw_text = load_raw_extracted_text(document_id)
-        save_text(work_dir(document_id) / "raw_extracted_text.txt", raw_text)
+        if SAVE_DEBUG_FILES:
+            save_text(work_dir(document_id) / "raw_extracted_text.txt", raw_text)
         _log_stage("LOAD_RAW", chars=len(raw_text), duration=f"{time.time()-t0:.2f}s")
         update_progress(document_id, status="loaded_raw_text")
 
         t0 = time.time()
         prepared = prepare_lines(raw_text)
         _log_stage("PREPARE", lines=len(prepared), duration=f"{time.time()-t0:.2f}s")
-        save_session_json(document_id, "prepared_lines.json", [asdict(x) for x in prepared])
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "prepared_lines.json", [asdict(x) for x in prepared])
         update_progress(document_id, status="prepared_lines", prepared_line_count=len(prepared))
 
         t0 = time.time()
         merged_lines = merge_visual_wrapped_lines(prepared)
         reduction = len(prepared) - len(merged_lines)
         _log_stage("MERGE", before=len(prepared), after=len(merged_lines), reduction=reduction, duration=f"{time.time()-t0:.2f}s")
-        save_session_json(document_id, "merged_lines.json", [asdict(x) for x in merged_lines])
-        save_partial_normalized(document_id, "01_after_merge.txt", "\n".join(x.text for x in merged_lines).strip() + "\n")
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "merged_lines.json", [asdict(x) for x in merged_lines])
+            save_partial_normalized(document_id, "01_after_merge.txt", "\n".join(x.text for x in merged_lines).strip() + "\n")
         update_progress(document_id, status="merged_lines", merged_line_count=len(merged_lines))
 
         t0 = time.time()
         segments = build_sentence_segments(merged_lines)
         _log_stage("SEGMENT", segments=len(segments), duration=f"{time.time()-t0:.2f}s")
-        save_session_json(document_id, "segments.json", [asdict(x) for x in segments])
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "segments.json", [asdict(x) for x in segments])
         update_progress(document_id, status="built_segments", segment_count=len(segments))
 
         t0 = time.time()
@@ -1885,7 +1893,8 @@ def generate_normalized_text(document_id: str) -> Path:
         remove_count = sum(1 for r in reviews if r.decision == "REMOVE_NOISE")
         manual_count = sum(1 for r in reviews if r.decision == "MANUAL_REVIEW")
         _log_stage("LLM_REVIEW", total=len(reviews), apply=apply_count, keep=keep_count, remove=remove_count, manual=manual_count, duration=f"{llm_duration:.2f}s")
-        save_session_json(document_id, "llm_review.json", [asdict(x) for x in reviews])
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "llm_review.json", [asdict(x) for x in reviews])
         update_progress(document_id, status="reviewed_segments", review_count=len(reviews))
 
         t0 = time.time()
@@ -1897,8 +1906,9 @@ def generate_normalized_text(document_id: str) -> Path:
         )
         sem_duration = time.time() - t0
         _log_stage("SEMANTIC_VALIDATE", candidates=len(semantic_report), allowed=len(semantic_allowed), duration=f"{sem_duration:.2f}s")
-        save_session_json(document_id, "semantic_validation.json", semantic_report)
-        save_session_json(document_id, "semantic_allowed.json", semantic_allowed)
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "semantic_validation.json", semantic_report)
+            save_session_json(document_id, "semantic_allowed.json", semantic_allowed)
         update_progress(
             document_id,
             status="validated_semantic_fixes",
@@ -1917,8 +1927,9 @@ def generate_normalized_text(document_id: str) -> Path:
         )
         noise_duration = time.time() - t0
         _log_stage("NOISE_VALIDATE", candidates=len(noise_report), allowed_removal=len(noise_allowed), duration=f"{noise_duration:.2f}s")
-        save_session_json(document_id, "noise_validation.json", noise_report)
-        save_session_json(document_id, "noise_allowed.json", noise_allowed)
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "noise_validation.json", noise_report)
+            save_session_json(document_id, "noise_allowed.json", noise_allowed)
         update_progress(
             document_id,
             status="validated_noise",
@@ -1934,24 +1945,29 @@ def generate_normalized_text(document_id: str) -> Path:
             noise_allowed=noise_allowed,
         )
         _log_stage("APPLY_FIXES", segments=len(fixed_segments), duration=f"{time.time()-t0:.2f}s")
-        save_session_json(document_id, "normalized_report.json", review_report)
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "normalized_report.json", review_report)
 
         joined_fixed = "\n".join(fixed_segments)
-        save_partial_normalized(document_id, "02_after_apply_reviews.txt", joined_fixed.strip() + "\n")
+        if SAVE_DEBUG_FILES:
+            save_partial_normalized(document_id, "02_after_apply_reviews.txt", joined_fixed.strip() + "\n")
         update_progress(document_id, status="applied_reviews", fixed_segment_count=len(fixed_segments))
 
         t0 = time.time()
         normalized_text = final_merge_and_cleanup(joined_fixed)
         _log_stage("FINAL_MERGE", chars=len(normalized_text), duration=f"{time.time()-t0:.2f}s")
-        save_partial_normalized(document_id, "03_final_normalized_preview.txt", normalized_text)
+        if SAVE_DEBUG_FILES:
+            save_partial_normalized(document_id, "03_final_normalized_preview.txt", normalized_text)
 
         t0 = time.time()
         validation = validate_loss_signal(prepared, normalized_text)
         _log_stage("VALIDATE_LOSS", exact=validation["summary"]["EXACT_FOUND"], fuzzy=validation["summary"]["FUZZY_FOUND"], missing=validation["summary"]["MISSING"], duration=f"{time.time()-t0:.2f}s")
-        save_session_json(document_id, "validation.json", validation)
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "validation.json", validation)
 
         applied_summary = build_applied_fixes_summary(review_report, semantic_report, noise_report)
-        save_session_json(document_id, "applied_fixes_summary.json", applied_summary)
+        if SAVE_DEBUG_FILES:
+            save_session_json(document_id, "applied_fixes_summary.json", applied_summary)
 
         normalized_path.parent.mkdir(parents=True, exist_ok=True)
         normalized_path.write_text(normalized_text, encoding="utf-8")
