@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json, os, re, time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -26,8 +28,8 @@ LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
 LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
-MD_BATCH_SIZE = int(os.getenv("MD_BATCH_SIZE", "4"))
-MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "4000"))
+MD_BATCH_SIZE = int(os.getenv("MD_BATCH_SIZE", "2"))
+MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "3000"))
 MD_SECTION_MAX_BLOCKS = int(os.getenv("MD_SECTION_MAX_BLOCKS", "28"))
 MD_SECTION_MAX_CHARS = int(os.getenv("MD_SECTION_MAX_CHARS", "5000"))
 MD_BLOCK_TEXT_CHARS = int(os.getenv("MD_BLOCK_TEXT_CHARS", "140"))
@@ -36,6 +38,7 @@ MD_SAVE_REPORTS = os.getenv("MD_SAVE_REPORTS", "true").lower() == "true"
 MD_ALLOW_PARTIAL = os.getenv("MD_ALLOW_PARTIAL", "true").lower() == "true"
 MD_JSON_RETRY_ATTEMPTS = int(os.getenv("MD_JSON_RETRY_ATTEMPTS", "3"))
 MD_JSON_RETRY_WAIT_SECONDS = int(os.getenv("MD_JSON_RETRY_WAIT_SECONDS", "2"))
+MD_MAX_WORKERS = int(os.getenv("MD_MAX_WORKERS", "4"))
 
 # =========================================================
 # DATA
@@ -93,13 +96,15 @@ class OutlineNode:
 # FILE / LOG
 # =========================================================
 _log_file = None  # Will be set per pipeline run
+_log_lock = threading.Lock()
 
 
 def _log(msg: str) -> None:
     print(f"[MD-INCREMENTAL] {msg}", flush=True)
-    if _log_file:
-        _log_file.write(f"[{time.strftime('%H:%M:%S')}] {msg}\n")
-        _log_file.flush()
+    with _log_lock:
+        if _log_file:
+            _log_file.write(f"[{time.strftime('%H:%M:%S')}] {msg}\n")
+            _log_file.flush()
 
 
 def _log_stage(stage: str, **kwargs: Any) -> None:
@@ -107,9 +112,10 @@ def _log_stage(stage: str, **kwargs: Any) -> None:
     extras = " ".join(f"{k}={v}" for k, v in kwargs.items())
     msg = f"[MD-INCREMENTAL] [{stage}] {extras}"
     print(msg, flush=True)
-    if _log_file:
-        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [{stage}] {extras}\n")
-        _log_file.flush()
+    with _log_lock:
+        if _log_file:
+            _log_file.write(f"[{time.strftime('%H:%M:%S')}] [{stage}] {extras}\n")
+            _log_file.flush()
 
 
 def _log_llm_call(stage: str, section_id: int | None, prompt_chars: int,
@@ -123,9 +129,10 @@ def _log_llm_call(stage: str, section_id: int | None, prompt_chars: int,
         msg += f" error={error[:120]}"
     full = f"[MD-INCREMENTAL] [LLM] {msg}"
     print(full, flush=True)
-    if _log_file:
-        _log_file.write(f"[{time.strftime('%H:%M:%S')}] [LLM] {msg}\n")
-        _log_file.flush()
+    with _log_lock:
+        if _log_file:
+            _log_file.write(f"[{time.strftime('%H:%M:%S')}] [LLM] {msg}\n")
+            _log_file.flush()
 
 def work_dir(document_id: str) -> Path:
     return WORK_DIR / document_id
@@ -159,6 +166,7 @@ def effective_config() -> dict[str, Any]:
         "MD_ALLOW_PARTIAL": MD_ALLOW_PARTIAL, "MD_SAVE_REPORTS": MD_SAVE_REPORTS,
         "MD_JSON_RETRY_ATTEMPTS": MD_JSON_RETRY_ATTEMPTS,
         "MD_JSON_RETRY_WAIT_SECONDS": MD_JSON_RETRY_WAIT_SECONDS,
+        "MD_MAX_WORKERS": MD_MAX_WORKERS,
     }
 
 def update_progress(doc_id: str, **data: Any) -> None:
@@ -198,8 +206,11 @@ def cj(data: Any) -> str:
 # =========================================================
 # ROBUST JSON
 # =========================================================
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
 def extract_json_object(content: str) -> dict[str, Any]:
     raw = (content or "").strip()
+    raw = _THINK_RE.sub("", raw).strip()
     raw = re.sub(r"^```(?:json|JSON)?\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw).strip()
     for marker in ["\nINFO:", "\nERROR:", "\nWARNING:", "\nTraceback", "\n[GIN]"]:
@@ -822,7 +833,7 @@ def process_section(
     if not nodes:
         nodes = nodes_from_candidates(cands, byid, section.section_id)
 
-    nodes = structural_postprocess(nodes, byid)
+    # structural_postprocess removed here — runs once after merge at line 968
 
     return {
         "section_id": section.section_id,
@@ -934,34 +945,43 @@ def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None)
 
         root=work_dir(document_id)
         save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
-        c=client(); results=[]; completed=[]; failed=[]
+        c=client(); results=[None]*len(sections); completed=[]; failed=[]
 
         t_llm_start=time.time()
         update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=[], failed_sections=[])
-        for i, sec in enumerate(sections, 1):
+
+        def _run_section(idx: int, sec: SectionRecord) -> tuple[int, dict, float]:
             t_sec=time.time()
-            try: res=process_section(c,document_id,sec,blocks,byid)
+            try:
+                res=process_section(c,document_id,sec,blocks,byid)
             except Exception as e:
                 _log(f"Section {sec.section_id} hard fallback: {e}")
-                secblocks=[byid[i] for i in sec.block_ids if i in byid]
+                secblocks=[byid[b] for b in sec.block_ids if b in byid]
                 roles=parse_roles({}, {}, secblocks); cands=py_candidates(secblocks,roles); nodes=structural_postprocess(nodes_from_candidates(cands,byid,sec.section_id),byid)
                 res={"section_id":sec.section_id,"status":"failed_but_rendered","error":str(e),"roles":list(roles.values()),"candidates":cands,"outline":nodes}
-            results.append(res)
-            save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
-            save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
-            sec_duration=time.time()-t_sec
-            node_count=len(res["outline"])
-            status_str=res["status"]
-            _log_stage("SECTION", id=sec.section_id, total=len(sections), blocks=len(sec.block_ids), nodes=node_count, status=status_str, duration=f"{sec_duration:.2f}s")
-            completed.append(sec.section_id) if res["status"] in {"done","done_with_fallback","failed_but_rendered"} else failed.append({"section_id":sec.section_id,"error":res["error"]})
-            update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=completed, failed_sections=failed, current_section=sec.section_id, updated_at=time.time())
-            if res["status"]=="failed" and not MD_ALLOW_PARTIAL: raise RuntimeError(res["error"])
+            return idx, res, time.time()-t_sec
+
+        max_workers=min(MD_MAX_WORKERS, len(sections))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures={pool.submit(_run_section, i, sec): i for i, sec in enumerate(sections)}
+            for fut in as_completed(futures):
+                idx, res, sec_duration = fut.result()
+                sec=sections[idx]
+                results[idx]=res
+                save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
+                save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
+                node_count=len(res["outline"])
+                status_str=res["status"]
+                _log_stage("SECTION", id=sec.section_id, total=len(sections), blocks=len(sec.block_ids), nodes=node_count, status=status_str, duration=f"{sec_duration:.2f}s")
+                completed.append(sec.section_id) if res["status"] in {"done","done_with_fallback","failed_but_rendered"} else failed.append({"section_id":sec.section_id,"error":res["error"]})
+                update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=completed, failed_sections=failed, current_section=sec.section_id, updated_at=time.time())
+                if res["status"]=="failed" and not MD_ALLOW_PARTIAL: raise RuntimeError(res["error"])
         t_llm_total=time.time()-t_llm_start
 
         t0=time.time()
         merged=[]
         for r in results: merged.extend(r["outline"])
-        # Single structural_postprocess + hierarchical_validation pass (no redundant double-call)
+        # Single structural_postprocess + hierarchical_validation pass (per-section call removed)
         merged=structural_postprocess(merged,byid)
         checked=hierarchical_validation(merged)
         checked=sorted({n.block_id:n for n in checked}.values(),key=lambda n:n.line_id)

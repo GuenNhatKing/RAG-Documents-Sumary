@@ -54,8 +54,8 @@ LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
 LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
-OCR_BATCH_SIZE = int(os.getenv("OCR_BATCH_SIZE", "4"))
-OCR_MAX_PROMPT_CHARS = int(os.getenv("OCR_MAX_PROMPT_CHARS", "4000"))
+OCR_BATCH_SIZE = int(os.getenv("OCR_BATCH_SIZE", "2"))
+OCR_MAX_PROMPT_CHARS = int(os.getenv("OCR_MAX_PROMPT_CHARS", "3000"))
 OCR_SEGMENT_MAX_LINES = int(os.getenv("OCR_SEGMENT_MAX_LINES", "8"))
 OCR_SEGMENT_MAX_CHARS = int(os.getenv("OCR_SEGMENT_MAX_CHARS", "1200"))
 OCR_TEXT_SNIPPET_CHARS = int(os.getenv("OCR_TEXT_SNIPPET_CHARS", "700"))
@@ -64,8 +64,8 @@ OCR_JSON_RETRY_ATTEMPTS = int(os.getenv("OCR_JSON_RETRY_ATTEMPTS", "3"))
 OCR_JSON_RETRY_WAIT_SECONDS = int(os.getenv("OCR_JSON_RETRY_WAIT_SECONDS", "2"))
 OCR_ENABLE_LLM_REVIEW = os.getenv("OCR_ENABLE_LLM_REVIEW", "true").lower() == "true"
 OCR_ENABLE_SEMANTIC_VALIDATION = os.getenv("OCR_ENABLE_SEMANTIC_VALIDATION", "true").lower() == "true"
-OCR_SEMANTIC_BATCH_SIZE = int(os.getenv("OCR_SEMANTIC_BATCH_SIZE", "6"))
-OCR_SAVE_REPORTS = os.getenv("OCR_SAVE_REPORTS", "true").lower() == "true"
+OCR_SEMANTIC_BATCH_SIZE = int(os.getenv("OCR_SEMANTIC_BATCH_SIZE", "3"))
+OCR_SAVE_REPORTS = os.getenv("OCR_SAVE_REPORTS", "false").lower() == "true"
 
 
 # =========================================================
@@ -171,6 +171,14 @@ def _strip_markdown_fence(content: str) -> str:
     return s
 
 
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
+def _strip_think_blocks(content: str) -> str:
+    """Remove think blocks that qwen3 models sometimes emit."""
+    return _THINK_RE.sub("", content).strip()
+
+
 def _cut_accidental_logs(content: str) -> str:
     markers = ["\nINFO:", "\nERROR:", "\nWARNING:", "\nTraceback", "\n[GIN]", "\n127.0.0.1:"]
     end = len(content)
@@ -249,7 +257,7 @@ def _try_json_object(content: str) -> dict[str, Any] | None:
 
 def extract_json_object(content: str) -> dict[str, Any]:
     raw = content or ""
-    s = _cut_accidental_logs(_strip_markdown_fence(raw))
+    s = _cut_accidental_logs(_strip_think_blocks(_strip_markdown_fence(raw)))
     candidates = [s]
     balanced = _extract_first_balanced_object(s)
     if balanced:
@@ -364,11 +372,10 @@ def looks_footer_or_signature_line(text: str) -> bool:
 
 
 def is_probable_garbage_line(line: str) -> bool:
-    """Minimal generic garbage detector.
+    """Generic garbage detector for OCR artifacts in Vietnamese admin documents.
 
-    This function is intentionally weak.
-    It only catches format-level garbage that does not require document-specific knowledge.
-    Semantic noise removal is handled by an LLM validation pass with neighboring context.
+    Catches format-level garbage AND common OCR noise patterns observed in real data.
+    Semantic noise removal is still handled by LLM validation for borderline cases.
     """
     s = line.strip()
     if not s:
@@ -388,6 +395,29 @@ def is_probable_garbage_line(line: str) -> bool:
     # Very short symbol-heavy fragments, e.g. ", _".
     symbol_count = len(re.findall(r"[^A-Za-zÀ-ỹĐđ0-9\s]", s))
     if len(s) <= 8 and symbol_count >= max(2, len(letters_or_digits) + 1):
+        return True
+
+    # OCR noise: lines with trailing ". . . . ." or ".. .. .." patterns (common OCR garbage)
+    if re.search(r"(\.\s){3,}\.?\s*$", s):
+        return True
+
+    # OCR noise: lines with mostly dots, commas, or repeated punctuation
+    # High ratio of dots/commas relative to text length.
+    dots_and_commas = s.count(".") + s.count(",")
+    if len(s) > 5 and dots_and_commas / len(s) > 0.4:
+        return True
+
+    # OCR noise: lines that are mostly single letters or short fragments separated by spaces (e.g. "T a i l i e u")
+    # Pattern: alternating single chars and spaces with very few real words.
+    if re.match(r"^([A-Za-zÀ-ỹĐđ]\s){4,}[A-Za-zÀ-ỹĐđ]$", s):
+        return True
+
+    # OCR noise: lines that are just punctuation markers repeated (e.g. "........", "--------", "________")
+    if re.match(r"^([.\-=_*]{2,}\s*)+$", s):
+        return True
+
+    # OCR noise: very short lines with no letters or digits at all but longer than 12 chars (symbol-only spam)
+    if len(letters_or_digits) == 0 and len(s) > 12:
         return True
 
     return False
@@ -1309,6 +1339,30 @@ def chunk_list(items: list[Any], size: int) -> list[list[Any]]:
     return [items[i:i + size] for i in range(0, len(items), max(1, size))]
 
 
+# Fix kinds that are safe to auto-apply without semantic validation.
+_HIGH_CONFIDENCE_KINDS = {"SPELLING", "DIACRITIC"}
+
+
+def _is_high_confidence_fix(candidate: dict[str, Any]) -> bool:
+    """Return True if a fix candidate is safe to apply without LLM semantic validation.
+
+    Criteria:
+    - precheck passed (shape is safe)
+    - scope is WORD (single word, not phrase)
+    - kind is SPELLING or DIACRITIC (not OCR_ARTIFACT, PUNCTUATION, SPACING)
+    - has phrase context (at least one neighbor word)
+    """
+    if candidate.get("precheck") != "PASS":
+        return False
+    if candidate.get("scope") != "WORD":
+        return False
+    if candidate.get("kind") not in _HIGH_CONFIDENCE_KINDS:
+        return False
+    ctx = candidate.get("phrase_context", {})
+    has_context = bool(ctx.get("left_words")) or bool(ctx.get("right_words"))
+    return has_context
+
+
 def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentRecord], reviews: list[SegmentReview], document_id: str | None = None) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     """One-request semantic validation for OCR fixes.
 
@@ -1331,6 +1385,7 @@ def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentReco
 
     for batch_index, batch in enumerate(chunk_list(candidates, OCR_SEMANTIC_BATCH_SIZE), start=1):
         passed: list[dict[str, Any]] = []
+        skipped: list[dict[str, Any]] = []
 
         for c in batch:
             if c["precheck"] != "PASS":
@@ -1339,6 +1394,21 @@ def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentReco
                     "apply_decision": "REJECT",
                     "reason": c["precheck_reason"],
                 })
+            elif _is_high_confidence_fix(c):
+                # Auto-allow: SPELLING/DIACRITIC single-word fix with context
+                item = {
+                    **c,
+                    "evaluation": {"action": "APPLY", "reason": "CONTEXT_MATCH"},
+                    "best_replacement": c["replacement"],
+                    "original_suggestion": c["replacement"],
+                    "best_shape_check": "PASS",
+                    "best_shape_reason": c["precheck_reason"],
+                    "apply_decision": "ALLOW",
+                    "reason": "CONTEXT_MATCH",
+                    "semantic_validation": "SKIPPED_HIGH_CONFIDENCE",
+                }
+                report.append(item)
+                allowed[c["fix_id"]] = item
             else:
                 passed.append(c)
 
