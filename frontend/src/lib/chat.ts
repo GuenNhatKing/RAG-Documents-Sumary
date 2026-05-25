@@ -44,10 +44,7 @@ export async function getSessions(docId?: string): Promise<ChatSession[]> {
     ? `${API}/chat/sessions?doc_id=${encodeURIComponent(docId)}`
     : `${API}/chat/sessions`;
   const res = await fetch(url, { headers: authHeaders() });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Failed to fetch sessions (${res.status}): ${err}`);
-  }
+  if (!res.ok) return [];
   return res.json();
 }
 

@@ -12,7 +12,7 @@ import {
   askGlobal,
   DocSearchResult,
 } from "@/lib/chat";
-import { API, getToken } from "@/lib/auth";
+import { API, getToken, getPayload } from "@/lib/auth";
 
 type Document = {
   id: string;
@@ -100,9 +100,18 @@ export default function ChatMasterPage() {
     return date.toLocaleDateString("vi-VN");
   };
 
-  const filteredDocs = documents.filter((doc) =>
-    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const payload = getPayload();
+  const role = payload?.role ?? "nguoi_dung";
+  const canSeeAll = role === "admin" || role === "can_bo";
+
+  const filteredDocs = documents
+    .filter((doc) => {
+      if (canSeeAll) return true;
+      return doc.status === "processed";
+    })
+    .filter((doc) =>
+      doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleGlobalSend = async () => {
     if (!globalQuestion.trim() || globalLoading) return;
