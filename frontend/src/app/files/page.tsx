@@ -110,6 +110,14 @@ export default function FilesPage() {
                               Review
                             </Link>
                           )}
+                          {doc.markdown_path && doc.status !== "pending" && doc.status !== "processing" && (
+                            <Link
+                              href={`/files/${doc.id}/review`}
+                              className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded text-xs hover:bg-yellow-100"
+                            >
+                              Sửa
+                            </Link>
+                          )}
                           {doc.status === "processed" && (
                             <Link
                               href={`/documents/${doc.id}/view`}

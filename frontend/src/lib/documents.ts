@@ -64,3 +64,11 @@ export async function confirmDocumentMd(docId: string): Promise<boolean> {
   });
   return res.ok;
 }
+
+export async function rebuildTree(docId: string): Promise<boolean> {
+  const res = await fetch(`${API}/documents/${docId}/build-tree`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  return res.ok;
+}

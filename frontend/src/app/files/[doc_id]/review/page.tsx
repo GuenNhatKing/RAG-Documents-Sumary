@@ -19,6 +19,7 @@ export default function ReviewPage() {
 
   const [markdown, setMarkdown] = useState("");
   const [filename, setFilename] = useState("");
+  const [docStatus, setDocStatus] = useState("");
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -30,11 +31,13 @@ export default function ReviewPage() {
         setStatus("error");
         return;
       }
-      if (doc.status !== "pending_review") {
-        router.replace("/files");
+      if (!doc.markdown_path) {
+        setErrorMsg("Tài liệu chưa có nội dung Markdown.");
+        setStatus("error");
         return;
       }
       setFilename(doc.filename);
+      setDocStatus(doc.status);
       const md = await getDocumentMarkdown(docId);
       if (md === null) {
         setErrorMsg("Không thể tải nội dung Markdown.");
@@ -78,6 +81,24 @@ export default function ReviewPage() {
     }
   };
 
+  const handleRebuild = async () => {
+    setStatus("confirming");
+    setErrorMsg("");
+    const saved = await saveDocumentMarkdown(docId, markdown);
+    if (!saved) {
+      setErrorMsg("Lưu thất bại.");
+      setStatus("error");
+      return;
+    }
+    const confirmed = await confirmDocumentMd(docId);
+    if (confirmed) {
+      setStatus("done");
+    } else {
+      setErrorMsg("Tạo lại cây thất bại.");
+      setStatus("error");
+    }
+  };
+
   return (
     <ProtectedRoute requiredRole={["admin", "can_bo"]}>
       <div className="min-h-[calc(100vh-64px)] flex flex-col p-8">
@@ -90,7 +111,7 @@ export default function ReviewPage() {
               &larr; Quay lại danh sách
             </button>
             <h1 className="text-2xl font-bold text-gray-800">
-              Review Markdown: {filename}
+              {docStatus === "pending_review" ? "Review" : "Sửa"} Markdown: {filename}
             </h1>
           </div>
           {status === "ready" && (
@@ -101,12 +122,21 @@ export default function ReviewPage() {
               >
                 Lưu chỉnh sửa
               </button>
-              <button
-                onClick={handleConfirm}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-              >
-                Xác nhận & Tạo cây
-              </button>
+              {docStatus === "pending_review" ? (
+                <button
+                  onClick={handleConfirm}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                >
+                  Xác nhận & Tạo cây
+                </button>
+              ) : (
+                <button
+                  onClick={handleRebuild}
+                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                >
+                  Lưu & Tạo lại cây
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -120,7 +150,11 @@ export default function ReviewPage() {
         {(status === "saving" || status === "confirming") && (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-primary">
-              {status === "saving" ? "Đang lưu…" : "Đang tạo cây ngữ nghĩa…"}
+              {status === "saving"
+                ? "Đang lưu…"
+                : docStatus === "pending_review"
+                  ? "Đang tạo cây ngữ nghĩa…"
+                  : "Đang tạo lại cây ngữ nghĩa…"}
             </p>
           </div>
         )}
@@ -128,7 +162,9 @@ export default function ReviewPage() {
         {status === "done" && (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <p className="text-green-600 text-lg font-semibold">
-              Tài liệu đã được xử lý thành công!
+              {docStatus === "pending_review"
+                ? "Tài liệu đã được xử lý thành công!"
+                : "Đã cập nhật Markdown và tạo lại cây thành công!"}
             </p>
             <button
               onClick={() => router.push("/files")}

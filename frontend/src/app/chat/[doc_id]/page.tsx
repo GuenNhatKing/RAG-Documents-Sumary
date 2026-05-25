@@ -8,7 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import SessionList from "@/components/SessionList";
 import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
 import { ChatMessage, getMessages, askQuestion } from "@/lib/chat";
-import { API } from "@/lib/auth";
+import { API, getToken } from "@/lib/auth";
 
 type SourceTag = {
   file: string;
@@ -47,7 +47,7 @@ export default function ChatPage({ params }: PageProps) {
 
   useEffect(() => {
     setDocLoading(true);
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getToken();
     const headers: Record<string, string> = token
       ? { Authorization: `Bearer ${token}` }
       : {};

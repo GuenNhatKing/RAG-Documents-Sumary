@@ -278,10 +278,10 @@ def edit_document_markdown(doc_id: str, body: dict, current_user: TokenData = De
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status != DocumentStatus.PENDING_REVIEW:
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
             )
 
         new_markdown = body.get("markdown")
@@ -318,10 +318,10 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status != DocumentStatus.PENDING_REVIEW:
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
             )
 
         doc.status = DocumentStatus.PROCESSING
