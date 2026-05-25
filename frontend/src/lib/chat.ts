@@ -98,3 +98,40 @@ export async function askQuestion(
     sources: data.result.sources,
   };
 }
+
+// ============================================================
+// MASTER TREE SEARCH & GLOBAL ASK
+// ============================================================
+export interface DocSearchResult {
+  doc_id: string;
+  filename: string;
+  summary: string;
+}
+
+export async function searchMasterTree(
+  query: string
+): Promise<DocSearchResult[]> {
+  const res = await fetch(`${API}/chat/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) throw new Error("Search failed");
+  return res.json();
+}
+
+export async function askGlobal(
+  question: string
+): Promise<{
+  answer: string;
+  sources: { file: string; lines: string }[];
+  relevant_docs: DocSearchResult[];
+}> {
+  const res = await fetch(`${API}/chat/ask-global`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ question }),
+  });
+  if (!res.ok) throw new Error("Global ask failed");
+  return res.json();
+}

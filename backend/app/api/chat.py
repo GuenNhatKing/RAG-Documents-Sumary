@@ -15,9 +15,6 @@ from app.api.auth import get_current_user, TokenData
 router = APIRouter()
 
 
-# ============================================================
-# DATABASE DEPENDENCY
-# ============================================================
 def get_db():
     db = SessionLocal()
     try:
@@ -26,9 +23,6 @@ def get_db():
         db.close()
 
 
-# ============================================================
-# HELPER
-# ============================================================
 def _get_user_id(current_user: TokenData, db: Session) -> str:
     user = db.query(User).filter(User.username == current_user.username).first()
     if not user:
@@ -42,7 +36,7 @@ def _check_ownership(session: ChatSession, user_id: str):
 
 
 # ============================================================
-# PYDANTIC SCHEMAS
+# SCHEMAS
 # ============================================================
 class ChatRequest(BaseModel):
     doc_id: str
@@ -93,6 +87,26 @@ class MessageResponse(BaseModel):
         from_attributes = True
 
 
+class SearchRequest(BaseModel):
+    query: str
+
+
+class DocResult(BaseModel):
+    doc_id: str
+    filename: str
+    summary: str
+
+
+class GlobalAskRequest(BaseModel):
+    question: str
+
+
+class GlobalAskResponse(BaseModel):
+    answer: str
+    sources: List[SourceDetail]
+    relevant_docs: List[DocResult]
+
+
 # ============================================================
 # SESSION CRUD (protected)
 # ============================================================
@@ -108,11 +122,8 @@ def create_session(
     db.commit()
     db.refresh(session)
     return SessionResponse(
-        id=session.id,
-        user_id=session.user_id,
-        doc_id=session.doc_id,
-        title=session.title,
-        created_at=session.created_at.isoformat(),
+        id=session.id, user_id=session.user_id, doc_id=session.doc_id,
+        title=session.title, created_at=session.created_at.isoformat(),
         updated_at=session.updated_at.isoformat(),
     )
 
@@ -127,47 +138,26 @@ def list_sessions(
     query = db.query(ChatSession).filter(ChatSession.user_id == user_id).order_by(ChatSession.updated_at.desc())
     if doc_id:
         query = query.filter(ChatSession.doc_id == doc_id)
-    sessions = query.all()
     return [
-        SessionResponse(
-            id=s.id,
-            user_id=s.user_id,
-            doc_id=s.doc_id,
-            title=s.title,
-            created_at=s.created_at.isoformat(),
-            updated_at=s.updated_at.isoformat(),
-        )
-        for s in sessions
+        SessionResponse(id=s.id, user_id=s.user_id, doc_id=s.doc_id, title=s.title,
+                        created_at=s.created_at.isoformat(), updated_at=s.updated_at.isoformat())
+        for s in query.all()
     ]
 
 
 @router.get("/sessions/{session_id}", response_model=SessionResponse)
-def get_session(
-    session_id: str,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user),
-):
+def get_session(session_id: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     _check_ownership(session, user_id)
-    return SessionResponse(
-        id=session.id,
-        user_id=session.user_id,
-        doc_id=session.doc_id,
-        title=session.title,
-        created_at=session.created_at.isoformat(),
-        updated_at=session.updated_at.isoformat(),
-    )
+    return SessionResponse(id=session.id, user_id=session.user_id, doc_id=session.doc_id, title=session.title,
+                           created_at=session.created_at.isoformat(), updated_at=session.updated_at.isoformat())
 
 
 @router.delete("/sessions/{session_id}")
-def delete_session(
-    session_id: str,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user),
-):
+def delete_session(session_id: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
@@ -179,77 +169,41 @@ def delete_session(
 
 
 @router.get("/sessions/{session_id}/messages", response_model=List[MessageResponse])
-def get_messages(
-    session_id: str,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user),
-):
+def get_messages(session_id: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     user_id = _get_user_id(current_user, db)
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     _check_ownership(session, user_id)
-    messages = (
-        db.query(ChatMessage)
-        .filter(ChatMessage.session_id == session_id)
-        .order_by(ChatMessage.created_at.asc())
-        .all()
-    )
-    return [
-        MessageResponse(
-            id=m.id,
-            session_id=m.session_id,
-            role=m.role,
-            content=m.content,
-            sources=m.sources,
-            created_at=m.created_at.isoformat(),
-        )
-        for m in messages
-    ]
+    messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc()).all()
+    return [MessageResponse(id=m.id, session_id=m.session_id, role=m.role, content=m.content,
+                            sources=m.sources, created_at=m.created_at.isoformat())
+            for m in messages]
 
 
 # ============================================================
-# CHAT ASK (protected, with session persistence)
+# SINGLE DOC ASK (protected)
 # ============================================================
 @router.post("/ask", response_model=ChatResponse)
-async def ask_document(
-    request: ChatRequest,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user),
-):
+async def ask_document(request: ChatRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     json_path = f"/work/backend/data/semantic_trees/{request.doc_id}.json"
     markdown_path = f"/work/backend/data/markdown_docs/{request.doc_id}.md"
 
     if not os.path.exists(json_path) or not os.path.exists(markdown_path):
-        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu (JSON hoặc MD).")
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
 
-    try:
-        with open(json_path, 'r', encoding='utf-8') as f:
-            tree_data = json.load(f)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi đọc file JSON: {e}")
+    with open(json_path, 'r', encoding='utf-8') as f:
+        tree_data = json.load(f)
 
-    try:
-        node_list = reasoning_search_tree(tree_data, request.question)
-        if not node_list:
-            context = ""
-        else:
-            context = build_context_from_markdown(tree_data, node_list, markdown_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi RAG Retrieval: {e}")
+    node_list = reasoning_search_tree(tree_data, request.question)
+    context = build_context_from_markdown(tree_data, node_list, markdown_path) if node_list else ""
 
     sources = []
     if context:
-        pattern = r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]"
-        matches = re.findall(pattern, context)
-        unique_matches = list(set(matches))
-        for match in unique_matches:
+        for match in list(set(re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context))):
             sources.append(SourceDetail(file=match[0], lines=match[1]))
 
-    try:
-        answer = generate_final_answer(context, request.question)
-    except Exception as e:
-         raise HTTPException(status_code=503, detail=f"Lỗi gọi LLM: {e}")
+    answer = generate_final_answer(context, request.question)
 
     if request.session_id:
         user_id = _get_user_id(current_user, db)
@@ -257,17 +211,70 @@ async def ask_document(
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         _check_ownership(session, user_id)
-
-        user_msg = ChatMessage(session_id=request.session_id, role="user", content=request.question)
-        db.add(user_msg)
-
+        db.add(ChatMessage(session_id=request.session_id, role="user", content=request.question))
         sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
-        assistant_msg = ChatMessage(session_id=request.session_id, role="assistant", content=answer, sources=sources_json)
-        db.add(assistant_msg)
-
+        db.add(ChatMessage(session_id=request.session_id, role="assistant", content=answer, sources=sources_json))
         if not session.title:
             session.title = request.question[:100]
-
         db.commit()
 
     return ChatResponse(result=ChatResult(answer=answer, sources=sources))
+
+
+# ============================================================
+# MASTER TREE SEARCH (protected)
+# ============================================================
+@router.post("/search", response_model=List[DocResult])
+def search_docs(req: SearchRequest, current_user: TokenData = Depends(get_current_user)):
+    from app.services.master_tree import search_master_tree
+    results = search_master_tree(req.query)
+    return [DocResult(**r) for r in results]
+
+
+# ============================================================
+# GLOBAL ASK — cross-document (protected)
+# ============================================================
+@router.post("/ask-global", response_model=GlobalAskResponse)
+def ask_global(req: GlobalAskRequest, current_user: TokenData = Depends(get_current_user)):
+    from app.services.master_tree import search_master_tree
+
+    relevant_docs = search_master_tree(req.question)
+    if not relevant_docs:
+        return GlobalAskResponse(answer="Không tìm thấy tài liệu nào liên quan.", sources=[], relevant_docs=[])
+
+    # Build context from top docs
+    context_parts = []
+    for doc_info in relevant_docs[:3]:
+        doc_id = doc_info["doc_id"]
+        json_path = f"/work/backend/data/semantic_trees/{doc_id}.json"
+        markdown_path = f"/work/backend/data/markdown_docs/{doc_id}.md"
+        if not os.path.exists(json_path) or not os.path.exists(markdown_path):
+            continue
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                tree_data = json.load(f)
+            node_list = reasoning_search_tree(tree_data, req.question)
+            if node_list:
+                ctx = build_context_from_markdown(tree_data, node_list, markdown_path)
+                if ctx:
+                    context_parts.append(f"=== Tài liệu: {doc_info['filename']} ===\n{ctx}")
+        except Exception:
+            continue
+
+    combined_context = "\n\n".join(context_parts)
+
+    sources = []
+    if combined_context:
+        for match in list(set(re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", combined_context))):
+            sources.append(SourceDetail(file=match[0], lines=match[1]))
+
+    try:
+        answer = generate_final_answer(combined_context, req.question)
+    except Exception:
+        answer = "Lỗi khi tạo câu trả lời."
+
+    return GlobalAskResponse(
+        answer=answer,
+        sources=sources,
+        relevant_docs=[DocResult(**d) for d in relevant_docs],
+    )

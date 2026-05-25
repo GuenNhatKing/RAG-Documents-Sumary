@@ -18,6 +18,7 @@ except Exception:
 
 from app.services.pageindex.page_index_md import md_to_tree
 from app.services.pageindex.utils import ConfigLoader
+from app.services.master_tree import add_doc_to_master_tree
 
 
 def _log(step: str) -> None:
@@ -86,6 +87,15 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
             json.dump(semantic_tree, f, ensure_ascii=False, indent=2)
 
         _log(f"SAVED: {out_path}")
+
+        # Update master tree with document summary
+        try:
+            doc_name = Path(md_path).stem
+            add_doc_to_master_tree(document_id, doc_name, semantic_tree)
+            _log("Master tree updated.")
+        except Exception as mt_err:
+            _log(f"Warning: master tree update failed: {mt_err}")
+
         return out_path
 
     except Exception as e:
