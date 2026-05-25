@@ -16,3 +16,4 @@ pyyaml
 passlib
 PyJWT
 pycryptodome
+python-multipart
