@@ -16,3 +16,4 @@ __pycache__/
 .understand-anything/
 data/
 *.db
+.nv/
