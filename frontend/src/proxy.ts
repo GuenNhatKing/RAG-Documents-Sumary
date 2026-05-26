@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Next.js Middleware — Auth & role-based routing at the proxy level.
+ * Next.js Proxy — Auth & role-based routing.
  * Runs BEFORE page renders. Redirects unauthenticated users to /login
  * and blocks unauthorized roles from protected routes.
  */
@@ -44,7 +44,7 @@ const GUEST_ONLY = ["/login", "/register"];
 // ============================================================
 // Middleware
 // ============================================================
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = getTokenFromCookies(request);
   const payload = token ? decodePayload(token) : null;

@@ -17,3 +17,4 @@ passlib
 PyJWT
 pycryptodome
 python-multipart
+cryptography
