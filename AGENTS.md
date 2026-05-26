@@ -158,6 +158,32 @@ Nguyên tắc:
 - Sau khi sửa, đọc lại phần đã sửa để kiểm tra cú pháp và nội dung.
 - Không chỉnh file ngoài phạm vi task nếu không cần thiết.
 
+## 3.4 `searxng`
+
+Dùng `searxng` để tìm kiếm thông tin bên ngoài repository khi task cần dữ liệu từ web hoặc tài liệu công khai.
+
+Nên dùng `searxng` khi cần tìm:
+
+- Tài liệu chính thức của thư viện, framework, API hoặc công cụ.
+- Cách xử lý lỗi dựa trên thông báo lỗi cụ thể.
+- Thay đổi mới trong dependency, runtime, package manager hoặc CLI.
+- Ví dụ cấu hình từ nguồn đáng tin cậy.
+- Thông tin kỹ thuật không nằm trong repository hiện tại.
+
+Nguyên tắc:
+
+- Ưu tiên nguồn chính thức như documentation, repository chính thức, release notes hoặc issue tracker chính thức.
+- Không dùng kết quả tìm kiếm để thay thế việc đọc code trong repository.
+- Không sao chép code từ nguồn ngoài nếu chưa hiểu tác động và license.
+- Khi thông tin từ web mâu thuẫn với code hiện tại, ưu tiên kiểm chứng bằng code và test trong repository.
+- Không tìm kiếm hoặc gửi secrets, token, password, private key, dữ liệu khách hàng hoặc nội dung nhạy cảm ra ngoài.
+
+`searxng` bổ sung cho `semble`, không thay thế `semble`:
+
+- `semble`: tìm kiếm ngữ nghĩa trong codebase hiện tại.
+- `searxng`: tìm kiếm thông tin công khai bên ngoài repository.
+
+
 ---
 
 # 4. Quy trình làm việc chuẩn
@@ -172,6 +198,8 @@ Nhận yêu cầu
 Xác định phạm vi task
  ↓
 Tra cứu agentmemory nếu task có rủi ro hoặc có tính lặp lại
+ ↓
+Dùng searxng nếu cần thông tin công khai bên ngoài repository
  ↓
 Dùng semble để định vị code liên quan
  ↓
@@ -478,6 +506,7 @@ Một task được xem là hoàn thành khi thỏa mãn tối đa các điều 
 
 Trước khi kết thúc, Agent tự kiểm tra:
 
+- Đã dùng `searxng` khi cần tìm thông tin công khai bên ngoài repository chưa?
 - Đã dùng `semble` khi cần tìm code chưa?
 - Đã dùng `filesystem` để đọc/sửa đúng file chưa?
 - Có cần tra cứu hoặc lưu `agentmemory` không?
