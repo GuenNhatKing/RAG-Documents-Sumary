@@ -813,7 +813,7 @@ def _load_symspell_vi() -> SymSpell:
     if _SYMSPELL_INSTANCE is not None:
         return _SYMSPELL_INSTANCE
     sym = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
-    dict_path = Path(__file__).resolve().parents[2] / "data" / "vi_frequency_dict.txt"
+    dict_path = Path(__file__).resolve().parents[2] / "resources" / "vn_word_frequencies.tsv"
     if not dict_path.exists():
         _log(f"WARNING: SymSpell dictionary not found at {dict_path}")
         _SYMSPELL_INSTANCE = sym
