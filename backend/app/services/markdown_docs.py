@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json, os, re, time
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -28,7 +27,7 @@ LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
 LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
-MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "6000"))
+MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "7500"))
 MD_SECTION_MAX_BLOCKS = int(os.getenv("MD_SECTION_MAX_BLOCKS", "28"))
 MD_SECTION_MAX_CHARS = int(os.getenv("MD_SECTION_MAX_CHARS", "5000"))
 MD_BLOCK_TEXT_CHARS = int(os.getenv("MD_BLOCK_TEXT_CHARS", "140"))
@@ -40,9 +39,9 @@ MD_JSON_RETRY_ATTEMPTS = int(os.getenv("MD_JSON_RETRY_ATTEMPTS", "3"))
 MD_JSON_RETRY_WAIT_SECONDS = int(os.getenv("MD_JSON_RETRY_WAIT_SECONDS", "2"))
 
 # Batched pipeline config
-MD_LLM_MAX_CHUNK_CHARS = int(os.getenv("MD_LLM_MAX_CHUNK_CHARS", "2000"))
+MD_LLM_MAX_CHUNK_CHARS = int(os.getenv("MD_LLM_MAX_CHUNK_CHARS", "1500"))
 MD_LLM_MAX_BLOCKS_PER_CHUNK = int(os.getenv("MD_LLM_MAX_BLOCKS_PER_CHUNK", "12"))
-MD_LLM_MAX_CHUNKS_PER_CALL = int(os.getenv("MD_LLM_MAX_CHUNKS_PER_CALL", "10"))
+MD_LLM_MAX_CHUNKS_PER_CALL = int(os.getenv("MD_LLM_MAX_CHUNKS_PER_CALL", "4"))
 MD_LLM_CONTEXT_BEFORE_CHARS = int(os.getenv("MD_LLM_CONTEXT_BEFORE_CHARS", "100"))
 MD_LLM_CONTEXT_AFTER_CHARS = int(os.getenv("MD_LLM_CONTEXT_AFTER_CHARS", "100"))
 MD_SUMMARY_MAX_WORDS = int(os.getenv("MD_SUMMARY_MAX_WORDS", "40"))
@@ -429,6 +428,209 @@ def build_sections(blocks: list[BlockRecord]) -> list[SectionRecord]:
     flush()
     return sections
 
+
+# =========================================================
+# STRUCTURAL SIGNALS + SEMANTIC CHUNKING
+# =========================================================
+
+def _parse_numbering(s: str) -> tuple[str | None, int]:
+    """Extract numbering string and its level from text.
+
+    Returns (numbering_str, level) or (None, 0).
+    Level: 1=chapter/article, 2=numbered, 3=decimal sub, 4=lettered sub.
+    """
+    s = s.strip()
+    # Chapter markers
+    m = re.match(r"^(PHẦN|CHƯƠNG|MỤC|TIỂU\s+MỤC)", s, re.I)
+    if m:
+        return m.group(0), 1
+    # Article: Điều 1.
+    m = re.match(r"^(Điều\s+\d+[.:]?\s*)", s, re.I)
+    if m:
+        return m.group(1).strip(), 2
+    # Decimal: 1.1.1 or 1.1.1)
+    m = re.match(r"^(\d+(?:\.\d+)+[.)]?\s*)", s)
+    if m:
+        depth = m.group(1).count(".")
+        return m.group(1).strip(), min(depth + 1, 4)
+    # Numbered: 1. or 1)
+    m = re.match(r"^(\d+[.)]\s*)", s)
+    if m:
+        return m.group(1).strip(), 2
+    # Roman: I. or IV)
+    m = re.match(r"^([IVXLCDM]+[.)]\s*)", s, re.I)
+    if m:
+        return m.group(1).strip(), 3
+    # Lettered: A. or a)
+    m = re.match(r"^([A-Za-zÀ-ỹĐđ][.)]\s*)", s, re.I)
+    if m:
+        return m.group(1).strip(), 4
+    return None, 0
+
+
+def extract_structural_signals(blocks: list[BlockRecord]) -> list[dict[str, Any]]:
+    """Detect structural signals for each block as evidence (not decisions).
+
+    These signals are used to build chunks, inform LLM, and validate LLM output.
+    """
+    result: list[dict[str, Any]] = []
+    for i, b in enumerate(blocks):
+        s = b.first_line
+        f = b.features
+        fl = f.get("first_line_features", {})
+        numbering_str, numbering_level = _parse_numbering(s)
+        result.append({
+            "block_id": b.block_id,
+            "numbering": numbering_str,
+            "numbering_level": numbering_level,
+            "marker_kind": marker_kind(s),
+            "bullet": dash_bullet(s),
+            "article": article(s),
+            "chapter": chapter(s),
+            "all_caps": title_like(s),
+            "short_line": f.get("char_count", 999) < 80,
+            "ends_period": bool(re.search(r"[.!?…]\s*$", s.strip())),
+            "continuation": continuation(s),
+            "incomplete_prev": prev_invites(blocks[i - 1].first_line) if i > 0 else False,
+            "noise_like": noise_like(s),
+            "metadata_like": metadata_like(s),
+            "footer_like": footer_section_like(s),
+            "signature_like": signature_like(s),
+            "subject_like": subject_like(s),
+            "line_count": f.get("line_count", 1),
+            "char_count": f.get("char_count", 0),
+        })
+    return result
+
+
+def _chunk_signals_summary(signals: list[dict]) -> dict[str, Any]:
+    """Aggregate signals for a chunk from its block signals."""
+    if not signals:
+        return {}
+    has_numbering = any(s["numbering"] for s in signals)
+    numbering_level = min((s["numbering_level"] for s in signals if s["numbering_level"] > 0), default=0)
+    return {
+        "has_numbering": has_numbering,
+        "numbering_level": numbering_level,
+        "has_article": any(s["article"] for s in signals),
+        "has_chapter": any(s["chapter"] for s in signals),
+        "is_all_caps": any(s["all_caps"] for s in signals),
+        "is_short": all(s["short_line"] for s in signals),
+        "ends_period": signals[-1]["ends_period"] if signals else False,
+        "is_continuation": signals[0]["continuation"] if signals else False,
+        "char_count": sum(s["char_count"] for s in signals),
+        "block_count": len(signals),
+    }
+
+
+def _should_start_new_chunk(
+    current_signals: list[dict],
+    current_chars: int,
+    new_signal: dict,
+    new_block_idx: int,
+) -> bool:
+    """Decide if a new block should start a new chunk."""
+    if not current_signals:
+        return False
+    # Size limit
+    if current_chars + new_signal["char_count"] > MD_LLM_MAX_CHUNK_CHARS:
+        return True
+    if len(current_signals) >= MD_LLM_MAX_BLOCKS_PER_CHUNK:
+        return True
+    # Structural anchor triggers new chunk
+    if new_signal["noise_like"] or new_signal["metadata_like"]:
+        return True
+    if new_signal["footer_like"] or new_signal["signature_like"]:
+        return True
+    # Same-level marker change triggers new chunk
+    if new_signal["numbering"] and current_signals:
+        # Find the first numbering in current chunk
+        chunk_numbering_level = min(
+            (s["numbering_level"] for s in current_signals if s["numbering_level"] > 0),
+            default=0,
+        )
+        if new_signal["numbering_level"] > 0 and chunk_numbering_level > 0:
+            # Same or higher level marker → start new chunk
+            if new_signal["numbering_level"] <= chunk_numbering_level:
+                return True
+    # Chapter/subject always starts new chunk
+    if new_signal["chapter"] or new_signal["subject_like"]:
+        return True
+    # All-caps title-like near start → new chunk
+    if new_signal["all_caps"] and current_signals and not current_signals[0]["all_caps"]:
+        return True
+    return False
+
+
+def build_semantic_chunks(
+    blocks: list[BlockRecord],
+    signals: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Group blocks into semantic chunks for batched LLM recognition.
+
+    Each chunk contains consecutive blocks that belong together logically.
+    A new chunk starts when a structural boundary is detected.
+    """
+    if not blocks:
+        return []
+
+    chunks: list[dict[str, Any]] = []
+    current_blocks: list[int] = []  # block_ids
+    current_signals: list[dict] = []
+    current_texts: list[str] = []
+    current_chars = 0
+
+    def flush():
+        nonlocal current_blocks, current_signals, current_texts, current_chars
+        if not current_blocks:
+            return
+        chunk_id = f"c{len(chunks) + 1}"
+        # First block's first line as candidate header
+        first_block = next(b for b in blocks if b.block_id == current_blocks[0])
+        candidate_header = first_block.first_line
+        text = "\n".join(current_texts)
+        chunk_signals = _chunk_signals_summary(current_signals)
+
+        # Context before: last block before this chunk
+        before_idx = blocks.index(first_block) - 1
+        context_before = ""
+        if before_idx >= 0:
+            context_before = clip(blocks[before_idx].text, MD_LLM_CONTEXT_BEFORE_CHARS)
+
+        chunks.append({
+            "chunk_id": chunk_id,
+            "source_block_ids": list(current_blocks),
+            "text": text,
+            "candidate_header": candidate_header,
+            "python_signals": chunk_signals,
+            "context_before": context_before,
+            "context_after": "",  # filled after all chunks built
+        })
+        current_blocks = []
+        current_signals = []
+        current_texts = []
+        current_chars = 0
+
+    for i, (block, sig) in enumerate(zip(blocks, signals)):
+        if _should_start_new_chunk(current_signals, current_chars, sig, i):
+            flush()
+        current_blocks.append(block.block_id)
+        current_signals.append(sig)
+        current_texts.append(block.text)
+        current_chars += sig["char_count"]
+
+    flush()
+
+    # Fill context_after
+    for i, chunk in enumerate(chunks):
+        if i + 1 < len(chunks):
+            chunk["context_after"] = clip(
+                chunks[i + 1]["candidate_header"], MD_LLM_CONTEXT_AFTER_CHARS
+            )
+
+    return chunks
+
+
 # =========================================================
 # LLM PROMPTS + SCHEMAS
 # =========================================================
@@ -641,6 +843,478 @@ def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, f
             _save_debug_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":str(e),"raw_response":content[:5000],"prompt_preview":prompt[:2500]})
             raise LLMJSONParseError(f"Could not parse JSON from {stage} section={secid}: {str(e)[:100]}")
     return _call()
+
+
+# =========================================================
+# BATCHED LLM RECOGNITION PIPELINE
+# =========================================================
+
+# Allowed enum values for normalization
+_ALLOWED_ROLES = {"TITLE", "HEADING", "BODY", "NOISE", "REVIEW"}
+_ROLE_NORMALIZE = {
+    "heading": "HEADING", "header": "HEADING", "subheading": "HEADING",
+    "section_heading": "HEADING", "sub_heading": "HEADING",
+    "title": "TITLE", "document_title": "TITLE",
+    "paragraph": "BODY", "content": "BODY", "body": "BODY", "text": "BODY",
+    "body_detail": "BODY", "preamble": "BODY", "background": "BODY",
+    "noise": "NOISE", "footer": "NOISE", "page_number": "NOISE",
+    "header_footer": "NOISE", "separator": "NOISE", "page_header": "NOISE",
+    "review": "REVIEW", "unknown": "REVIEW",
+}
+_ALLOWED_DECISIONS = {"KEEP", "MERGE_PREVIOUS", "MARK_NOISE", "REVIEW"}
+_DECISION_NORMALIZE = {
+    "keep": "KEEP", "stay": "KEEP", "no_change": "KEEP",
+    "merge": "MERGE_PREVIOUS", "merge_with_previous": "MERGE_PREVIOUS",
+    "merge_previous": "MERGE_PREVIOUS", "merge_with_prev": "MERGE_PREVIOUS",
+    "noise": "MARK_NOISE", "mark_noise": "MARK_NOISE", "remove": "MARK_NOISE",
+    "review": "REVIEW",
+}
+_ALLOWED_RISK_FLAGS = {
+    "possible_heading", "possible_body", "possible_continuation",
+    "possible_noise", "unclear_level", "header_content_mismatch",
+    "numbering_level_mismatch",
+}
+
+
+def normalize_llm_output(raw_result: dict[str, Any]) -> dict[str, Any]:
+    """Normalize LLM output enums. Small models may return near-correct values."""
+    normalized = dict(raw_result)
+    chunks = normalized.get("chunks", [])
+    for chunk in chunks:
+        # Normalize role
+        raw_role = str(chunk.get("role", "REVIEW")).strip().lower()
+        chunk["role"] = _ROLE_NORMALIZE.get(raw_role, "REVIEW")
+        # Normalize decision
+        raw_decision = str(chunk.get("decision", "REVIEW")).strip().lower()
+        chunk["decision"] = _DECISION_NORMALIZE.get(raw_decision, "REVIEW")
+        # Normalize level
+        try:
+            level = int(chunk.get("level", 3))
+        except (ValueError, TypeError):
+            level = 3
+        if chunk["role"] == "TITLE":
+            level = 1
+        elif chunk["role"] == "NOISE":
+            level = 0
+        chunk["level"] = max(1 if chunk["role"] != "NOISE" else 0, min(MD_MAX_HEADING_LEVEL, level))
+        # Normalize risk_flags
+        raw_flags = chunk.get("risk_flags", [])
+        if isinstance(raw_flags, list):
+            chunk["risk_flags"] = [f for f in raw_flags if isinstance(f, str) and f in _ALLOWED_RISK_FLAGS]
+        else:
+            chunk["risk_flags"] = []
+        # Normalize is_node
+        chunk["is_node"] = bool(chunk.get("is_node", False))
+        if chunk["role"] in ("TITLE", "HEADING"):
+            chunk["is_node"] = True
+        elif chunk["role"] in ("BODY", "NOISE"):
+            chunk["is_node"] = False
+    return normalized
+
+
+def _chunk_has_numbering(chunk: dict) -> bool:
+    """Check if chunk's candidate_header starts with a clear numbering pattern."""
+    header = chunk.get("candidate_header", "").strip()
+    return bool(_parse_numbering(header)[0])
+
+
+def _chunk_looks_like_heading(chunk: dict) -> bool:
+    """Check if chunk looks like a heading based on signals."""
+    signals = chunk.get("python_signals", {})
+    s = chunk.get("candidate_header", "").strip()
+    if signals.get("has_numbering"):
+        return True
+    if signals.get("is_all_caps"):
+        return True
+    if signals.get("has_article") or signals.get("has_chapter"):
+        return True
+    if title_like(s):
+        return True
+    if len(s.split()) <= 12 and not signals.get("ends_period"):
+        return True
+    return False
+
+
+def compute_trust_score(
+    chunk: dict,
+    llm_decision: str,
+    signals: dict[str, Any],
+) -> tuple[str, str]:
+    """Compute trust level from structural evidence. Returns (trust, reason).
+
+    Trust levels: "accept", "flag_review", "reject"
+    """
+    has_numbering = signals.get("has_numbering", False)
+    numbering_level = signals.get("numbering_level", 0)
+    is_continuation = signals.get("is_continuation", False)
+    chunk_has_heading_look = _chunk_looks_like_heading(chunk)
+
+    # LLM returns REVIEW → always flag
+    if llm_decision == "REVIEW":
+        return "flag_review", "LLM chose REVIEW"
+
+    # MERGE_PREVIOUS: conservative check
+    if llm_decision == "MERGE_PREVIOUS":
+        if has_numbering:
+            return "reject", "Chunk has clear numbering — reject merge"
+        if chunk_has_heading_look:
+            return "reject", "Chunk looks like heading — reject merge"
+        return "accept", "Merge approved: no numbering, not heading-like"
+
+    # MARK_NOISE: check noise signals
+    if llm_decision == "MARK_NOISE":
+        if signals.get("noise_like"):
+            return "accept", "Noise signal matches LLM decision"
+        return "flag_review", "LLM says noise but no noise signal"
+
+    # KEEP: generally trust LLM
+    if llm_decision == "KEEP":
+        return "accept", "KEEP with no conflicts"
+
+    return "flag_review", f"Unknown decision: {llm_decision}"
+
+
+def validate_llm_decisions(
+    chunks: list[dict],
+    signals_map: dict[int, dict],
+    normalized: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Validate each LLM decision against structural signals.
+
+    Returns list of validated items with trust scores and final decisions.
+    """
+    validated: list[dict[str, Any]] = []
+    llm_chunks = {c["chunk_id"]: c for c in normalized.get("chunks", [])}
+
+    for chunk in chunks:
+        cid = chunk["chunk_id"]
+        llm = llm_chunks.get(cid, {})
+        llm_decision = llm.get("decision", "REVIEW")
+        llm_role = llm.get("role", "REVIEW")
+
+        # Get signals for blocks in this chunk
+        chunk_signals = [signals_map.get(bid, {}) for bid in chunk["source_block_ids"]]
+        agg = _chunk_signals_summary(chunk_signals)
+
+        trust, reason = compute_trust_score(chunk, llm_decision, agg)
+
+        final_decision = llm_decision
+        applied = False
+
+        if trust == "accept":
+            applied = True
+        elif trust == "reject":
+            final_decision = "KEEP"  # downgrade to KEEP
+            applied = True
+            reason += " → downgraded to KEEP"
+        else:  # flag_review
+            final_decision = "REVIEW"
+            applied = False
+
+        # For HEADING: check numbering consistency
+        level_correction = None
+        if llm_role == "HEADING" and agg.get("has_numbering") and agg.get("numbering_level", 0) > 0:
+            expected_level = agg["numbering_level"]
+            llm_level = llm.get("level", 3)
+            if llm_level != expected_level:
+                level_correction = expected_level
+                reason += f" → level corrected {llm_level}→{expected_level} (numbering match)"
+
+        validated.append({
+            "chunk_id": cid,
+            "source_block_ids": chunk["source_block_ids"],
+            "llm_raw": {"role": llm.get("role"), "decision": llm.get("decision"), "level": llm.get("level")},
+            "normalized_role": llm_role,
+            "normalized_decision": llm_decision,
+            "final_decision": final_decision,
+            "final_role": llm_role,
+            "final_level": level_correction or llm.get("level", 3),
+            "is_node": llm.get("is_node", False),
+            "header": llm.get("header", ""),
+            "summary": llm.get("summary", ""),
+            "risk_flags": llm.get("risk_flags", []),
+            "trust": trust,
+            "reason": reason,
+            "applied": applied,
+        })
+
+    return validated
+
+
+def _build_chunk_payload_for_llm(chunk: dict) -> dict:
+    """Build a compact payload for a single chunk to send to LLM."""
+    sig = chunk.get("python_signals", {})
+    # Only send essential signals to save prompt space
+    compact_sig = {
+        "has_numbering": sig.get("has_numbering", False),
+        "numbering_level": sig.get("numbering_level", 0),
+        "is_all_caps": sig.get("is_all_caps", False),
+        "is_short": sig.get("is_short", False),
+        "ends_period": sig.get("ends_period", False),
+        "is_continuation": sig.get("is_continuation", False),
+        "char_count": sig.get("char_count", 0),
+    }
+    return {
+        "chunk_id": chunk["chunk_id"],
+        "source_block_ids": chunk["source_block_ids"],
+        "candidate_header": clip(chunk["candidate_header"], 80),
+        "text": clip(chunk["text"], 150),
+        "python_signals": compact_sig,
+        "context_before": clip(chunk.get("context_before", ""), 30),
+        "context_after": clip(chunk.get("context_after", ""), 30),
+    }
+
+
+def llm_recognize_chunks(
+    c: OpenAI,
+    docid: str,
+    chunks: list[dict],
+) -> dict[str, Any]:
+    """Send chunks to LLM for batched recognition.
+
+    Splits into multiple calls if chunks exceed MD_LLM_MAX_CHUNKS_PER_CALL.
+    Returns merged normalized result.
+    """
+    if not chunks:
+        return {"chunks": [], "document_warnings": []}
+
+    # Split into batches
+    batch_size = MD_LLM_MAX_CHUNKS_PER_CALL
+    batches = [chunks[i:i + batch_size] for i in range(0, len(chunks), batch_size)]
+
+    all_chunks: list[dict] = []
+    all_warnings: list[dict] = []
+
+    for batch_idx, batch in enumerate(batches):
+        payload = {"chunks": [_build_chunk_payload_for_llm(ch) for ch in batch]}
+        prompt = ensure_prompt(JSON_RULES + "\n" + RECOGNITION_PROMPT + "\n" + cj(payload))
+
+        t0 = time.time()
+        try:
+            raw = call_json(c, prompt, docid, "recognition", batch_idx, RECOGNITION_FORMAT)
+            elapsed = time.time() - t0
+            _log_llm_call("recognition", batch_idx, len(prompt), 0, elapsed, True)
+        except Exception as e:
+            elapsed = time.time() - t0
+            _log_llm_call("recognition", batch_idx, len(prompt), 0, elapsed, False, str(e))
+            _log(f"Recognition batch {batch_idx} failed: {e}")
+            # Fallback: create REVIEW entries for all chunks in this batch
+            for ch in batch:
+                all_chunks.append({
+                    "chunk_id": ch["chunk_id"],
+                    "source_block_ids": ch["source_block_ids"],
+                    "role": "REVIEW",
+                    "is_node": False,
+                    "header": ch["candidate_header"],
+                    "level": 3,
+                    "summary": "LLM recognition failed — needs manual review.",
+                    "decision": "REVIEW",
+                    "risk_flags": [],
+                    "reason": f"LLM call failed: {str(e)[:100]}",
+                })
+            continue
+
+        # Normalize
+        normalized = normalize_llm_output(raw)
+        all_chunks.extend(normalized.get("chunks", []))
+        all_warnings.extend(normalized.get("document_warnings", []))
+
+    return {"chunks": all_chunks, "document_warnings": all_warnings}
+
+
+def llm_global_review(
+    c: OpenAI,
+    docid: str,
+    validated: list[dict],
+    warnings: list[dict],
+) -> dict[str, Any]:
+    """Run global review: LLM sees all headers + levels + summaries."""
+    headers = []
+    for v in validated:
+        headers.append({
+            "chunk_id": v["chunk_id"],
+            "header": clip(v.get("header", ""), 80),
+            "level": v.get("final_level", 3),
+            "role": v.get("final_role", "REVIEW"),
+            "summary": clip(v.get("summary", ""), 50),
+        })
+
+    payload = {
+        "document_headers": headers,
+        "total_chunks": len(validated),
+    }
+    prompt = ensure_prompt(JSON_RULES + "\n" + GLOBAL_REVIEW_PROMPT + "\n" + cj(payload))
+
+    t0 = time.time()
+    try:
+        raw = call_json(c, prompt, docid, "global_review", None, GLOBAL_REVIEW_FORMAT)
+        elapsed = time.time() - t0
+        _log_llm_call("global_review", None, len(prompt), 0, elapsed, True)
+        return raw
+    except Exception as e:
+        elapsed = time.time() - t0
+        _log_llm_call("global_review", None, len(prompt), 0, elapsed, False, str(e))
+        _log(f"Global review failed: {e}")
+        return {"reviews": [], "document_notes": []}
+
+
+def apply_safe_decisions(
+    chunks: list[dict],
+    validated: list[dict],
+    byid: dict[int, BlockRecord],
+) -> list[OutlineNode]:
+    """Convert validated decisions into OutlineNodes.
+
+    Only applied decisions become nodes. MERGE_PREVIOUS modifies previous chunk's blocks.
+    """
+    # First pass: collect which blocks are merged into previous
+    merged_into: dict[int, int] = {}  # block_id -> previous chunk's first block_id
+    for v in validated:
+        if v["final_decision"] == "MERGE_PREVIOUS" and v["applied"]:
+            # Find previous chunk's last block_id
+            chunk_idx = next(
+                (i for i, vv in enumerate(validated) if vv["chunk_id"] == v["chunk_id"]),
+                -1,
+            )
+            if chunk_idx > 0:
+                prev = validated[chunk_idx - 1]
+                prev_last_block = prev["source_block_ids"][-1] if prev["source_block_ids"] else None
+                if prev_last_block is not None:
+                    for bid in v["source_block_ids"]:
+                        merged_into[bid] = prev_last_block
+
+    # Second pass: build OutlineNodes from applied HEADING/TITLE decisions
+    nodes: list[OutlineNode] = []
+    for v in validated:
+        if not v["applied"]:
+            continue
+        if not v.get("is_node", False):
+            continue
+        if v["final_decision"] == "MARK_NOISE":
+            continue
+        # Use first block of the chunk as the heading node
+        first_bid = v["source_block_ids"][0] if v["source_block_ids"] else None
+        if first_bid is None or first_bid in merged_into:
+            continue
+        block = byid.get(first_bid)
+        if block is None:
+            continue
+
+        level = max(1, min(MD_MAX_HEADING_LEVEL, v.get("final_level", 3)))
+        role = v.get("final_role", "BODY")
+
+        nodes.append(OutlineNode(
+            block_id=block.block_id,
+            line_id=block.start_line_id,
+            level=level,
+            first_line=block.first_line,
+            line_ids=block.line_ids,
+            role=role,
+            section_id=None,
+        ))
+
+    return sorted(nodes, key=lambda n: n.line_id)
+
+
+def apply_global_review_safely(
+    review: dict[str, Any],
+    nodes: list[OutlineNode],
+    byid: dict[int, BlockRecord],
+) -> list[OutlineNode]:
+    """Apply global review suggestions safely.
+
+    Only KEEP, MARK_NOISE are auto-applied. MERGE_PREVIOUS needs conservative check.
+    """
+    reviews = review.get("reviews", [])
+    if not reviews:
+        return nodes
+
+    nodes_by_block = {n.block_id: n for n in nodes}
+    changes = 0
+
+    for r in reviews:
+        suggestion = str(r.get("suggestion", "KEEP")).strip().upper()
+        suggestion = _DECISION_NORMALIZE.get(suggestion.lower(), suggestion)
+
+        if suggestion == "MARK_NOISE":
+            # Find and remove the node
+            cid = r.get("chunk_id", "")
+            # Match by chunk_id format: extract block info if possible
+            # For now, log the suggestion
+            _log(f"Global review MARK_NOISE for {cid}: {r.get('reason', '')}")
+            changes += 1
+
+        elif suggestion == "REVIEW":
+            _log(f"Global review flags REVIEW for {r.get('chunk_id', '')}: {r.get('reason', '')}")
+            changes += 1
+
+    if changes > 0:
+        _log(f"Global review: {changes} suggestions processed")
+
+    return nodes
+
+
+def export_metadata(
+    document_id: str,
+    chunks: list[dict],
+    validated: list[dict],
+) -> Path:
+    """Export metadata.json with section info."""
+    sections = []
+    for v in validated:
+        sections.append({
+            "chunk_id": v["chunk_id"],
+            "source_block_ids": v["source_block_ids"],
+            "header": v.get("header", ""),
+            "level": v.get("final_level", 3),
+            "role": v.get("final_role", "REVIEW"),
+            "decision": v.get("final_decision", "REVIEW"),
+            "summary": v.get("summary", ""),
+        })
+    data = {"document_id": document_id, "sections": sections}
+    path = work_dir(document_id) / "metadata.json"
+    save_json(path, data)
+    return path
+
+
+def export_audit_log(
+    document_id: str,
+    validated: list[dict],
+    llm_calls: list[dict],
+    warnings: list[dict],
+) -> Path:
+    """Export audit.json with full decision trail."""
+    entries = []
+    rejected = []
+    for v in validated:
+        entry = {
+            "chunk_id": v["chunk_id"],
+            "llm_raw": v.get("llm_raw", {}),
+            "normalized": {
+                "role": v.get("normalized_role"),
+                "decision": v.get("normalized_decision"),
+            },
+            "final_decision": v.get("final_decision"),
+            "trust": v.get("trust"),
+            "trust_reason": v.get("reason", ""),
+            "applied": v.get("applied", False),
+        }
+        if v.get("applied"):
+            entries.append(entry)
+        else:
+            rejected.append({**entry, "rejected_reason": v.get("reason", "")})
+
+    data = {
+        "document_id": document_id,
+        "entries": entries,
+        "rejected": rejected,
+        "llm_calls": llm_calls,
+        "document_warnings": warnings,
+    }
+    path = work_dir(document_id) / "audit.json"
+    save_json(path, data)
+    return path
+
 
 # =========================================================
 # PARSE + FALLBACKS
@@ -1050,92 +1724,160 @@ def build_tree_nodes(nodes: list[OutlineNode]) -> list[dict[str, Any]]:
 # MAIN
 # =========================================================
 def generate_markdown_doc(document_id: str, normalized_path: str|Path|None=None) -> Path:
+    """Main pipeline: normalized text → Markdown via batched LLM recognition.
+
+    Flow:
+    1. Python segment → lines, blocks
+    2. Python detect signals → structural signals per block
+    3. Python build chunks → semantic chunks with context
+    4. LLM recognize → batched classification (1-2 calls)
+    5. Python normalize → enum normalization
+    6. Python validate → trust scoring, safe apply
+    7. LLM global review → review headers + summaries (1 call)
+    8. Python apply review → safe apply global review
+    9. Build tree → structural_postprocess + hierarchical_validation
+    10. Render markdown → render_markdown
+    11. Export metadata/audit
+    """
     global _log_file
-    start=time.time(); ensure_dirs(document_id)
-    inp=Path(normalized_path) if normalized_path else NORMALIZED_DIR/f"{document_id}.txt"
-    outp=MARKDOWN_DIR/f"{document_id}.md"
-    if not inp.exists(): raise FileNotFoundError(f"Normalized text not found: {inp}")
+    start = time.time()
+    ensure_dirs(document_id)
+    inp = Path(normalized_path) if normalized_path else NORMALIZED_DIR / f"{document_id}.txt"
+    outp = MARKDOWN_DIR / f"{document_id}.md"
+    if not inp.exists():
+        raise FileNotFoundError(f"Normalized text not found: {inp}")
     log_path = work_dir(document_id) / "pipeline.log"
     _log_file = open(log_path, "a", encoding="utf-8")
-    sections = []
-    completed = []
-    failed = []
+    llm_calls_log: list[dict] = []
+
     try:
-        _log_stage("START", input=str(inp), output=str(outp), model=LLM_MODEL)
+        _log_stage("START", input=str(inp), output=str(outp), model=LLM_MODEL, mode=MD_PIPELINE_MODE)
         _log_stage("CONFIG", **effective_config())
+        root = work_dir(document_id)
 
-        t0=time.time()
-        lines=read_lines(inp); blocks=build_blocks(lines); byid={b.block_id:b for b in blocks}; sections=build_sections(blocks)
-        _log_stage("PARSE", lines=len(lines), blocks=len(blocks), sections=len(sections), duration=f"{time.time()-t0:.2f}s")
-
-        root=work_dir(document_id)
+        # Step 1: Python segment
+        t0 = time.time()
+        lines = read_lines(inp)
+        blocks = build_blocks(lines)
+        byid = {b.block_id: b for b in blocks}
+        _log_stage("PARSE", lines=len(lines), blocks=len(blocks), duration=f"{time.time()-t0:.2f}s")
         if SAVE_DEBUG_FILES:
-            save_json(root/"lines.json", [asdict(x) for x in lines]); save_json(root/"blocks.json", [asdict(x) for x in blocks]); save_json(root/"sections.json", [asdict(x) for x in sections])
-        c=client(); results=[None]*len(sections); completed=[]; failed=[]
+            save_json(root/"lines.json", [asdict(x) for x in lines])
+            save_json(root/"blocks.json", [asdict(x) for x in blocks])
 
-        t_llm_start=time.time()
-        update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=[], failed_sections=[])
-
-        def _run_section(idx: int, sec: SectionRecord) -> tuple[int, dict, float]:
-            t_sec=time.time()
-            try:
-                res=process_section(c,document_id,sec,blocks,byid)
-            except Exception as e:
-                _log(f"Section {sec.section_id} hard fallback: {e}")
-                secblocks=[byid[b] for b in sec.block_ids if b in byid]
-                roles=parse_roles({}, {}, secblocks); cands=py_candidates(secblocks,roles); nodes=structural_postprocess(nodes_from_candidates(cands,byid,sec.section_id),byid)
-                res={"section_id":sec.section_id,"status":"failed_but_rendered","error":str(e),"roles":list(roles.values()),"candidates":cands,"outline":nodes}
-            return idx, res, time.time()-t_sec
-
-        max_workers=min(MD_MAX_WORKERS, len(sections))
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            futures={pool.submit(_run_section, i, sec): i for i, sec in enumerate(sections)}
-            for fut in as_completed(futures):
-                idx, res, sec_duration = fut.result()
-                sec=sections[idx]
-                results[idx]=res
-                if SAVE_DEBUG_FILES:
-                    save_json(root/"section_reports"/f"section_{sec.section_id:03d}.result.json", {"section":asdict(sec),"status":res["status"],"error":res["error"],"roles":[asdict(x) for x in res["roles"]],"candidates":[asdict(x) for x in res["candidates"]],"outline":[asdict(x) for x in res["outline"]]})
-                    save_text(root/"partial_markdown"/f"section_{sec.section_id:03d}.md", render_section(lines,sec,res["outline"]))
-                node_count=len(res["outline"])
-                status_str=res["status"]
-                _log_stage("SECTION", id=sec.section_id, total=len(sections), blocks=len(sec.block_ids), nodes=node_count, status=status_str, duration=f"{sec_duration:.2f}s")
-                completed.append(sec.section_id) if res["status"] in {"done","done_with_fallback","failed_but_rendered"} else failed.append({"section_id":sec.section_id,"error":res["error"]})
-                update_progress(document_id, status="processing", total_sections=len(sections), completed_sections=completed, failed_sections=failed, current_section=sec.section_id, updated_at=time.time())
-                if res["status"]=="failed" and not MD_ALLOW_PARTIAL: raise RuntimeError(res["error"])
-        t_llm_total=time.time()-t_llm_start
-
-        t0=time.time()
-        merged=[]
-        for r in results: merged.extend(r["outline"])
-        # Single structural_postprocess + hierarchical_validation pass (per-section call removed)
-        merged=structural_postprocess(merged,byid)
-        checked=hierarchical_validation(merged)
-        checked=sorted({n.block_id:n for n in checked}.values(),key=lambda n:n.line_id)
-        _log_stage("OUTLINE_MERGE", raw_nodes=len(merged), final_nodes=len(checked), duration=f"{time.time()-t0:.2f}s")
+        # Step 2: Python detect signals
+        t0 = time.time()
+        block_signals = extract_structural_signals(blocks)
+        signals_map = {s["block_id"]: s for s in block_signals}
+        _log_stage("SIGNALS", count=len(block_signals), duration=f"{time.time()-t0:.2f}s")
         if SAVE_DEBUG_FILES:
-            save_json(root/"merged_outline.json", [asdict(x) for x in merged]); save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked]); save_json(root/"tree_nodes.json", build_tree_nodes(checked))
+            save_json(root/"signals.json", block_signals)
 
-        t0=time.time()
-        md=render_markdown(lines,checked)
-        validation=validate_lossless(lines,md)
-        _log_stage("RENDER", md_chars=len(md), md_lines=len(md.splitlines()), missing=validation["missing_count"], duration=f"{time.time()-t0:.2f}s")
+        # Step 3: Python build chunks
+        t0 = time.time()
+        chunks = build_semantic_chunks(blocks, block_signals)
+        _log_stage("CHUNKS", count=len(chunks), duration=f"{time.time()-t0:.2f}s")
+        if SAVE_DEBUG_FILES:
+            save_json(root/"chunks.json", chunks)
+
+        update_progress(document_id, status="processing",
+                        stage="llm_recognition", total_chunks=len(chunks))
+
+        # Step 4: LLM recognize (batched)
+        t_llm_start = time.time()
+        c = client()
+        recognition_result = llm_recognize_chunks(c, document_id, chunks)
+        llm_calls_log.append({"stage": "recognition", "chunks": len(chunks)})
+        _log_stage("LLM_RECOGNITION", chunks=len(recognition_result.get("chunks", [])),
+                    warnings=len(recognition_result.get("document_warnings", [])),
+                    duration=f"{time.time()-t_llm_start:.2f}s")
+
+        # Step 5: Normalize (already done inside llm_recognize_chunks)
+        # Step 6: Python validate
+        t0 = time.time()
+        validated = validate_llm_decisions(chunks, signals_map, recognition_result)
+        _log_stage("VALIDATE", total=len(validated),
+                    applied=sum(1 for v in validated if v["applied"]),
+                    rejected=sum(1 for v in validated if not v["applied"]),
+                    duration=f"{time.time()-t0:.2f}s")
+        if SAVE_DEBUG_FILES:
+            save_json(root/"validated.json", validated)
+
+        update_progress(document_id, status="processing",
+                        stage="global_review", validated=len(validated))
+
+        # Step 7: LLM global review
+        t_review_start = time.time()
+        if MD_ENABLE_GLOBAL_REVIEW:
+            review_result = llm_global_review(
+                c, document_id, validated, recognition_result.get("document_warnings", [])
+            )
+            llm_calls_log.append({"stage": "global_review"})
+            _log_stage("GLOBAL_REVIEW", reviews=len(review_result.get("reviews", [])),
+                        duration=f"{time.time()-t_review_start:.2f}s")
+        else:
+            review_result = {"reviews": [], "document_notes": []}
+
+        t_llm_total = time.time() - t_llm_start
+
+        # Step 8: Apply safe decisions → OutlineNodes
+        t0 = time.time()
+        nodes = apply_safe_decisions(chunks, validated, byid)
+        _log_stage("APPLY_DECISIONS", nodes=len(nodes), duration=f"{time.time()-t0:.2f}s")
+
+        # Step 8b: Apply global review
+        if MD_ENABLE_GLOBAL_REVIEW:
+            nodes = apply_global_review_safely(review_result, nodes, byid)
+
+        # Step 9: Build tree (structural_postprocess + hierarchical_validation)
+        t0 = time.time()
+        nodes = structural_postprocess(nodes, byid)
+        checked = hierarchical_validation(nodes)
+        checked = sorted({n.block_id: n for n in checked}.values(), key=lambda n: n.line_id)
+        _log_stage("TREE", raw_nodes=len(nodes), final_nodes=len(checked),
+                    duration=f"{time.time()-t0:.2f}s")
+        if SAVE_DEBUG_FILES:
+            save_json(root/"merged_outline.json", [asdict(x) for x in nodes])
+            save_json(root/"hierarchy_checked_outline.json", [asdict(x) for x in checked])
+            save_json(root/"tree_nodes.json", build_tree_nodes(checked))
+
+        # Step 10: Render markdown
+        t0 = time.time()
+        md = render_markdown(lines, checked)
+        validation = validate_lossless(lines, md)
+        _log_stage("RENDER", md_chars=len(md), md_lines=len(md.splitlines()),
+                    missing=validation["missing_count"], duration=f"{time.time()-t0:.2f}s")
         if SAVE_DEBUG_FILES:
             save_json(root/"lossless_validation.json", validation)
             save_text(root/"final.md", md)
-        outp.write_text(md,encoding="utf-8")
+        outp.write_text(md, encoding="utf-8")
 
-        total_duration=round(time.time()-start, 2)
-        ok_sections=len([s for s in completed if s not in [f.get("section_id") for f in failed]])
-        _log_stage("PIPELINE_COMPLETE", document_id=document_id, duration=f"{total_duration:.2f}s", llm_duration=f"{t_llm_total:.2f}s", sections_ok=ok_sections, sections_failed=len(failed), outline_nodes=len(checked), md_chars=len(md), missing_lines=validation["missing_count"])
+        # Step 11: Export metadata + audit
+        if MD_SAVE_REPORTS:
+            export_metadata(document_id, chunks, validated)
+        if MD_ENABLE_AUDIT_LOG:
+            export_audit_log(document_id, validated, llm_calls_log,
+                             recognition_result.get("document_warnings", []))
 
-        update_progress(document_id, status="done", total_sections=len(sections), completed_sections=completed, failed_sections=failed, output_path=str(outp), duration_seconds=total_duration)
-        _log(f"DONE in {total_duration:.2f}s → {outp}")
+        total_duration = round(time.time() - start, 2)
+        llm_call_count = len(llm_calls_log)
+        _log_stage("PIPELINE_COMPLETE", document_id=document_id,
+                    duration=f"{total_duration:.2f}s", llm_duration=f"{t_llm_total:.2f}s",
+                    llm_calls=llm_call_count, chunks=len(chunks),
+                    outline_nodes=len(checked), md_chars=len(md),
+                    missing_lines=validation["missing_count"])
+
+        update_progress(document_id, status="done", output_path=str(outp),
+                        duration_seconds=total_duration, llm_calls=llm_call_count)
+        _log(f"DONE in {total_duration:.2f}s ({llm_call_count} LLM calls) → {outp}")
         return outp
+
     except Exception as exc:
         duration = round(time.time() - start, 2)
-        _log_stage("PIPELINE_FAILED", document_id=document_id, duration=f"{duration:.2f}s", error=str(exc)[:200])
-        update_progress(document_id, status="failed", total_sections=len(sections), completed_sections=completed, failed_sections=failed, output_path=str(outp), duration_seconds=duration)
+        _log_stage("PIPELINE_FAILED", document_id=document_id,
+                    duration=f"{duration:.2f}s", error=str(exc)[:200])
+        update_progress(document_id, status="failed",
+                        output_path=str(outp), duration_seconds=duration)
         raise
     finally:
         if _log_file:

@@ -447,16 +447,26 @@ def should_merge_lines(prev_line: str, curr_line: str) -> bool:
     if is_hard_structural_line(curr):
         return False
     score = 0
-    if prev.endswith((",", "-", "–", "(", "/")):
+    # Strong merge signals
+    if prev.endswith((",", "-", "–", "(", "/", ":")):
         score += 4
-    if not prev.endswith((".", ";", ":", "?", "!", "…”", "”")):
+    if prev.endswith(";"):
+        score += 3  # semicolon is list separator in admin docs, not sentence end
+    # Previous line has no sentence-ending punctuation
+    if not prev.endswith((".", "?", "!", "…\"")):
         score += 3
+    # Current line starts lowercase → continuation
     if starts_lowercase(curr):
         score += 3
+    # Current line starts with continuation words
     if curr.lower().startswith(("và ", "hoặc ", "của ", "theo ", "trong ", "để ", "về ", "với ", "từ ", "đến ", "cho ", "do ", "nhằm ")):
         score += 2
-    if prev.endswith((".", "?", "!", "…”", "”")):
+    # Sentence-ending punctuation → strong break signal
+    if prev.endswith((".", "?", "!")):
         score -= 5
+    # Quoted sentence end → break
+    if prev.endswith(("…\"",)):
+        score -= 4
     return score >= 4
 
 
@@ -468,9 +478,6 @@ def apply_safe_rule_corrections(line: str) -> str:
         (r"\bngay\s+(\d{1,2})\s+tháng\b", r"ngày \1 tháng"),
         (r"\bthang\s+(\d{1,2})\b", r"tháng \1"),
         (r"\bnam\s+(\d{4})\b", r"năm \1"),
-        (r"\bcăn cử\b", "căn cứ"),
-        (r"\bthâm quyền\b", "thẩm quyền"),
-        (r"\bthành phó\b", "thành phố"),
         (r"^[_]+\s+", ""),
         (r",\s*\.\s*", ", "),
         (r"\.\s+\.\s+\.", "..."),
@@ -765,6 +772,29 @@ def _strip_diacritics(text: str) -> str:
     return "".join(ch for ch in text if unicodedata.category(ch) != "Mn").lower()
 
 
+# Precompiled regex for strange character detection
+_RE_NORMALIZE_QUOTES = re.compile(r"[\u201C\u201D\u2018\u2019\u00AB\u00BB]")  # fancy quotes → ASCII
+_RE_STRANGE_CHARS = re.compile(
+    r"[^\w\s.,;:!?/\\(){}@#$%^&*+=<>~`|\"'\-_–—…àáảãạăắằẵặấầẩẫậèéẻẽẹêếềểễệ"
+    r"ìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ"
+    r"ÀÁẢÃẠĂẮẰẴẶẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢ"
+    r"ÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴĐ]"
+)
+
+
+def clean_strange_chars(text: str) -> str:
+    """Remove non-standard characters from text.
+
+    Keeps: Vietnamese letters, digits, common ASCII punctuation, whitespace.
+    Normalizes fancy quotes to ASCII.
+    Removes: OCR noise like ¬, §, ¶, stray symbols.
+    """
+    # Normalize fancy quotes to ASCII
+    text = _RE_NORMALIZE_QUOTES.sub('"', text)
+    # Remove remaining strange characters
+    return _RE_STRANGE_CHARS.sub("", text)
+
+
 def _has_vietnamese_diacritics(text: str) -> bool:
     """Check if text contains Vietnamese diacritic characters."""
     return bool(re.search(
@@ -844,6 +874,11 @@ def detect_errors_heuristic(text: str, sym: SymSpell) -> list[dict[str, Any]]:
             continue
         # Skip pure punctuation
         if not any(c.isalpha() for c in clean):
+            continue
+        # Skip proper nouns (person names, place names)
+        # Vietnamese names: 2-5 words, each starting with uppercase
+        # Also skip ALL_CAPS short words that look like abbreviations
+        if _is_proper_noun(clean):
             continue
 
         reasons = []
@@ -960,6 +995,7 @@ def generate_candidates(text: str, flagged: list[dict[str, Any]], sym: SymSpell)
 
     For each flagged word, find the closest valid words in the dictionary.
     Falls back to base_form_index for MISSING_DIACRITICS/WRONG_DIACRITIC errors.
+    For adjacent flagged words, try compound-word lookup (e.g., "tham quyen" -> "thẩm quyền").
     Returns list with added "candidates" field.
     """
     for item in flagged:
@@ -984,8 +1020,94 @@ def generate_candidates(text: str, flagged: list[dict[str, Any]], sym: SymSpell)
         candidates = [s.term for s in suggestions if s.term != item["token"]][:10]
         item["candidates"] = candidates
 
+    # Compound-word merge: for adjacent flagged words, try pairing them
+    # Also try pairing a flagged word with the NEXT word in text (even if not flagged)
+    if _BASE_FORM_INDEX and len(flagged) >= 1:
+        flagged_sorted = sorted(flagged, key=lambda x: x.get("position", 0))
+        skip_indices: set[int] = set()
+        merged_flagged: list[dict[str, Any]] = []
+
+        for i in range(len(flagged_sorted)):
+            if i in skip_indices:
+                continue
+            cur = flagged_sorted[i]
+            cur_base = cur.get("base_form", _strip_diacritics(cur.get("token", "")))
+            cur_end = cur.get("position", 0) + len(cur.get("token", ""))
+
+            # Strategy 1: pair with next flagged word
+            if i + 1 < len(flagged_sorted):
+                nxt = flagged_sorted[i + 1]
+                nxt_pos = nxt.get("position", 0)
+                gap = text[cur_end:nxt_pos]
+                if len(gap) <= 1 and (not gap or gap.isspace()):
+                    nxt_base = nxt.get("base_form", _strip_diacritics(nxt.get("token", "")))
+                    compound_base = f"{cur_base} {nxt_base}"
+                    if compound_base in _BASE_FORM_INDEX:
+                        compound_candidates = [w for w, _ in _BASE_FORM_INDEX[compound_base]
+                                               if w != compound_base][:5]
+                        if compound_candidates:
+                            cur["compound_candidates"] = compound_candidates
+                            cur["compound_with"] = nxt["token"]
+                            cur["compound_position_end"] = nxt_pos + len(nxt.get("token", ""))
+                            skip_indices.add(i + 1)
+                            merged_flagged.append(cur)
+                            continue
+
+            # Strategy 2: pair with next word in text (even if not flagged)
+            # Extract next word from text after current word
+            remaining = text[cur_end:].lstrip()
+            if remaining:
+                next_word_match = re.match(r"(\S+)", remaining)
+                if next_word_match:
+                    next_word = next_word_match.group(1)
+                    # Only try if next word looks Vietnamese (not punctuation, not number)
+                    if re.match(r"^[a-zA-ZÀ-ỹĐđ]+$", next_word):
+                        gap_len = len(text[cur_end:]) - len(text[cur_end:].lstrip())
+                        if gap_len <= 2:  # at most 2 spaces
+                            next_base = _strip_diacritics(next_word)
+                            compound_base = f"{cur_base} {next_base}"
+                            if compound_base in _BASE_FORM_INDEX:
+                                compound_candidates = [w for w, _ in _BASE_FORM_INDEX[compound_base]
+                                                       if w != compound_base][:5]
+                                if compound_candidates:
+                                    next_pos = cur_end + gap_len
+                                    cur["compound_candidates"] = compound_candidates
+                                    cur["compound_with"] = next_word
+                                    cur["compound_position_end"] = next_pos + len(next_word)
+                                    merged_flagged.append(cur)
+                                    continue
+
+            # Strategy 3: pair with PREVIOUS word in text (even if not flagged)
+            # e.g., "thanh pho" -> "pho" flagged, look back to find "thanh"
+            cur_pos = cur.get("position", 0)
+            text_before = text[:cur_pos].rstrip()
+            if text_before:
+                prev_word_match = re.search(r"(\S+)$", text_before)
+                if prev_word_match:
+                    prev_word = prev_word_match.group(1)
+                    if re.match(r"^[a-zA-ZÀ-ỹĐđ]+$", prev_word):
+                        gap_len = cur_pos - len(text_before)
+                        if gap_len <= 2:
+                            prev_base = _strip_diacritics(prev_word)
+                            compound_base = f"{prev_base} {cur_base}"
+                            if compound_base in _BASE_FORM_INDEX:
+                                compound_candidates = [w for w, _ in _BASE_FORM_INDEX[compound_base]
+                                                       if w != compound_base][:5]
+                                if compound_candidates:
+                                    prev_pos = len(text_before)
+                                    cur["compound_candidates"] = compound_candidates
+                                    cur["compound_with"] = prev_word
+                                    cur["compound_position_start"] = prev_pos
+                                    cur["compound_position_end"] = cur_pos + len(cur.get("token", ""))
+                                    merged_flagged.append(cur)
+                                    continue
+
+            merged_flagged.append(cur)
+
+        flagged = merged_flagged
+
     # Only keep items that have candidates
-    return [item for item in flagged if item.get("candidates")]
+    return [item for item in flagged if item.get("candidates") or item.get("compound_candidates")]
 
 
 # =========================================================
@@ -1020,10 +1142,37 @@ CORRECTION_RESPONSE_FORMAT = {
 }
 
 
+def _get_context_snippet(text: str, position: int, word_len: int, before: int = 60, after: int = 60) -> tuple[str, str]:
+    """Extract context snippets before and after a word at given position."""
+    ctx_before = text[max(0, position - before):position].strip()
+    ctx_after = text[position + word_len:position + word_len + after].strip()
+    return ctx_before, ctx_after
+
+
+def _is_proper_noun(token: str) -> bool:
+    """Check if token looks like a Vietnamese proper noun (person name, place name).
+
+    Pattern: Title Case (not ALL CAPS), 2-4 words, each starting with uppercase.
+    Example: "Tô Lâm", "Nguyễn Văn A", "Hà Nội", "Bộ Công Thương"
+    NOT: "VAN PHONG", "CONG HÒA" (these are ALL CAPS OCR errors)
+    """
+    clean = token.strip()
+    if not clean or not clean[0].isupper():
+        return False
+    # Reject ALL CAPS — these are likely OCR errors, not names
+    if clean.isupper():
+        return False
+    words = clean.split()
+    if len(words) < 2 or len(words) > 5:
+        return False
+    # Each word should start with uppercase
+    return all(w[0].isupper() for w in words if w)
+
+
 def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
     """Build prompt asking LLM to review suspected errors and choose corrections.
 
-    The LLM sees the full text and a list of suspected errors with candidates.
+    The LLM sees the full text and a list of suspected errors with context snippets.
     It chooses the best correction for each error based on context.
     """
     if not flagged:
@@ -1031,9 +1180,22 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
 
     error_lines = []
     for item in flagged[:10]:  # Limit to 10 errors max
-        candidates = ", ".join(item.get("candidates", []))
+        candidates = list(item.get("candidates", []))
+        # Add compound candidates (e.g., "tham quyen" -> "thẩm quyền")
+        compound_cands = item.get("compound_candidates", [])
+        compound_with = item.get("compound_with", "")
+        if compound_cands and compound_with:
+            candidates.extend([f"[{c}]" for c in compound_cands])  # bracket to indicate compound
+        candidates_str = ", ".join(candidates)
         reasons = ", ".join(item.get("reasons", []))
-        error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates}] (reasons: {reasons})')
+        pos = item.get("position", -1)
+        ctx_before, ctx_after = "", ""
+        if pos >= 0:
+            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]))
+        context_part = ""
+        if ctx_before or ctx_after:
+            context_part = f' context: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
+        error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates_str}] (reasons: {reasons}){context_part}')
 
     errors_text = "\n".join(error_lines)
 
@@ -1043,7 +1205,10 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
         f"{errors_text}\n\n"
         f"Text:\n{text}\n\n"
         f"For each error, pick the best correction from the candidates based on context. "
-        f"If a word is actually correct, skip it. Return JSON:\n"
+        f"If a word is actually correct, skip it.\n"
+        f"IMPORTANT: Do NOT correct proper nouns (person names, place names). "
+        f"If a word starts with uppercase and appears to be a name, skip it even if it has candidates.\n"
+        f"Return JSON:\n"
         f'{{"corrections": [{{"word": "error", "chosen": "correction", "reason": "why"}}]}}'
     )
 
@@ -1055,15 +1220,28 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
     - Only replace words that are in the flagged list
     - Only replace with words from SymSpell candidates (not LLM-invented words)
     - Case-preserving replacement
+    - Handle compound candidates (e.g., [thẩm quyền] replaces "tham quyen")
     - Log each decision for audit
     """
     if not llm_corrections:
         return text
 
-    # Build lookup: word -> allowed candidates
+    # Build lookup: word -> allowed candidates (including compound)
     allowed_map: dict[str, list[str]] = {}
+    # Map for compound: first_word -> (second_word, compound_candidates, position_end)
+    compound_map: dict[str, dict[str, Any]] = {}
     for item in flagged:
         allowed_map[item["token"].lower()] = item.get("candidates", [])
+        if item.get("compound_candidates") and item.get("compound_with"):
+            allowed_map[item["token"].lower()].extend(
+                [f"[{c}]" for c in item["compound_candidates"]]
+            )
+            compound_map[item["token"].lower()] = {
+                "second_word": item["compound_with"],
+                "candidates": item["compound_candidates"],
+                "end_pos": item.get("compound_position_end"),
+                "start_pos": item.get("compound_position_start"),
+            }
 
     result = text
     for corr in llm_corrections:
@@ -1074,30 +1252,81 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
         if not word or not chosen:
             continue
 
-        # Validate: word must be in flagged list
+        # Validate: word must be in flagged list (exact or fuzzy match)
         word_lower = word.lower()
         if word_lower not in allowed_map:
-            _log(f"LLM correction REJECTED: '{word}' not in flagged list")
+            # Fuzzy: try base_form match (LLM may return slightly different diacritics)
+            word_base = _strip_diacritics(word)
+            fuzzy_match = None
+            for flagged_word in allowed_map:
+                if _strip_diacritics(flagged_word) == word_base:
+                    fuzzy_match = flagged_word
+                    break
+            if fuzzy_match:
+                word_lower = fuzzy_match
+                word = fuzzy_match
+            else:
+                _log(f"LLM correction REJECTED: '{word}' not in flagged list")
+                continue
+
+        # Skip proper nouns — don't correct names even if LLM suggests it
+        if _is_proper_noun(word):
+            _log(f"LLM correction REJECTED: '{word}' is a proper noun (name/place)")
             continue
 
-        # Validate: chosen must be from SymSpell candidates
+        # Validate: chosen must be from SymSpell candidates (including compound)
         allowed = [c.lower() for c in allowed_map[word_lower]]
-        if chosen.lower() not in allowed:
+        is_compound = chosen.startswith("[") and chosen.endswith("]")
+        chosen_clean = chosen.strip("[]") if is_compound else chosen
+        if chosen_clean.lower() not in allowed and chosen.lower() not in allowed:
             _log(f"LLM correction REJECTED: '{chosen}' not in candidates for '{word}'")
             continue
 
-        # Find and replace in text (case-insensitive)
-        idx = result.find(word)
-        if idx == -1:
-            idx = result.lower().find(word_lower)
-        if idx == -1:
-            continue
+        if is_compound and word_lower in compound_map:
+            # Compound replacement: replace "word1 word2" with compound word
+            info = compound_map[word_lower]
+            second_word = info["second_word"]
+            start_pos = info.get("start_pos")
 
-        # Find actual text at position to preserve case
-        actual_text = result[idx:idx + len(word)]
-        corrected = _match_case(actual_text, chosen)
-        result = result[:idx] + corrected + result[idx + len(word):]
-        _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (reason: {reason})")
+            if start_pos is not None:
+                # Backward compound: prev_word + current_word
+                idx = result.lower().find(word_lower)
+                if idx == -1:
+                    continue
+                span_end = idx + len(word)
+                actual_span = result[start_pos:span_end]
+                corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
+                result = result[:start_pos] + corrected + result[span_end:]
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason})")
+            else:
+                # Forward compound: current_word + next_word
+                idx = result.find(word)
+                if idx == -1:
+                    idx = result.lower().find(word_lower)
+                if idx == -1:
+                    continue
+                search_start = idx + len(word)
+                idx2 = result.find(second_word, search_start)
+                if idx2 == -1:
+                    idx2 = result.lower().find(second_word.lower(), search_start)
+                if idx2 == -1:
+                    continue
+                span_end = idx2 + len(second_word)
+                actual_span = result[idx:span_end]
+                corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
+                result = result[:idx] + corrected + result[span_end:]
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason})")
+        else:
+            # Single word replacement
+            idx = result.find(word)
+            if idx == -1:
+                idx = result.lower().find(word_lower)
+            if idx == -1:
+                continue
+            actual_text = result[idx:idx + len(word)]
+            corrected = _match_case(actual_text, chosen_clean)
+            result = result[:idx] + corrected + result[idx + len(word):]
+            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (reason: {reason})")
 
     return result
 
@@ -1227,19 +1456,22 @@ def process_segments_hybrid(
     for idx, seg in enumerate(segments):
         t0 = time.time()
 
+        # Step 0: Clean strange characters (OCR noise)
+        seg_text = clean_strange_chars(seg.text)
+
         # Step 1: Heuristic error detection
-        flagged_raw = detect_errors_heuristic(seg.text, sym)
+        flagged_raw = detect_errors_heuristic(seg_text, sym)
 
         # Step 2: Context validation (remove false positives)
-        flagged = validate_with_context(seg.text, flagged_raw, sym)
+        flagged = validate_with_context(seg_text, flagged_raw, sym)
 
         # Step 3: Generate candidates
-        flagged_with_candidates = generate_candidates(seg.text, flagged, sym)
+        flagged_with_candidates = generate_candidates(seg_text, flagged, sym)
 
         detect_time = time.time() - t0
 
         if not flagged_with_candidates:
-            corrected.append(seg.text)
+            corrected.append(seg_text)
             report_items.append({
                 "segment_id": seg.segment_id,
                 "kind": seg.kind,
@@ -1247,15 +1479,15 @@ def process_segments_hybrid(
                 "confirmed_errors": len(flagged),
                 "corrected": False,
                 "before": seg.text,
-                "after": seg.text,
+                "after": seg_text,
             })
             continue
 
         segments_with_errors += 1
 
         # Step 4: Apply unambiguous SymSpell corrections directly
-        sym_text = apply_symspell_direct(seg.text, flagged_with_candidates, sym)
-        sym_changed = sym_text.strip() != seg.text.strip()
+        sym_text = apply_symspell_direct(seg_text, flagged_with_candidates, sym)
+        sym_changed = sym_text.strip() != seg_text.strip()
 
         # Step 5: LLM review for ambiguous cases (multiple candidates)
         ambiguous = [item for item in flagged_with_candidates if len(item.get("candidates", [])) > 1]
@@ -1268,7 +1500,7 @@ def process_segments_hybrid(
         else:
             final_text = sym_text
 
-        changed = final_text.strip() != seg.text.strip()
+        changed = final_text.strip() != seg_text.strip()
         if changed:
             segments_corrected += 1
 
