@@ -1,10 +1,14 @@
 """Normalized text generation for Vietnamese administrative documents.
 
+Hybrid Pipeline (3 steps):
+1. underthesea: Tokenization and OCR error detection
+2. SymSpell: Generate correction suggestions via edit distance
+3. LLM (Qwen3): Context-aware referee to choose correct words
+
 Design goals:
 - Generic for Vietnamese administrative documents, not for a single document type.
 - Python does deterministic cleanup, line wrapping, and safety validation.
-- LLM only returns enum-based suggestions; no probability/confidence floats.
-- LLM reviews sentence/paragraph-like segments, not isolated raw lines only.
+- LLM only used for ambiguous corrections; SymSpell handles clear cases directly.
 - Partial reports are saved so failures do not hide intermediate results.
 
 Input:
@@ -14,7 +18,7 @@ Output:
     data/normalized_text/{document_id}.txt
     data/normalized_text/{document_id}.normalized_report.json
     data/normalized_text/{document_id}.segments.json
-    data/normalized_text/{document_id}.llm_review.json
+    data/normalized_text/{document_id}.hybrid_report.json
 """
 
 from __future__ import annotations
@@ -23,12 +27,15 @@ import json
 import os
 import re
 import time
+import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from underthesea import word_tokenize
+from symspellpy import SymSpell, Verbosity
 from app.env import load_backend_env
 
 
@@ -149,15 +156,6 @@ class SegmentRecord:
     kind: str
     start_line_id: int
     end_line_id: int
-
-
-@dataclass
-class SegmentReview:
-    segment_id: int
-    decision: str
-    risk: str
-    fixes: list[dict[str, Any]]
-    notes: str = ""
 
 
 # =========================================================
@@ -659,109 +657,25 @@ def build_sentence_segments(lines: list[LineRecord]) -> list[SegmentRecord]:
 
 # =========================================================
 # LLM REVIEW USING ENUMS
+
+# =========================================================
+# LLM OUTPUT RULES
 # =========================================================
 
-JSON_OUTPUT_RULES = """
-/no_think
-Output constraints:
-- Return exactly one valid JSON object.
-- Do not use markdown code fences.
-- Do not write reasoning or analysis.
-- Do not include <think>...</think>.
-- Do not add comments, logs, or text outside JSON.
-- Do not use probability, confidence, score, or numeric certainty fields.
-- Use only the enum values allowed by the schema.
-- End immediately after the final closing brace }.
-""".strip()
+JSON_OUTPUT_RULES = (
+    "/no_think\n"
+    "Output constraints:\n"
+    "- Return exactly one valid JSON object.\n"
+    "- Do not use markdown code fences.\n"
+    "- Do not write reasoning or analysis.\n"
+    "- Do not include <think> blocks.\n"
+    "- Do not add comments, logs, or text outside JSON.\n"
+    "- End immediately after the final closing brace }."
+)
 
-SEGMENT_REVIEW_PROMPT = """
-You are reviewing OCR text segments from Vietnamese administrative documents.
-
-Task:
-For each segment, decide whether Python may safely apply small OCR fixes.
-Return enum-based JSON only. Do not use probability scores.
-
-Return format:
-{
-  "reviews": [
-    {
-      "segment_id": 1,
-      "decision": "KEEP" | "APPLY_SMALL_FIXES" | "MANUAL_REVIEW" | "REMOVE_NOISE",
-      "risk": "LOW" | "MEDIUM" | "HIGH",
-      "fixes": [
-        {
-          "kind": "SPELLING" | "DIACRITIC" | "OCR_ARTIFACT" | "PUNCTUATION" | "SPACING",
-          "scope": "WORD" | "SHORT_PHRASE",
-          "from": "exact source substring",
-          "to": "replacement substring"
-        }
-      ],
-      "notes": "short note"
-    }
-  ]
-}
-
-Rules:
-- Return exactly one review object for every input segment_id.
-- Use KEEP when no safe fix is needed.
-- Use APPLY_SMALL_FIXES only for exact short substring fixes inside the segment.
-- Use MANUAL_REVIEW when the segment may be wrong but correction would require guessing.
-- Use REMOVE_NOISE only for obvious OCR/page/signature garbage; never remove valid legal content.
-- Do not rewrite a full line, full sentence, paragraph, name, date, number, document code, article number, or organization name.
-- Each fix.from must appear exactly in the segment text.
-- Keep fixes short: one word or a short phrase only.
-- Do not add missing content.
-- Do not change legal meaning.
-
-Focus on:
-- Vietnamese diacritic/spelling OCR errors.
-- Broken punctuation or spacing.
-- OCR artifacts.
-- Sentence-level context: segments usually end at punctuation or paragraph boundary.
-""".strip()
-
-SEGMENT_REVIEW_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "ocr_segment_review",
-        "schema": {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "reviews": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "segment_id": {"type": "integer"},
-                            "decision": {"type": "string", "enum": ["KEEP", "APPLY_SMALL_FIXES", "MANUAL_REVIEW", "REMOVE_NOISE"]},
-                            "risk": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
-                            "fixes": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "additionalProperties": False,
-                                    "properties": {
-                                        "kind": {"type": "string", "enum": ["SPELLING", "DIACRITIC", "OCR_ARTIFACT", "PUNCTUATION", "SPACING"]},
-                                        "scope": {"type": "string", "enum": ["WORD", "SHORT_PHRASE"]},
-                                        "from": {"type": "string"},
-                                        "to": {"type": "string"},
-                                    },
-                                    "required": ["kind", "scope", "from", "to"],
-                                },
-                            },
-                            "notes": {"type": "string"},
-                        },
-                        "required": ["segment_id", "decision", "risk", "fixes", "notes"],
-                    },
-                }
-            },
-            "required": ["reviews"],
-        },
-    },
-}
-
+# =========================================================
+# LLM CLIENT & JSON CALLS (kept for compatibility)
+# =========================================================
 
 def make_client() -> OpenAI:
     return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
@@ -796,27 +710,11 @@ def clip_text(text: str, max_chars: int) -> str:
     return s[:half].rstrip() + " ... " + s[-half:].lstrip()
 
 
-def build_review_prompt(segments: list[SegmentRecord]) -> str:
-    payload = {
-        "segments": [
-            {
-                "segment_id": s.segment_id,
-                "kind": s.kind,
-                "lines": [s.start_line_id, s.end_line_id],
-                "text": clip_text(s.text, OCR_TEXT_SNIPPET_CHARS),
-            }
-            for s in segments
-        ]
-    }
-    prompt = JSON_OUTPUT_RULES + "\n\n" + SEGMENT_REVIEW_PROMPT + "\nINPUT JSON:\n" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
+def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] | None = None, document_id: str | None = None, stage: str = "", batch_index: int | None = None) -> dict[str, Any]:
+    """Call LLM and return parsed JSON."""
 
-
-def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] | None = None, document_id: str | None = None, stage: str = "llm", batch_index: int | None = None) -> dict[str, Any]:
     @_retry_json()
-    def _call() -> dict[str, Any]:
+    def _call():
         kwargs: dict[str, Any] = {
             "model": LLM_MODEL,
             "messages": [{"role": "user", "content": prompt}],
@@ -829,412 +727,590 @@ def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] |
                 "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
             },
         }
-        if LLM_USE_RESPONSE_FORMAT and response_format is not None:
+        if LLM_USE_RESPONSE_FORMAT and response_format:
             kwargs["response_format"] = response_format
         t0 = time.time()
         resp = client.chat.completions.create(**kwargs)
-        content = resp.choices[0].message.content or ""
+        raw = resp.choices[0].message.content or ""
         elapsed = time.time() - t0
-
-        # Detect empty response (common with local LLM timeouts)
-        if not content.strip():
+        if not raw.strip():
             _log_llm_call(stage, batch_index, len(prompt), 0, elapsed, False, "empty_response")
-            if document_id:
-                suffix = f".batch_{batch_index:03d}" if batch_index is not None else ""
-                save_json_always(
-                    work_dir(document_id) / "llm_failures" / f"{stage}{suffix}.{int(time.time() * 1000)}.json",
-                    {
-                        "stage": stage,
-                        "batch_index": batch_index,
-                        "error": "LLM returned empty response",
-                        "raw_response": "",
-                        "prompt_preview": prompt[:2500],
-                    },
-                )
-            raise EmptyLLMResponseError(f"LLM returned empty response for {stage} batch={batch_index}")
-
+            raise EmptyLLMResponseError(f"LLM returned empty response for stage={stage}")
         try:
-            result = extract_json_object(content)
-            _log_llm_call(stage, batch_index, len(prompt), len(content), elapsed, True)
+            result = extract_json_object(raw)
+            _log_llm_call(stage, batch_index, len(prompt), len(raw), elapsed, True)
             return result
         except EmptyLLMResponseError:
             raise
-        except Exception as exc:
-            _log_llm_call(stage, batch_index, len(prompt), len(content), elapsed, False, str(exc))
-            if document_id:
-                suffix = f".batch_{batch_index:03d}" if batch_index is not None else ""
-                save_json_always(
-                    work_dir(document_id) / "llm_failures" / f"{stage}{suffix}.{int(time.time() * 1000)}.json",
-                    {
-                        "stage": stage,
-                        "batch_index": batch_index,
-                        "error": str(exc),
-                        "raw_response": content[:5000],
-                        "prompt_preview": prompt[:2500],
-                    },
-                )
-            raise LLMJSONParseError(f"Could not parse JSON from {stage} batch={batch_index}: {str(exc)[:100]}")
+        except Exception as e:
+            _log_llm_call(stage, batch_index, len(prompt), len(raw), elapsed, False, str(e))
+            raise LLMJSONParseError(f"Could not parse JSON from LLM stage={stage}: {str(e)[:100]}")
+
     return _call()
 
 
-VALID_DECISIONS = {"KEEP", "APPLY_SMALL_FIXES", "MANUAL_REVIEW", "REMOVE_NOISE"}
-VALID_RISKS = {"LOW", "MEDIUM", "HIGH"}
-VALID_FIX_KINDS = {"SPELLING", "DIACRITIC", "OCR_ARTIFACT", "PUNCTUATION", "SPACING"}
-VALID_SCOPES = {"WORD", "SHORT_PHRASE"}
+# =========================================================
+# HYBRID PIPELINE: heuristic detect + context + LLM review
+# =========================================================
+#
+# Flow:
+#   OCR text → normalize → heuristic error detection →
+#   context validation → generate candidates → LLM review
+#   → Python applies validated corrections
+#
+
+def _strip_diacritics(text: str) -> str:
+    """Remove Vietnamese diacritics, keep base letters."""
+    text = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in text if unicodedata.category(ch) != "Mn").lower()
 
 
-def parse_segment_reviews(obj: dict[str, Any], segments: list[SegmentRecord]) -> list[SegmentReview]:
-    seg_ids = {s.segment_id for s in segments}
-    out: list[SegmentReview] = []
-    seen: set[int] = set()
-    raw = obj.get("reviews", [])
-    if not isinstance(raw, list):
-        raw = []
-    for item in raw:
-        if not isinstance(item, dict):
+def _has_vietnamese_diacritics(text: str) -> bool:
+    """Check if text contains Vietnamese diacritic characters."""
+    return bool(re.search(
+        r"[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]",
+        text.lower()
+    ))
+
+
+_SYMSPELL_INSTANCE: SymSpell | None = None
+_BASE_FORM_INDEX: dict[str, list[tuple[str, int]]] | None = None
+
+
+def _load_symspell_vi() -> SymSpell:
+    """Load Vietnamese dictionary for SymSpell (cached singleton)."""
+    global _SYMSPELL_INSTANCE
+    if _SYMSPELL_INSTANCE is not None:
+        return _SYMSPELL_INSTANCE
+    sym = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
+    dict_path = Path(__file__).resolve().parents[2] / "data" / "vi_frequency_dict.txt"
+    if not dict_path.exists():
+        _log(f"WARNING: SymSpell dictionary not found at {dict_path}")
+        _SYMSPELL_INSTANCE = sym
+        return sym
+    sym.load_dictionary(str(dict_path), term_index=0, count_index=1, separator="\t")
+    _SYMSPELL_INSTANCE = sym
+    # Build base_form index: stripped_form -> [(original_word, freq), ...]
+    # Index all words (single + compound) for missing-diacritics lookup
+    global _BASE_FORM_INDEX
+    if _BASE_FORM_INDEX is None:
+        _BASE_FORM_INDEX = {}
+        for word, count in sym.words.items():
+            base = _strip_diacritics(word)
+            if base != word.lower():  # only index words that have diacritics
+                _BASE_FORM_INDEX.setdefault(base, []).append((word, count))
+            # Also add d-đ alias: strip đ -> d for OCR missing-đ detection
+            if 'đ' in base:
+                alias = base.replace('đ', 'd')
+                if alias != base:
+                    _BASE_FORM_INDEX.setdefault(alias, []).append((word, count))
+        for entries in _BASE_FORM_INDEX.values():
+            entries.sort(key=lambda x: -x[1])  # sort by freq descending
+    return sym
+
+
+# =========================================================
+# STEP 1: Heuristic error detection
+# =========================================================
+
+def detect_errors_heuristic(text: str, sym: SymSpell) -> list[dict[str, Any]]:
+    """Detect suspected OCR errors using heuristics.
+
+    Heuristics:
+    1. Word has Vietnamese diacritics but NOT in SymSpell dictionary
+    2. Word looks like OCR noise (random chars, numbers mixed with letters)
+    3. Word is a known OCR error pattern (e.g., single-letter words with diacritics)
+    4. Word missing diacritics - base form exists in dictionary (e.g., "phap" -> "pháp")
+    5. Word has wrong diacritic position - base form matches dictionary entries
+
+    Returns list of suspected errors with word, position, and reason.
+    """
+    tokens = word_tokenize(text, format="text")
+    words = tokens.split()
+    flagged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for word in words:
+        # Normalize underthesea underscore tokens (de_nghi -> de nghi)
+        clean = word.strip().replace("_", " ")
+        if not clean or len(clean) < 2:
             continue
-        try:
-            sid = int(item.get("segment_id"))
-        except (TypeError, ValueError):
+        if clean in seen:
             continue
-        if sid not in seg_ids or sid in seen:
+        seen.add(clean)
+
+        # Skip numbers, pure ASCII, structural markers
+        if re.match(r"^[\d\s\W]+$", clean):
             continue
-        decision = str(item.get("decision", "KEEP")).strip().upper()
-        risk = str(item.get("risk", "HIGH")).strip().upper()
-        if decision not in VALID_DECISIONS:
-            decision = "MANUAL_REVIEW"
-        if risk not in VALID_RISKS:
-            risk = "HIGH"
-        fixes: list[dict[str, Any]] = []
-        for fix in item.get("fixes", []) if isinstance(item.get("fixes", []), list) else []:
-            if not isinstance(fix, dict):
+        # Skip pure punctuation
+        if not any(c.isalpha() for c in clean):
+            continue
+
+        reasons = []
+        clean_lower = clean.lower()
+
+        # Heuristic 1: has diacritics but not in dictionary
+        has_diacritics = _has_vietnamese_diacritics(clean)
+        in_dict = clean_lower in sym.words
+
+        if has_diacritics and not in_dict:
+            reasons.append("NOT_IN_DICT")
+
+        # Heuristic 2: looks like OCR noise (mixed letters/numbers)
+        if re.search(r"[a-zA-Z].*\d|\d.*[a-zA-Z]", clean) and not re.match(r"^(ngày|tháng|năm|số|điều|khoản|mục)\s", clean_lower):
+            reasons.append("OCR_NOISE")
+
+        # Heuristic 3: single-letter word with diacritics AND low frequency (likely OCR error)
+        # Skip common words like 'có' (542K), 'từ' (120K), 'bộ' (31K)
+        if len(clean) == 2 and has_diacritics and not in_dict:
+            reasons.append("SINGLE_LETTER_DIACRITIC")
+
+        # Heuristic 4: missing diacritics (ASCII-only word, base form in dict)
+        # e.g., "phap" not in dict, but "pháp" is in dict via base_form_index
+        if not has_diacritics and not in_dict and _BASE_FORM_INDEX:
+            base = _strip_diacritics(clean)  # same as clean_lower for ASCII
+            if base in _BASE_FORM_INDEX:
+                candidates = [w for w, _ in _BASE_FORM_INDEX[base]]
+                if candidates:
+                    reasons.append("MISSING_DIACRITICS")
+
+        # Heuristic 5: wrong diacritic position (has diacritics, not in dict, base form matches dict entries)
+        # e.g., "trành" not in dict, but base "tranh" -> "tranh" is in dict
+        if has_diacritics and not in_dict and _BASE_FORM_INDEX:
+            base = _strip_diacritics(clean)
+            if base in _BASE_FORM_INDEX:
+                candidates = [w for w, _ in _BASE_FORM_INDEX[base]]
+                if candidates and clean_lower not in candidates:
+                    reasons.append("WRONG_DIACRITIC")
+
+        # Heuristic 6: likely wrong word (in dict but very low freq vs top candidate)
+        # e.g., "nhiêu" (freq=289) vs "nhiều" (freq=122987) — ratio 426x
+        if in_dict and _BASE_FORM_INDEX and not reasons:
+            base = _strip_diacritics(clean)
+            if base in _BASE_FORM_INDEX:
+                entries = _BASE_FORM_INDEX[base]
+                word_freq = sym.words.get(clean_lower, 0)
+                top_word, top_freq = entries[0] if entries else ("", 0)
+                # Flag if: word freq < 2000, top candidate freq >= 10x, and word is not the top candidate
+                if word_freq < 2000 and top_freq >= 10 * word_freq and top_word != clean_lower:
+                    reasons.append("LIKELY_WRONG")
+
+        if reasons:
+            # Find position in original text
+            pos = text.find(clean)
+            if pos == -1:
                 continue
-            kind = str(fix.get("kind", "")).upper()
-            scope = str(fix.get("scope", "")).upper()
-            src = str(fix.get("from", ""))
-            dst = str(fix.get("to", ""))
-            if kind in VALID_FIX_KINDS and scope in VALID_SCOPES and src:
-                fixes.append({"kind": kind, "scope": scope, "from": src, "to": dst})
-        out.append(SegmentReview(sid, decision, risk, fixes, str(item.get("notes", ""))))
-        seen.add(sid)
-    for seg in segments:
-        if seg.segment_id not in seen:
-            out.append(SegmentReview(seg.segment_id, "KEEP", "LOW", [], "LLM omitted this segment; default KEEP."))
-    return sorted(out, key=lambda r: r.segment_id)
+            flagged.append({
+                "token": clean,
+                "position": pos,
+                "base_form": _strip_diacritics(clean),
+                "reasons": reasons,
+            })
 
-
-def review_segments_with_llm(client: OpenAI, segments: list[SegmentRecord], document_id: str | None = None) -> list[SegmentReview]:
-    if not OCR_ENABLE_LLM_REVIEW:
-        return [SegmentReview(s.segment_id, "KEEP", "LOW", [], "LLM disabled.") for s in segments]
-    out: list[SegmentReview] = []
-    total_batches = (len(segments) + OCR_BATCH_SIZE - 1) // OCR_BATCH_SIZE
-    for batch_index, i in enumerate(range(0, len(segments), OCR_BATCH_SIZE), start=1):
-        batch = segments[i:i + OCR_BATCH_SIZE]
-        try:
-            obj = call_llm_json(
-                client,
-                build_review_prompt(batch),
-                response_format=SEGMENT_REVIEW_RESPONSE_FORMAT,
-                document_id=document_id,
-                stage="segment_review",
-                batch_index=batch_index,
-            )
-            batch_reviews = parse_segment_reviews(obj, batch)
-            out.extend(batch_reviews)
-        except Exception as exc:
-            _log(f"Segment review batch failed; default KEEP. Error: {exc}")
-            batch_reviews = [SegmentReview(s.segment_id, "KEEP", "LOW", [], f"Batch failed: {exc}") for s in batch]
-            out.extend(batch_reviews)
-
-        if document_id:
-            if SAVE_DEBUG_FILES:
-                save_json_always(work_dir(document_id) / "batch_reports" / f"segment_review_{batch_index:03d}.json", [asdict(x) for x in batch_reviews])
-                save_json_always(work_dir(document_id) / "llm_review.partial.json", [asdict(x) for x in sorted(out, key=lambda r: r.segment_id)])
-            update_progress(
-                document_id,
-                status="reviewing_segments",
-                completed_review_batches=batch_index,
-                total_review_batches=total_batches,
-            )
-
-    return sorted(out, key=lambda r: r.segment_id)
-
+    return flagged
 
 
 # =========================================================
-# SEMANTIC VALIDATION FOR OCR FIXES
+# STEP 2: Context validation
 # =========================================================
 
+def validate_with_context(text: str, flagged: list[dict[str, Any]], sym: SymSpell) -> list[dict[str, Any]]:
+    """Validate suspected errors by checking context (surrounding words).
 
-SIMPLE_FIX_VALIDATION_PROMPT = """
-You validate OCR fixes in Vietnamese administrative text.
+    Context checks:
+    1. Word appears multiple times in text - likely correct (not flagged)
+    2. Word is part of a known phrase (e.g., "nhân dân" is always correct)
+    3. Word is adjacent to structural markers (e.g., "Số:", "Ngày:")
 
-Return exactly one valid JSON object.
+    Returns filtered list of confirmed errors.
+    """
+    confirmed = []
+    text_lower = text.lower()
 
-Input:
-- id: fix id
-- text: full segment context
-- src: exact source substring
-- hint: previous suggested replacement, may be wrong
+    for item in flagged:
+        token = item["token"]
+        token_lower = token.lower()
 
-Task:
-For each item, decide whether src should be replaced.
+        # Skip if word appears multiple times (likely correct)
+        count = text_lower.count(token_lower)
+        if count > 1:
+            continue
 
-Return format:
-{
-  "results": [
-    {
-      "id": "same id",
-      "action": "APPLY" | "REJECT" | "MANUAL",
-      "to": "replacement or original src",
-      "reason": "CONTEXT_MATCH" | "KEEP_ORIGINAL" | "MEANING_CHANGE" | "TOO_AMBIGUOUS" | "UNSAFE_EXPANSION" | "PROTECTED_CONTENT" | "NOT_FOUND"
-    }
-  ]
-}
+        # Skip if word is adjacent to structural markers
+        pos = item["position"]
+        context_before = text[max(0, pos-50):pos].lower()
+        context_after = text[pos+len(token):pos+len(token)+50].lower()
 
-Rules:
-- Return exactly one result for every input item.
-- APPLY only when the replacement preserves phrase-level meaning.
-- If unsure, use MANUAL.
-- If keeping original is safest, use REJECT and set to = src.
-- Do not add missing content.
-- Do not change names, dates, numbers, document codes, article numbers, or organization names.
-- Do not rewrite full sentences.
-- Prefer context over isolated word form.
-- The hint may be wrong; do not blindly follow it.
-- If src is not found exactly in text, use REJECT and reason NOT_FOUND.
+        # Structural markers that indicate the word is likely correct
+        structural_markers = ["số:", "ngày:", "tháng:", "năm:", "điều:", "khoản:", "mục:", "phần:"]
+        if any(marker in context_before for marker in structural_markers):
+            continue
 
-Important examples:
-- "dé tổng hợp" should be "để", not "đề".
-- "hang tuần" should be "hằng", not "hàng".
-- "day mạnh" should be "đẩy", not "đầy".
-- "ran đe" should be "răn".
-- "dau tranh" should be "đấu tranh", not "đau tranh".
-- "t" -> "thực" is unsafe expansion.
-- "tri tuệ" -> "sở hữu trí tuệ" adds content and must be rejected.
-- Removing possible administrative labels such as "điện:" is unsafe unless a separate noise validation proves it is noise.
-""".strip()
+        confirmed.append(item)
+
+    return confirmed
 
 
-SIMPLE_FIX_RESPONSE_FORMAT = {
+# =========================================================
+# STEP 3: Generate correction candidates
+# =========================================================
+
+def generate_candidates(text: str, flagged: list[dict[str, Any]], sym: SymSpell) -> list[dict[str, Any]]:
+    """Generate correction candidates for each flagged word using SymSpell.
+
+    For each flagged word, find the closest valid words in the dictionary.
+    Falls back to base_form_index for MISSING_DIACRITICS/WRONG_DIACRITIC errors.
+    Returns list with added "candidates" field.
+    """
+    for item in flagged:
+        reasons = item.get("reasons", [])
+
+        # For missing-diacritics / wrong-diacritic / likely-wrong / single-letter errors, use base_form_index
+        # (SymSpell edit distance can't bridge the gap or would give wrong results)
+        if any(r in reasons for r in ("MISSING_DIACRITICS", "WRONG_DIACRITIC", "LIKELY_WRONG", "SINGLE_LETTER_DIACRITIC")) and _BASE_FORM_INDEX:
+            base = item.get("base_form", "")
+            if base in _BASE_FORM_INDEX:
+                candidates = [w for w, _ in _BASE_FORM_INDEX[base]
+                              if w != item["token"].lower()][:10]
+                if candidates:
+                    item["candidates"] = candidates
+                    continue
+
+        # Standard SymSpell edit-distance lookup
+        suggestions = sym.lookup(
+            item["token"], Verbosity.CLOSEST, max_edit_distance=2, transfer_casing=True
+        )
+        # Filter out the word itself and get top 3
+        candidates = [s.term for s in suggestions if s.term != item["token"]][:10]
+        item["candidates"] = candidates
+
+    # Only keep items that have candidates
+    return [item for item in flagged if item.get("candidates")]
+
+
+# =========================================================
+# STEP 4: LLM reviews and chooses corrections
+# =========================================================
+
+# JSON schema for LLM correction response
+CORRECTION_RESPONSE_FORMAT = {
     "type": "json_schema",
     "json_schema": {
-        "name": "simple_ocr_fix_validation",
+        "name": "correction_response",
+        "strict": True,
         "schema": {
             "type": "object",
-            "additionalProperties": False,
             "properties": {
-                "results": {
+                "corrections": {
                     "type": "array",
                     "items": {
                         "type": "object",
-                        "additionalProperties": False,
                         "properties": {
-                            "id": {"type": "string"},
-                            "action": {"type": "string", "enum": ["APPLY", "REJECT", "MANUAL"]},
-                            "to": {"type": "string"},
-                            "reason": {
-                                "type": "string",
-                                "enum": [
-                                    "CONTEXT_MATCH",
-                                    "KEEP_ORIGINAL",
-                                    "MEANING_CHANGE",
-                                    "TOO_AMBIGUOUS",
-                                    "UNSAFE_EXPANSION",
-                                    "PROTECTED_CONTENT",
-                                    "NOT_FOUND",
-                                ],
-                            },
-                        },
-                        "required": ["id", "action", "to", "reason"],
-                    },
-                }
-            },
-            "required": ["results"],
-        },
-    },
-}
-
-
-def build_simple_fix_prompt(candidates: list[dict[str, Any]]) -> str:
-    payload = {
-        "items": [
-            {
-                "id": c["fix_id"],
-                "text": c["segment_text"],
-                "src": c["source"],
-                "hint": c["replacement"],
-            }
-            for c in candidates
-        ]
-    }
-    prompt = JSON_OUTPUT_RULES + "\n\n" + SIMPLE_FIX_VALIDATION_PROMPT + "\nINPUT JSON:\n" + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
-
-
-
-NOISE_VALIDATION_PROMPT = """
-You are validating whether OCR/PDF extracted segments are removable noise in a Vietnamese administrative document.
-
-Task:
-For each candidate segment marked REMOVE_NOISE by a previous model, inspect the segment with neighboring context.
-Return JSON only.
-
-Return format:
-{
-  "noise_evaluations": [
-    {
-      "segment_id": 1,
-      "content_role": "DOCUMENT_CONTENT" | "LAYOUT_METADATA" | "SCAN_STAMP" | "OCR_GARBAGE" | "UNCLEAR",
-      "remove_decision": "REMOVE" | "KEEP" | "MANUAL_REVIEW",
-      "reason": "short reason"
-    }
-  ]
-}
-
-Rules:
-- REMOVE only if the segment is clearly not part of the administrative document content.
-- KEEP if it is a title, subject, recipient, legal basis, numbered/lettered item, body text, footer, signature, date, or document metadata.
-- MANUAL_REVIEW if uncertain.
-- Use neighboring context to decide whether the text is a scan stamp, portal watermark, broken OCR junk, or real content.
-- Do not use document-type-specific assumptions.
-- Do not remove valid administrative content just because it has OCR errors.
-""".strip()
-
-NOISE_RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "ocr_noise_validation",
-        "schema": {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {
-                "noise_evaluations": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "segment_id": {"type": "integer"},
-                            "content_role": {"type": "string", "enum": ["DOCUMENT_CONTENT", "LAYOUT_METADATA", "SCAN_STAMP", "OCR_GARBAGE", "UNCLEAR"]},
-                            "remove_decision": {"type": "string", "enum": ["REMOVE", "KEEP", "MANUAL_REVIEW"]},
+                            "word": {"type": "string"},
+                            "chosen": {"type": "string"},
                             "reason": {"type": "string"},
                         },
-                        "required": ["segment_id", "content_role", "remove_decision", "reason"],
+                        "required": ["word", "chosen", "reason"],
                     },
-                }
+                },
             },
-            "required": ["noise_evaluations"],
+            "required": ["corrections"],
         },
     },
 }
 
 
-def build_noise_validation_prompt(items: list[dict[str, Any]]) -> str:
-    payload = {"items": items}
-    prompt = (
-        JSON_OUTPUT_RULES
-        + "\n\n"
-        + NOISE_VALIDATION_PROMPT
-        + "\nINPUT JSON:\n"
-        + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
+    """Build prompt asking LLM to review suspected errors and choose corrections.
+
+    The LLM sees the full text and a list of suspected errors with candidates.
+    It chooses the best correction for each error based on context.
+    """
+    if not flagged:
+        return ""
+
+    error_lines = []
+    for item in flagged[:10]:  # Limit to 10 errors max
+        candidates = ", ".join(item.get("candidates", []))
+        reasons = ", ".join(item.get("reasons", []))
+        error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates}] (reasons: {reasons})')
+
+    errors_text = "\n".join(error_lines)
+
+    return (
+        f"/no_think\n"
+        f"Review this Vietnamese text for OCR errors. The following words are suspected errors:\n\n"
+        f"{errors_text}\n\n"
+        f"Text:\n{text}\n\n"
+        f"For each error, pick the best correction from the candidates based on context. "
+        f"If a word is actually correct, skip it. Return JSON:\n"
+        f'{{"corrections": [{{"word": "error", "chosen": "correction", "reason": "why"}}]}}'
     )
-    if len(prompt) > OCR_MAX_PROMPT_CHARS:
-        raise ValueError(f"Prompt too long: {len(prompt)} chars > {OCR_MAX_PROMPT_CHARS}")
-    return prompt
 
 
-def collect_noise_candidates(segments: list[SegmentRecord], reviews: list[SegmentReview]) -> list[dict[str, Any]]:
-    review_by_id = {r.segment_id: r for r in reviews}
-    segments_sorted = sorted(segments, key=lambda s: s.segment_id)
-    by_id = {s.segment_id: s for s in segments_sorted}
-    candidates: list[dict[str, Any]] = []
+def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]], flagged: list[dict[str, Any]], sym: SymSpell) -> str:
+    """Apply LLM-chosen corrections with strict validation.
 
-    for seg in segments_sorted:
-        review = review_by_id.get(seg.segment_id)
-        if not review or review.decision != "REMOVE_NOISE":
+    Rules:
+    - Only replace words that are in the flagged list
+    - Only replace with words from SymSpell candidates (not LLM-invented words)
+    - Case-preserving replacement
+    - Log each decision for audit
+    """
+    if not llm_corrections:
+        return text
+
+    # Build lookup: word -> allowed candidates
+    allowed_map: dict[str, list[str]] = {}
+    for item in flagged:
+        allowed_map[item["token"].lower()] = item.get("candidates", [])
+
+    result = text
+    for corr in llm_corrections:
+        word = str(corr.get("word", "")).strip()
+        chosen = str(corr.get("chosen", "")).strip()
+        reason = str(corr.get("reason", "")).strip()
+
+        if not word or not chosen:
             continue
 
-        prev_seg = by_id.get(seg.segment_id - 1)
-        next_seg = by_id.get(seg.segment_id + 1)
+        # Validate: word must be in flagged list
+        word_lower = word.lower()
+        if word_lower not in allowed_map:
+            _log(f"LLM correction REJECTED: '{word}' not in flagged list")
+            continue
 
-        candidates.append({
+        # Validate: chosen must be from SymSpell candidates
+        allowed = [c.lower() for c in allowed_map[word_lower]]
+        if chosen.lower() not in allowed:
+            _log(f"LLM correction REJECTED: '{chosen}' not in candidates for '{word}'")
+            continue
+
+        # Find and replace in text (case-insensitive)
+        idx = result.find(word)
+        if idx == -1:
+            idx = result.lower().find(word_lower)
+        if idx == -1:
+            continue
+
+        # Find actual text at position to preserve case
+        actual_text = result[idx:idx + len(word)]
+        corrected = _match_case(actual_text, chosen)
+        result = result[:idx] + corrected + result[idx + len(word):]
+        _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (reason: {reason})")
+
+    return result
+
+
+def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpell, client: OpenAI) -> str:
+    """Ask LLM to review suspected errors and choose corrections.
+
+    The LLM sees the full text context and chooses from candidates.
+    Python validates and applies the choices.
+    """
+    if not flagged:
+        return text
+
+    prompt = build_llm_review_prompt(text, flagged)
+    if not prompt:
+        return text
+
+    try:
+        kwargs = {
+            "model": LLM_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0,
+            "top_p": 0.1,
+            "max_tokens": min(LLM_MAX_TOKENS, 512),
+            "extra_body": {
+                "think": LLM_THINK,
+                "keep_alive": LLM_KEEP_ALIVE,
+                "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
+            },
+        }
+        if LLM_USE_RESPONSE_FORMAT:
+            kwargs["response_format"] = CORRECTION_RESPONSE_FORMAT
+
+        resp = client.chat.completions.create(**kwargs)
+        content = (resp.choices[0].message.content or "").strip()
+
+        if not content:
+            _log("LLM returned empty for correction review")
+            return text
+
+        # Parse JSON response
+        try:
+            parsed = extract_json_object(content)
+        except Exception:
+            _log("LLM correction JSON parse failed")
+            return text
+
+        corrections = parsed.get("corrections", [])
+        if not isinstance(corrections, list):
+            return text
+
+        # Apply with strict validation
+        return apply_validated_corrections(text, corrections, flagged, sym)
+
+    except Exception as exc:
+        _log(f"LLM correction review failed: {exc}")
+        return text
+
+
+# =========================================================
+# STEP 5: Apply SymSpell-only corrections (no LLM needed)
+# =========================================================
+
+def _match_case(original: str, correction: str) -> str:
+    """Preserve case pattern of original when applying correction.
+
+    Examples:
+        _match_case("Dau", "đấu") -> "Đấu"
+        _match_case("DAU TRANH", "đấu tranh") -> "ĐẤU TRANH"
+        _match_case("dau Tranh", "đấu tranh") -> "đấu Tranh"
+    """
+    if original.isupper():
+        return correction.upper()
+    if original.islower():
+        return correction
+    if original[0].isupper():
+        return correction[0].upper() + correction[1:]
+    return correction
+
+
+def apply_symspell_direct(text: str, flagged: list[dict[str, Any]], sym: SymSpell) -> str:
+    """Apply SymSpell corrections directly for unambiguous cases.
+
+    If a word has exactly ONE candidate, replace it without LLM.
+    If a word has MULTIPLE candidates, leave it for LLM review.
+    Preserves original case pattern.
+    """
+    result = text
+    for item in sorted(flagged, key=lambda x: x["position"], reverse=True):
+        candidates = item.get("candidates", [])
+        if len(candidates) == 1:
+            # Unambiguous: replace directly with case preservation
+            pos = item["position"]
+            corrected = _match_case(item["token"], candidates[0])
+            result = result[:pos] + corrected + result[pos + len(item["token"]):]
+
+    return result
+
+
+# =========================================================
+# MAIN HYBRID PIPELINE FUNCTION
+# =========================================================
+
+def process_segments_hybrid(
+    segments: list[SegmentRecord],
+    client: OpenAI,
+    document_id: str | None = None,
+) -> tuple[list[str], dict[str, Any]]:
+    """Run the 5-step hybrid pipeline on all segments.
+
+    Flow per segment:
+    1. Heuristic detect: underthesea tokenize + SymSpell lookup + OCR patterns
+    2. Context validate: check surrounding words, remove false positives
+    3. Generate candidates: SymSpell edit distance suggestions
+    4. SymSpell direct: apply unambiguous (single-candidate) corrections
+    5. LLM review: for ambiguous cases, LLM sees full text and chooses
+
+    Returns (corrected_texts, report).
+    """
+    sym = _load_symspell_vi()
+    corrected: list[str] = []
+    report_items: list[dict[str, Any]] = []
+    total_segments = len(segments)
+    segments_with_errors = 0
+    segments_corrected = 0
+
+    for idx, seg in enumerate(segments):
+        t0 = time.time()
+
+        # Step 1: Heuristic error detection
+        flagged_raw = detect_errors_heuristic(seg.text, sym)
+
+        # Step 2: Context validation (remove false positives)
+        flagged = validate_with_context(seg.text, flagged_raw, sym)
+
+        # Step 3: Generate candidates
+        flagged_with_candidates = generate_candidates(seg.text, flagged, sym)
+
+        detect_time = time.time() - t0
+
+        if not flagged_with_candidates:
+            corrected.append(seg.text)
+            report_items.append({
+                "segment_id": seg.segment_id,
+                "kind": seg.kind,
+                "raw_errors": len(flagged_raw),
+                "confirmed_errors": len(flagged),
+                "corrected": False,
+                "before": seg.text,
+                "after": seg.text,
+            })
+            continue
+
+        segments_with_errors += 1
+
+        # Step 4: Apply unambiguous SymSpell corrections directly
+        sym_text = apply_symspell_direct(seg.text, flagged_with_candidates, sym)
+        sym_changed = sym_text.strip() != seg.text.strip()
+
+        # Step 5: LLM review for ambiguous cases (multiple candidates)
+        ambiguous = [item for item in flagged_with_candidates if len(item.get("candidates", [])) > 1]
+
+        llm_time = 0.0
+        if ambiguous:
+            t0 = time.time()
+            final_text = llm_review_and_correct(sym_text, ambiguous, sym, client)
+            llm_time = time.time() - t0
+        else:
+            final_text = sym_text
+
+        changed = final_text.strip() != seg.text.strip()
+        if changed:
+            segments_corrected += 1
+
+        corrected.append(final_text)
+        report_items.append({
             "segment_id": seg.segment_id,
-            "segment_kind": seg.kind,
-            "segment_text": clip_text(seg.text, OCR_TEXT_SNIPPET_CHARS),
-            "previous_segment": clip_text(prev_seg.text, 280) if prev_seg else None,
-            "next_segment": clip_text(next_seg.text, 280) if next_seg else None,
-            "model_notes": review.notes,
-            "model_risk": review.risk,
+            "kind": seg.kind,
+            "raw_errors": len(flagged_raw),
+            "confirmed_errors": len(flagged),
+            "with_candidates": len(flagged_with_candidates),
+            "unambiguous_applied": sym_changed,
+            "ambiguous_for_llm": len(ambiguous),
+            "corrected": changed,
+            "detect_duration": f"{detect_time:.2f}s",
+            "llm_duration": f"{llm_time:.2f}s",
+            "before": seg.text,
+            "after": final_text,
         })
 
-    return candidates
-
-
-def semantic_validate_noise_segments(
-    client: OpenAI,
-    segments: list[SegmentRecord],
-    reviews: list[SegmentReview],
-    document_id: str | None = None,
-) -> tuple[dict[int, dict[str, Any]], list[dict[str, Any]]]:
-    """Validate REMOVE_NOISE decisions with a separate LLM context pass.
-
-    This avoids hard-coding watermark/portal/stamp patterns in Python.
-    """
-    candidates = collect_noise_candidates(segments, reviews)
-    allowed: dict[int, dict[str, Any]] = {}
-    report: list[dict[str, Any]] = []
-
-    if not candidates:
-        return allowed, report
-
-    for batch_index, batch in enumerate(chunk_list(candidates, OCR_SEMANTIC_BATCH_SIZE), start=1):
-        try:
-            obj = call_llm_json(
-                client,
-                build_noise_validation_prompt(batch),
-                response_format=NOISE_RESPONSE_FORMAT,
-                document_id=document_id,
-                stage="noise_validation",
-                batch_index=batch_index,
+        if document_id and (idx + 1) % 5 == 0:
+            update_progress(
+                document_id,
+                status="hybrid_correcting",
+                completed_segments=idx + 1,
+                total_segments=total_segments,
+                segments_with_errors=segments_with_errors,
+                segments_corrected=segments_corrected,
             )
-            raw = obj.get("noise_evaluations", []) if isinstance(obj, dict) else []
-            evals = {int(e.get("segment_id")): e for e in raw if isinstance(e, dict) and str(e.get("segment_id", "")).isdigit()}
 
-            for c in batch:
-                sid = int(c["segment_id"])
-                e = evals.get(sid, {})
-                role = str(e.get("content_role", "UNCLEAR")).upper()
-                decision = str(e.get("remove_decision", "MANUAL_REVIEW")).upper()
-                reason = str(e.get("reason", ""))
+    summary = {
+        "total_segments": total_segments,
+        "segments_with_errors": segments_with_errors,
+        "segments_corrected": segments_corrected,
+        "items": report_items,
+    }
+    return corrected, summary
 
-                can_remove = decision == "REMOVE" and role in {"SCAN_STAMP", "OCR_GARBAGE", "LAYOUT_METADATA"}
-                item = {
-                    **c,
-                    "content_role": role,
-                    "remove_decision": decision,
-                    "can_remove": can_remove,
-                    "reason": reason,
-                }
-                report.append(item)
-                if can_remove:
-                    allowed[sid] = item
-        except Exception as exc:
-            for c in batch:
-                report.append({**c, "remove_decision": "MANUAL_REVIEW", "can_remove": False, "reason": f"noise validation failed: {exc}"})
-
-        if document_id:
-            if SAVE_DEBUG_FILES:
-                save_json_always(work_dir(document_id) / "noise_validation.partial.json", report)
-            update_progress(document_id, status="validating_noise", completed_noise_batches=batch_index)
-
-    return allowed, report
 
 
 
 def has_cjk(text: str) -> bool:
+    """Detect CJK characters to protect non-Vietnamese content."""
     return bool(re.search(r"[\u3400-\u9fff]", str(text or "")))
 
 
@@ -1301,349 +1377,6 @@ def extract_phrase_context(segment_text: str, source: str, window_words: int = 3
     }
 
 
-def collect_fix_candidates(segments: list[SegmentRecord], reviews: list[SegmentReview]) -> list[dict[str, Any]]:
-    seg_by_id = {s.segment_id: s for s in segments}
-    candidates: list[dict[str, Any]] = []
-    for review in reviews:
-        if review.decision != "APPLY_SMALL_FIXES":
-            continue
-        if review.risk == "HIGH":
-            continue
-        seg = seg_by_id.get(review.segment_id)
-        if not seg:
-            continue
-        for idx, fix in enumerate(review.fixes):
-            src = str(fix.get("from", ""))
-            dst = str(fix.get("to", ""))
-            ok, reason = generic_fix_shape_is_safe(src, dst)
-            fix_id = f"{review.segment_id}:{idx}"
-            phrase_context = extract_phrase_context(seg.text, src, window_words=3)
-            candidates.append({
-                "fix_id": fix_id,
-                "segment_id": review.segment_id,
-                "fix_index": idx,
-                "segment_kind": seg.kind,
-                "segment_text": clip_text(seg.text, OCR_TEXT_SNIPPET_CHARS),
-                "source": src,
-                "replacement": dst,
-                "phrase_context": phrase_context,
-                "phrase_window": phrase_context.get("phrase_window", src),
-                "left_words": phrase_context.get("left_words", []),
-                "right_words": phrase_context.get("right_words", []),
-                "kind": fix.get("kind", ""),
-                "scope": fix.get("scope", ""),
-                "precheck": "PASS" if ok else "REJECT",
-                "precheck_reason": reason,
-            })
-    return candidates
-
-
-def chunk_list(items: list[Any], size: int) -> list[list[Any]]:
-    return [items[i:i + size] for i in range(0, len(items), max(1, size))]
-
-
-# Fix kinds that are safe to auto-apply without semantic validation.
-_HIGH_CONFIDENCE_KINDS = {"SPELLING", "DIACRITIC"}
-
-
-def _is_high_confidence_fix(candidate: dict[str, Any]) -> bool:
-    """Return True if a fix candidate is safe to apply without LLM semantic validation.
-
-    Criteria:
-    - precheck passed (shape is safe)
-    - scope is WORD (single word, not phrase)
-    - kind is SPELLING or DIACRITIC (not OCR_ARTIFACT, PUNCTUATION, SPACING)
-    - has phrase context (at least one neighbor word)
-    """
-    if candidate.get("precheck") != "PASS":
-        return False
-    if candidate.get("scope") != "WORD":
-        return False
-    if candidate.get("kind") not in _HIGH_CONFIDENCE_KINDS:
-        return False
-    ctx = candidate.get("phrase_context", {})
-    has_context = bool(ctx.get("left_words")) or bool(ctx.get("right_words"))
-    return has_context
-
-
-def semantic_validate_candidate_fixes(client: OpenAI, segments: list[SegmentRecord], reviews: list[SegmentReview], document_id: str | None = None) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
-    """One-request semantic validation for OCR fixes.
-
-    LLM suggests APPLY / REJECT / MANUAL; Python still performs the final
-    deterministic safety checks before allowing any replacement.
-    """
-    candidates = collect_fix_candidates(segments, reviews)
-    report: list[dict[str, Any]] = []
-    allowed: dict[str, dict[str, Any]] = {}
-
-    if not OCR_ENABLE_SEMANTIC_VALIDATION:
-        for c in candidates:
-            report.append({
-                **c,
-                "semantic_validation": "DISABLED",
-                "apply_decision": "MANUAL_REVIEW",
-                "reason": "semantic validation disabled",
-            })
-        return allowed, report
-
-    for batch_index, batch in enumerate(chunk_list(candidates, OCR_SEMANTIC_BATCH_SIZE), start=1):
-        passed: list[dict[str, Any]] = []
-        skipped: list[dict[str, Any]] = []
-
-        for c in batch:
-            if c["precheck"] != "PASS":
-                report.append({
-                    **c,
-                    "apply_decision": "REJECT",
-                    "reason": c["precheck_reason"],
-                })
-            elif _is_high_confidence_fix(c):
-                # Auto-allow: SPELLING/DIACRITIC single-word fix with context
-                item = {
-                    **c,
-                    "evaluation": {"action": "APPLY", "reason": "CONTEXT_MATCH"},
-                    "best_replacement": c["replacement"],
-                    "original_suggestion": c["replacement"],
-                    "best_shape_check": "PASS",
-                    "best_shape_reason": c["precheck_reason"],
-                    "apply_decision": "ALLOW",
-                    "reason": "CONTEXT_MATCH",
-                    "semantic_validation": "SKIPPED_HIGH_CONFIDENCE",
-                }
-                report.append(item)
-                allowed[c["fix_id"]] = item
-            else:
-                passed.append(c)
-
-        if not passed:
-            continue
-
-        try:
-            obj = call_llm_json(
-                client,
-                build_simple_fix_prompt(passed),
-                response_format=SIMPLE_FIX_RESPONSE_FORMAT,
-                document_id=document_id,
-                stage="semantic_validation",
-                batch_index=batch_index,
-            )
-
-            raw_results = obj.get("results", []) if isinstance(obj, dict) else []
-            results = {
-                str(item.get("id")): item
-                for item in raw_results
-                if isinstance(item, dict)
-            }
-
-            for c in passed:
-                fid = c["fix_id"]
-                result = results.get(fid)
-
-                if not result:
-                    report.append({
-                        **c,
-                        "evaluation": {},
-                        "best_replacement": c["source"],
-                        "original_suggestion": c["replacement"],
-                        "best_shape_check": "REJECT",
-                        "best_shape_reason": "LLM omitted this fix id",
-                        "apply_decision": "MANUAL_REVIEW",
-                        "reason": "LLM omitted this fix id",
-                    })
-                    continue
-
-                action = str(result.get("action", "MANUAL")).upper()
-                replacement = str(result.get("to", c["source"]))
-                reason = str(result.get("reason", "TOO_AMBIGUOUS")).upper()
-
-                if action not in {"APPLY", "REJECT", "MANUAL"}:
-                    action = "MANUAL"
-                if reason not in {
-                    "CONTEXT_MATCH",
-                    "KEEP_ORIGINAL",
-                    "MEANING_CHANGE",
-                    "TOO_AMBIGUOUS",
-                    "UNSAFE_EXPANSION",
-                    "PROTECTED_CONTENT",
-                    "NOT_FOUND",
-                }:
-                    reason = "TOO_AMBIGUOUS"
-
-                shape_ok, shape_reason = generic_fix_shape_is_safe(c["source"], replacement)
-
-                can_apply = (
-                    action == "APPLY"
-                    and reason == "CONTEXT_MATCH"
-                    and replacement != c["source"]
-                    and c["source"] in c["segment_text"]
-                    and shape_ok
-                )
-
-                if can_apply:
-                    apply_decision = "ALLOW"
-                elif action == "REJECT":
-                    apply_decision = "REJECT"
-                else:
-                    apply_decision = "MANUAL_REVIEW"
-
-                item = {
-                    **c,
-                    "evaluation": result,
-                    "best_replacement": replacement,
-                    "original_suggestion": c["replacement"],
-                    "best_shape_check": "PASS" if shape_ok else "REJECT",
-                    "best_shape_reason": shape_reason,
-                    "apply_decision": apply_decision,
-                    "reason": reason,
-                }
-                report.append(item)
-
-                if can_apply:
-                    allowed[fid] = item
-
-        except Exception as exc:
-            for c in passed:
-                report.append({
-                    **c,
-                    "apply_decision": "MANUAL_REVIEW",
-                    "reason": f"semantic validation batch failed: {exc}",
-                })
-
-        if document_id:
-            if SAVE_DEBUG_FILES:
-                save_json_always(work_dir(document_id) / "semantic_validation.partial.json", report)
-            update_progress(document_id, status="validating_semantic_fixes", completed_semantic_batches=batch_index)
-
-    return allowed, report
-
-def assert_semantic_validation_ready(
-    reviews: list[SegmentReview],
-    semantic_report: list[dict[str, Any]],
-) -> bool:
-    """Warn if spelling fixes exist but semantic validation produced no report.
-
-    Returns True if semantic validation is ready, False if fallback needed.
-    No longer raises RuntimeError — pipeline continues with all fixes as MANUAL_REVIEW.
-    """
-    has_fix_candidates = any(
-        r.decision == "APPLY_SMALL_FIXES" and r.risk != "HIGH" and bool(r.fixes)
-        for r in reviews
-    )
-    if OCR_ENABLE_SEMANTIC_VALIDATION and has_fix_candidates and not semantic_report:
-        _log("WARNING: semantic_validation report is empty while fix candidates exist. "
-             "All fixes will be treated as MANUAL_REVIEW.")
-        return False
-    return True
-
-
-def is_short_safe_fix(src: str, dst: str) -> bool:
-    ok, _ = generic_fix_shape_is_safe(src, dst)
-    return ok
-
-
-def apply_reviews_to_segments(
-    segments: list[SegmentRecord],
-    reviews: list[SegmentReview],
-    semantic_allowed: dict[str, dict[str, Any]] | None = None,
-    noise_allowed: dict[int, dict[str, Any]] | None = None,
-) -> tuple[list[str], list[dict[str, Any]]]:
-    semantic_allowed = semantic_allowed or {}
-    noise_allowed = noise_allowed or {}
-    by_id = {r.segment_id: r for r in reviews}
-    final_segments: list[str] = []
-    report: list[dict[str, Any]] = []
-
-    for seg in segments:
-        text = seg.text
-        review = by_id.get(seg.segment_id, SegmentReview(seg.segment_id, "KEEP", "LOW", [], "Missing review."))
-        applied: list[dict[str, Any]] = []
-        rejected: list[dict[str, Any]] = []
-        note = ""
-
-        if review.decision == "REMOVE_NOISE":
-            noise_eval = noise_allowed.get(seg.segment_id)
-            if noise_eval and noise_eval.get("can_remove"):
-                report.append({
-                    "segment_id": seg.segment_id,
-                    "line_ids": seg.line_ids,
-                    "kind": seg.kind,
-                    "decision": review.decision,
-                    "risk": review.risk,
-                    "applied": True,
-                    "removed": True,
-                    "noise_validation": noise_eval,
-                    "notes": review.notes,
-                    "before": seg.text,
-                    "after": "",
-                })
-                continue
-            note = "REMOVE_NOISE rejected because context-aware noise validation did not approve removal."
-
-        if review.decision == "APPLY_SMALL_FIXES":
-            for idx, fix in enumerate(review.fixes):
-                src = str(fix.get("from", ""))
-                original_dst = str(fix.get("to", ""))
-                fix_id = f"{seg.segment_id}:{idx}"
-                semantic = semantic_allowed.get(fix_id)
-
-                if not semantic:
-                    rejected.append({
-                        **fix,
-                        "fix_id": fix_id,
-                        "applied": False,
-                        "reason": "Rejected: missing semantic approval.",
-                    })
-                    continue
-
-                replacement = str(semantic.get("best_replacement", original_dst))
-
-                if src not in text:
-                    rejected.append({
-                        **fix,
-                        "fix_id": fix_id,
-                        "applied": False,
-                        "reason": "Rejected: source substring not found in segment text.",
-                        "semantic": semantic,
-                    })
-                    continue
-
-                if not is_short_safe_fix(src, replacement):
-                    rejected.append({
-                        **fix,
-                        "fix_id": fix_id,
-                        "applied": False,
-                        "reason": "Rejected: replacement failed Python shape check.",
-                        "semantic": semantic,
-                    })
-                    continue
-
-                text = text.replace(src, replacement, 1)
-                applied.append({
-                    **fix,
-                    "fix_id": fix_id,
-                    "from": src,
-                    "to": replacement,
-                    "original_suggestion": original_dst,
-                    "applied": True,
-                    "semantic": semantic,
-                })
-
-        final_segments.append(text)
-        report.append({
-            "segment_id": seg.segment_id,
-            "line_ids": seg.line_ids,
-            "kind": seg.kind,
-            "decision": review.decision,
-            "risk": review.risk,
-            "applied_fixes": applied,
-            "rejected_fixes": rejected,
-            "notes": note or review.notes,
-            "before": seg.text,
-            "after": text,
-        })
-
-    return final_segments, report
-
 def final_merge_and_cleanup(text: str) -> str:
     raw_lines = [normalize_basic_spacing(line) for line in text.splitlines() if line.strip()]
     records = [LineRecord(i + 1, line) for i, line in enumerate(raw_lines) if not is_probable_garbage_line(line)]
@@ -1706,70 +1439,17 @@ def validate_loss_signal(original_lines: list[LineRecord], normalized_text: str)
     }
 
 
-def build_applied_fixes_summary(
-    review_report: list[dict[str, Any]],
-    semantic_report: list[dict[str, Any]],
-    noise_report: list[dict[str, Any]],
-) -> dict[str, Any]:
-    applied_fixes: list[dict[str, Any]] = []
-    rejected_fixes: list[dict[str, Any]] = []
-    removed_noise: list[dict[str, Any]] = []
-    manual_review: list[dict[str, Any]] = []
-
-    semantic_by_id = {
-        str(item.get("fix_id")): item
-        for item in semantic_report
-        if isinstance(item, dict) and item.get("fix_id") is not None
-    }
-
-    for item in review_report:
-        if item.get("removed"):
-            removed_noise.append({
-                "segment_id": item.get("segment_id"),
-                "before": item.get("before"),
-                "noise_validation": item.get("noise_validation"),
-            })
-
-        for fix in item.get("applied_fixes", []) or []:
-            fid = str(fix.get("fix_id"))
-            applied_fixes.append({
-                "segment_id": item.get("segment_id"),
-                "from": fix.get("from"),
-                "to": fix.get("to"),
-                "fix_id": fid,
-                "semantic": fix.get("semantic") or semantic_by_id.get(fid),
-            })
-
-        for fix in item.get("rejected_fixes", []) or []:
-            fid = str(fix.get("fix_id"))
-            rejected_fixes.append({
-                "segment_id": item.get("segment_id"),
-                "from": fix.get("from"),
-                "to": fix.get("to"),
-                "fix_id": fid,
-                "reason": fix.get("reason"),
-                "semantic": semantic_by_id.get(fid),
-            })
-
-        if item.get("decision") == "MANUAL_REVIEW":
-            manual_review.append({
-                "segment_id": item.get("segment_id"),
-                "kind": item.get("kind"),
-                "before": item.get("before"),
-                "notes": item.get("notes"),
-            })
-
+def build_hybrid_fixes_summary(hybrid_report: dict[str, Any]) -> dict[str, Any]:
+    """Build summary from hybrid pipeline report."""
+    items = hybrid_report.get("items", [])
+    corrected_items = [i for i in items if i.get("corrected")]
+    error_items = [i for i in items if i.get("flagged_words", 0) > 0 and not i.get("corrected")]
     return {
-        "applied_count": len(applied_fixes),
-        "rejected_count": len(rejected_fixes),
-        "removed_noise_count": len(removed_noise),
-        "manual_review_count": len(manual_review),
-        "applied_fixes": applied_fixes[:200],
-        "rejected_fixes": rejected_fixes[:300],
-        "removed_noise": removed_noise[:100],
-        "manual_review": manual_review[:100],
-        "noise_validation_count": len(noise_report),
-        "semantic_validation_count": len(semantic_report),
+        "total_segments": hybrid_report.get("total_segments", 0),
+        "segments_with_errors": hybrid_report.get("segments_with_errors", 0),
+        "segments_corrected": hybrid_report.get("segments_corrected", 0),
+        "corrected_details": corrected_items[:100],
+        "uncorrected_errors": error_items[:50],
     }
 
 
@@ -1886,72 +1566,23 @@ def generate_normalized_text(document_id: str) -> Path:
         t0 = time.time()
         client = make_client()
 
-        reviews = review_segments_with_llm(client, segments, document_id=document_id)
-        llm_duration = time.time() - t0
-        apply_count = sum(1 for r in reviews if r.decision == "APPLY_SMALL_FIXES")
-        keep_count = sum(1 for r in reviews if r.decision == "KEEP")
-        remove_count = sum(1 for r in reviews if r.decision == "REMOVE_NOISE")
-        manual_count = sum(1 for r in reviews if r.decision == "MANUAL_REVIEW")
-        _log_stage("LLM_REVIEW", total=len(reviews), apply=apply_count, keep=keep_count, remove=remove_count, manual=manual_count, duration=f"{llm_duration:.2f}s")
+        fixed_segments, hybrid_report = process_segments_hybrid(segments, client, document_id=document_id)
+        hybrid_duration = time.time() - t0
+        _log_stage("HYBRID_PIPELINE",
+            total_segments=hybrid_report.get("total_segments", 0),
+            with_errors=hybrid_report.get("segments_with_errors", 0),
+            corrected=hybrid_report.get("segments_corrected", 0),
+            duration=f"{hybrid_duration:.2f}s")
         if SAVE_DEBUG_FILES:
-            save_session_json(document_id, "llm_review.json", [asdict(x) for x in reviews])
-        update_progress(document_id, status="reviewed_segments", review_count=len(reviews))
-
-        t0 = time.time()
-        semantic_allowed, semantic_report = semantic_validate_candidate_fixes(
-            client,
-            segments,
-            reviews,
-            document_id=document_id,
-        )
-        sem_duration = time.time() - t0
-        _log_stage("SEMANTIC_VALIDATE", candidates=len(semantic_report), allowed=len(semantic_allowed), duration=f"{sem_duration:.2f}s")
-        if SAVE_DEBUG_FILES:
-            save_session_json(document_id, "semantic_validation.json", semantic_report)
-            save_session_json(document_id, "semantic_allowed.json", semantic_allowed)
-        update_progress(
-            document_id,
-            status="validated_semantic_fixes",
-            semantic_validation_count=len(semantic_report),
-            semantic_allowed_count=len(semantic_allowed),
-        )
-
-        assert_semantic_validation_ready(reviews, semantic_report)
-
-        t0 = time.time()
-        noise_allowed, noise_report = semantic_validate_noise_segments(
-            client,
-            segments,
-            reviews,
-            document_id=document_id,
-        )
-        noise_duration = time.time() - t0
-        _log_stage("NOISE_VALIDATE", candidates=len(noise_report), allowed_removal=len(noise_allowed), duration=f"{noise_duration:.2f}s")
-        if SAVE_DEBUG_FILES:
-            save_session_json(document_id, "noise_validation.json", noise_report)
-            save_session_json(document_id, "noise_allowed.json", noise_allowed)
-        update_progress(
-            document_id,
-            status="validated_noise",
-            noise_validation_count=len(noise_report),
-            noise_allowed_count=len(noise_allowed),
-        )
-
-        t0 = time.time()
-        fixed_segments, review_report = apply_reviews_to_segments(
-            segments,
-            reviews,
-            semantic_allowed=semantic_allowed,
-            noise_allowed=noise_allowed,
-        )
-        _log_stage("APPLY_FIXES", segments=len(fixed_segments), duration=f"{time.time()-t0:.2f}s")
-        if SAVE_DEBUG_FILES:
-            save_session_json(document_id, "normalized_report.json", review_report)
+            save_session_json(document_id, "hybrid_report.json", hybrid_report)
+        update_progress(document_id, status="hybrid_completed",
+            total_segments=hybrid_report.get("total_segments", 0),
+            segments_with_errors=hybrid_report.get("segments_with_errors", 0),
+            segments_corrected=hybrid_report.get("segments_corrected", 0))
 
         joined_fixed = "\n".join(fixed_segments)
         if SAVE_DEBUG_FILES:
-            save_partial_normalized(document_id, "02_after_apply_reviews.txt", joined_fixed.strip() + "\n")
-        update_progress(document_id, status="applied_reviews", fixed_segment_count=len(fixed_segments))
+            save_partial_normalized(document_id, "02_after_hybrid.txt", joined_fixed.strip() + "\n")
 
         t0 = time.time()
         normalized_text = final_merge_and_cleanup(joined_fixed)
@@ -1965,23 +1596,19 @@ def generate_normalized_text(document_id: str) -> Path:
         if SAVE_DEBUG_FILES:
             save_session_json(document_id, "validation.json", validation)
 
-        applied_summary = build_applied_fixes_summary(review_report, semantic_report, noise_report)
+        hybrid_fixes_summary = build_hybrid_fixes_summary(hybrid_report)
         if SAVE_DEBUG_FILES:
-            save_session_json(document_id, "applied_fixes_summary.json", applied_summary)
+            save_session_json(document_id, "hybrid_fixes_summary.json", hybrid_fixes_summary)
 
         normalized_path.parent.mkdir(parents=True, exist_ok=True)
         normalized_path.write_text(normalized_text, encoding="utf-8")
 
-        # Backward-compatible copies in result directory (controlled by OCR_SAVE_REPORTS).
         if OCR_SAVE_REPORTS:
             save_json(NORMALIZED_TEXT_DIR / f"{document_id}.prepared_lines.json", [asdict(x) for x in prepared])
             save_json(NORMALIZED_TEXT_DIR / f"{document_id}.merged_lines.json", [asdict(x) for x in merged_lines])
             save_json(NORMALIZED_TEXT_DIR / f"{document_id}.segments.json", [asdict(x) for x in segments])
-            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.llm_review.json", [asdict(x) for x in reviews])
-            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.semantic_validation.json", semantic_report)
-            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.noise_validation.json", noise_report)
-            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.normalized_report.json", review_report)
-            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.applied_fixes_summary.json", applied_summary)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.hybrid_report.json", hybrid_report)
+            save_json(NORMALIZED_TEXT_DIR / f"{document_id}.hybrid_fixes_summary.json", hybrid_fixes_summary)
             save_json(NORMALIZED_TEXT_DIR / f"{document_id}.validation.json", validation)
 
         duration = round(time.time() - start, 2)
@@ -1993,9 +1620,8 @@ def generate_normalized_text(document_id: str) -> Path:
             input_lines=len(prepared),
             output_lines=len(normalized_text.splitlines()),
             output_chars=len(normalized_text),
-            llm_fixes_applied=applied_summary.get("applied_count", 0),
-            llm_fixes_rejected=applied_summary.get("rejected_count", 0),
-            noise_removed=applied_summary.get("removed_noise_count", 0),
+            segments_with_errors=hybrid_fixes_summary.get("segments_with_errors", 0),
+            segments_corrected=hybrid_fixes_summary.get("segments_corrected", 0),
             loss_exact=validation["summary"]["EXACT_FOUND"],
             loss_fuzzy=validation["summary"]["FUZZY_FOUND"],
             loss_missing=validation["summary"]["MISSING"],
@@ -2011,11 +1637,10 @@ def generate_normalized_text(document_id: str) -> Path:
             work_dir=str(work_dir(document_id)),
             duration_seconds=duration,
             validation_summary=validation.get("summary", {}),
-            applied_fixes_summary={
-                "applied_count": applied_summary.get("applied_count", 0),
-                "rejected_count": applied_summary.get("rejected_count", 0),
-                "removed_noise_count": applied_summary.get("removed_noise_count", 0),
-                "manual_review_count": applied_summary.get("manual_review_count", 0),
+            hybrid_fixes_summary={
+                "total_segments": hybrid_fixes_summary.get("total_segments", 0),
+                "segments_with_errors": hybrid_fixes_summary.get("segments_with_errors", 0),
+                "segments_corrected": hybrid_fixes_summary.get("segments_corrected", 0),
             },
         )
 

@@ -11,6 +11,9 @@ load_backend_env()
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL")
 LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "8192"))
+LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
+LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "10m")
 
 _client = OpenAI(
     api_key=LLM_API_KEY,
@@ -114,9 +117,20 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     """Gọi LLM để tìm node liên quan, có retry bằng tenacity."""
     response = _client.chat.completions.create(
         model=LLM_MODEL,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a document analysis AI. Answer precisely and concisely. Return only JSON, no explanation.",
+            },
+            {"role": "user", "content": prompt},
+        ],
         max_tokens=1500,
         temperature=0.0,
+        extra_body={
+            "think": LLM_THINK,
+            "keep_alive": LLM_KEEP_ALIVE,
+            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
+        },
     )
 
     content = response.choices[0].message.content
@@ -161,16 +175,15 @@ def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
         ]
     }
 
-    prompt = f"""You are an expert document navigator. Find nodes likely to contain the answer.
+    prompt = f"""You are a document navigation expert. Find nodes likely to contain the answer.
+
 Question: {query}
-Tree Structure:
+
+Tree structure:
 {json.dumps(normalized_tree, indent=2, ensure_ascii=False)}
 
-Reply EXACTLY in JSON:
-{{
-    "thinking": "<reasoning>",
-    "node_list": ["id_1", "id_2"]
-}}"""
+Return only JSON:
+{{"thinking": "<reasoning>", "node_list": ["id_1", "id_2"]}}"""
 
     try:
         result = _call_reasoning_llm(prompt)
@@ -200,13 +213,10 @@ def build_context_from_markdown(tree_data: Any, node_list: List[str], markdown_p
 
         start_idx = int(boundary["start"]) - 1
 
-        # Nếu không tìm thấy node kế tiếp, lấy 20 dòng làm context mặc định
         end_idx = int(boundary["end"]) if boundary["end"] else start_idx + 20
 
-        # Đảm bảo không vượt quá số dòng thực tế
         end_idx = min(end_idx, len(all_lines))
 
-        # Trích xuất và format
         segment = all_lines[start_idx:end_idx]
 
         if segment:

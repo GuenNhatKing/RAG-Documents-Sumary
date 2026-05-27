@@ -28,8 +28,7 @@ LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
 LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
-MD_BATCH_SIZE = int(os.getenv("MD_BATCH_SIZE", "2"))
-MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "3000"))
+MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "6000"))
 MD_SECTION_MAX_BLOCKS = int(os.getenv("MD_SECTION_MAX_BLOCKS", "28"))
 MD_SECTION_MAX_CHARS = int(os.getenv("MD_SECTION_MAX_CHARS", "5000"))
 MD_BLOCK_TEXT_CHARS = int(os.getenv("MD_BLOCK_TEXT_CHARS", "140"))
@@ -39,8 +38,18 @@ SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 MD_ALLOW_PARTIAL = os.getenv("MD_ALLOW_PARTIAL", "true").lower() == "true"
 MD_JSON_RETRY_ATTEMPTS = int(os.getenv("MD_JSON_RETRY_ATTEMPTS", "3"))
 MD_JSON_RETRY_WAIT_SECONDS = int(os.getenv("MD_JSON_RETRY_WAIT_SECONDS", "2"))
-MD_MAX_WORKERS = int(os.getenv("MD_MAX_WORKERS", "4"))
-SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
+
+# Batched pipeline config
+MD_LLM_MAX_CHUNK_CHARS = int(os.getenv("MD_LLM_MAX_CHUNK_CHARS", "2000"))
+MD_LLM_MAX_BLOCKS_PER_CHUNK = int(os.getenv("MD_LLM_MAX_BLOCKS_PER_CHUNK", "12"))
+MD_LLM_MAX_CHUNKS_PER_CALL = int(os.getenv("MD_LLM_MAX_CHUNKS_PER_CALL", "10"))
+MD_LLM_CONTEXT_BEFORE_CHARS = int(os.getenv("MD_LLM_CONTEXT_BEFORE_CHARS", "100"))
+MD_LLM_CONTEXT_AFTER_CHARS = int(os.getenv("MD_LLM_CONTEXT_AFTER_CHARS", "100"))
+MD_SUMMARY_MAX_WORDS = int(os.getenv("MD_SUMMARY_MAX_WORDS", "40"))
+MD_ENABLE_GLOBAL_REVIEW = os.getenv("MD_ENABLE_GLOBAL_REVIEW", "true").lower() == "true"
+MD_ENABLE_AUDIT_LOG = os.getenv("MD_ENABLE_AUDIT_LOG", "true").lower() == "true"
+MD_MERGE_CONSERVATIVE = os.getenv("MD_MERGE_CONSERVATIVE", "true").lower() == "true"
+MD_PIPELINE_MODE = os.getenv("MD_PIPELINE_MODE", "safe")  # fast/safe/debug
 
 # =========================================================
 # DATA
@@ -169,13 +178,17 @@ def effective_config() -> dict[str, Any]:
         "LLM_MODEL": LLM_MODEL, "LLM_NUM_CTX": LLM_NUM_CTX, "LLM_THINK": LLM_THINK,
         "LLM_MAX_TOKENS": LLM_MAX_TOKENS, "LLM_TIMEOUT_SECONDS": LLM_TIMEOUT_SECONDS,
         "LLM_USE_RESPONSE_FORMAT": LLM_USE_RESPONSE_FORMAT, "LLM_KEEP_ALIVE": LLM_KEEP_ALIVE,
-        "MD_BATCH_SIZE": MD_BATCH_SIZE, "MD_MAX_PROMPT_CHARS": MD_MAX_PROMPT_CHARS,
+        "MD_MAX_PROMPT_CHARS": MD_MAX_PROMPT_CHARS,
         "MD_SECTION_MAX_BLOCKS": MD_SECTION_MAX_BLOCKS, "MD_SECTION_MAX_CHARS": MD_SECTION_MAX_CHARS,
         "MD_BLOCK_TEXT_CHARS": MD_BLOCK_TEXT_CHARS, "MD_MAX_HEADING_LEVEL": MD_MAX_HEADING_LEVEL,
         "MD_ALLOW_PARTIAL": MD_ALLOW_PARTIAL, "MD_SAVE_REPORTS": MD_SAVE_REPORTS,
         "MD_JSON_RETRY_ATTEMPTS": MD_JSON_RETRY_ATTEMPTS,
         "MD_JSON_RETRY_WAIT_SECONDS": MD_JSON_RETRY_WAIT_SECONDS,
-        "MD_MAX_WORKERS": MD_MAX_WORKERS,
+        "MD_PIPELINE_MODE": MD_PIPELINE_MODE,
+        "MD_LLM_MAX_CHUNK_CHARS": MD_LLM_MAX_CHUNK_CHARS,
+        "MD_LLM_MAX_CHUNKS_PER_CALL": MD_LLM_MAX_CHUNKS_PER_CALL,
+        "MD_ENABLE_GLOBAL_REVIEW": MD_ENABLE_GLOBAL_REVIEW,
+        "MD_MERGE_CONSERVATIVE": MD_MERGE_CONSERVATIVE,
     }
 
 def update_progress(doc_id: str, **data: Any) -> None:
@@ -417,68 +430,159 @@ def build_sections(blocks: list[BlockRecord]) -> list[SectionRecord]:
     return sections
 
 # =========================================================
-# LLM
+# LLM PROMPTS + SCHEMAS
 # =========================================================
 JSON_RULES = "/no_think\nReturn exactly one valid JSON object. No markdown. No reasoning. No <think>. No extra fields."
 
-OUTLINE_PROMPT = """Analyze blocks from a Vietnamese administrative document.
+RECOGNITION_PROMPT = """Analyze these chunks from a Vietnamese administrative document.
+For each chunk, classify its role, decide if it should become a Markdown heading,
+and provide a short summary.
+
+Allowed roles: TITLE, HEADING, BODY, NOISE, REVIEW
+Allowed decisions: KEEP, MERGE_PREVIOUS, MARK_NOISE, REVIEW
+
+Rules:
+- TITLE: document title, usually all-caps or near the top.
+- HEADING: section heading with numbering (1., 1.1, I., A., etc.) or structural marker.
+- BODY: regular content paragraph.
+- NOISE: page header/footer, OCR noise, page number, separator.
+- REVIEW: use when unsure.
+- KEEP: chunk is fine as-is.
+- MERGE_PREVIOUS: chunk should be merged with the previous chunk (e.g., continuation).
+- MARK_NOISE: chunk is noise and should be removed from output.
+- REVIEW: need human review.
+- is_node=true only for TITLE and HEADING chunks.
+- level=1 for document title, level=2 for major sections, level=3 for articles/numbered units, level=4 for lettered sub-units.
+- summary: 1 sentence, max 40 Vietnamese words, describing what the chunk is about.
+- risk_flags: list any concerns (possible_heading, possible_body, possible_continuation, possible_noise, unclear_level, header_content_mismatch, numbering_level_mismatch).
+- If unsure about anything, choose REVIEW.
 
 Return format:
 {
-  "blocks": [
+  "chunks": [
     {
-      "block_id": 1,
-      "role": "DOCUMENT_TITLE",
+      "chunk_id": "c1",
+      "source_block_ids": [1, 2, 3],
+      "role": "HEADING",
       "is_node": true,
-      "level": 1
+      "header": "1. Tang cuong cong tac lanh dao",
+      "level": 2,
+      "summary": "Section yeu cau tang cuong lanh dao, chi dao va phoi hop.",
+      "decision": "KEEP",
+      "risk_flags": [],
+      "reason": "Chunk starts with a clear numbered heading."
     }
-  ]
-}
+  ],
+  "document_warnings": []
+}""".strip()
 
-Allowed roles:
-DOCUMENT_TITLE,DOCUMENT_SUBJECT,METADATA,PREAMBLE,BACKGROUND,LEGAL_BASIS,
-SECTION_INTRO,MAIN_CONTENT_UNIT,SUB_CONTENT_UNIT,BODY_DETAIL,LIST_ITEM,
-ADDRESSEE_ITEM,FOOTER_SECTION,FOOTER_ITEM,SIGNATURE_BLOCK,APPENDIX_SECTION,
-NOISE,UNKNOWN.
-
-Rules:
-- Return exactly one object for every input block_id.
-- Classify semantic function of every input block.
-- Set is_node=true only for blocks that should become Markdown headings.
-- Do not select metadata, footer item, list item, body detail, signature, noise.
-- Use level 1 for document title.
-- Use level 2 for subject, major section, appendix section, footer section.
-- Use level 3 for article, numbered unit, roman unit, decimal unit.
-- Use level 4 for lettered sub-unit.
-- Similar sibling markers must use the same level.
-- If unsure about role, choose UNKNOWN and is_node=false.
-- Do not rewrite block text.
-""".strip()
-
-OUTLINE_FORMAT = {
+RECOGNITION_FORMAT = {
     "type": "json_schema",
     "json_schema": {
-        "name": "outline_response",
+        "name": "recognition_response",
         "schema": {
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "blocks": {
+                "chunks": {
                     "type": "array",
                     "items": {
                         "type": "object",
                         "additionalProperties": False,
                         "properties": {
-                            "block_id": {"type": "integer"},
+                            "chunk_id": {"type": "string"},
+                            "source_block_ids": {"type": "array", "items": {"type": "integer"}},
                             "role": {"type": "string"},
                             "is_node": {"type": "boolean"},
+                            "header": {"type": "string"},
                             "level": {"type": "integer"},
+                            "summary": {"type": "string"},
+                            "decision": {"type": "string"},
+                            "risk_flags": {"type": "array", "items": {"type": "string"}},
+                            "reason": {"type": "string"},
                         },
-                        "required": ["block_id", "role", "is_node", "level"],
+                        "required": ["chunk_id", "source_block_ids", "role", "is_node", "header", "level", "summary", "decision", "risk_flags", "reason"],
                     },
-                }
+                },
+                "document_warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "type": {"type": "string"},
+                            "chunk_ids": {"type": "array", "items": {"type": "string"}},
+                            "risk_flags": {"type": "array", "items": {"type": "string"}},
+                            "reason": {"type": "string"},
+                        },
+                        "required": ["type", "chunk_ids", "risk_flags", "reason"],
+                    },
+                },
             },
-            "required": ["blocks"],
+            "required": ["chunks", "document_warnings"],
+        },
+    },
+}
+
+GLOBAL_REVIEW_PROMPT = """Review this document structure from a Vietnamese administrative document.
+You are given headers, levels, summaries, and Python-detected warnings.
+
+Your job: confirm or flag issues. You can only suggest:
+- KEEP: confirmed correct
+- REVIEW: needs human review
+- MERGE_PREVIOUS: merge this header's chunk with the previous one
+- MARK_NOISE: this chunk is noise
+
+You CANNOT create new headers, rewrite headers, delete content, or reorder sections.
+
+Return format:
+{
+  "reviews": [
+    {
+      "chunk_id": "c1",
+      "suggestion": "KEEP",
+      "reason": "Document title is correctly identified."
+    }
+  ],
+  "document_notes": []
+}""".strip()
+
+GLOBAL_REVIEW_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "global_review_response",
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "reviews": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "chunk_id": {"type": "string"},
+                            "suggestion": {"type": "string"},
+                            "reason": {"type": "string"},
+                        },
+                        "required": ["chunk_id", "suggestion", "reason"],
+                    },
+                },
+                "document_notes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "type": {"type": "string"},
+                            "chunk_ids": {"type": "array", "items": {"type": "string"}},
+                            "reason": {"type": "string"},
+                        },
+                        "required": ["type", "chunk_ids", "reason"],
+                    },
+                },
+            },
+            "required": ["reviews", "document_notes"],
         },
     },
 }
@@ -604,6 +708,18 @@ def parse_outline(
     nodes: list[OutlineNode] = []
 
     raw = obj.get("blocks", [])
+    # Handle LLM returning object instead of array
+    if isinstance(raw, dict):
+        # Convert {"blocks": {block_id: {...}}} to [{"block_id": ..., ...}]
+        converted = []
+        for key, val in raw.items():
+            if isinstance(val, dict):
+                try:
+                    val["block_id"] = int(key)
+                except (ValueError, TypeError):
+                    pass
+                converted.append(val)
+        raw = converted
     if not isinstance(raw, list):
         raw = []
 

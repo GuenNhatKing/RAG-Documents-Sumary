@@ -22,69 +22,35 @@ def generate_final_answer(context: str, query: str) -> str:
         return "**Tài liệu không đề cập đến vấn đề này.**"
 
     model_name = os.getenv("LLM_MODEL")
+    num_ctx = int(os.getenv("LLM_NUM_CTX", "8192"))
+    max_tokens = int(os.getenv("LLM_MAX_TOKENS", "4096"))
+    think = os.getenv("LLM_THINK", "false").lower() == "true"
+    keep_alive = os.getenv("LLM_KEEP_ALIVE", "10m")
 
     system_prompt = """You are a professional document analysis AI assistant.
 
-ULTIMATE AND UNBREAKABLE RULES:
-
-1. STRICT CONTEXT ADHERENCE:
-You must answer SOLELY, EXCLUSIVELY, and DIRECTLY based on the provided Context.
-Do not use external knowledge, assumptions, speculation, or unstated facts.
-If a fact is not explicitly present in the Context, it does not exist for you.
-
-2. ZERO-HALLUCINATION FALLBACK:
-If the Context does not contain enough information to answer the question, reply exactly:
-**Tài liệu không đề cập đến vấn đề này.**
-
-3. MARKDOWN OUTPUT:
-Your answer must be valid Markdown.
-Use:
-- short headings when useful
-- bullet lists for enumerations
-- numbered lists for ordered steps
-- Markdown tables when comparing multiple fields
-- **bold** for important terms or conclusions
-
-4. NO RAW SOURCE TAGS IN FINAL TEXT:
-The Context may contain source tags like:
-[Nguồn: ..., Dòng: ...]
-
-You MUST use those tags only internally to verify evidence.
-Do NOT include source tags in the final answer text.
-Do NOT write citations like [Nguồn: ..., Dòng: ...].
-Do NOT write line numbers in the final answer.
-
-5. ANSWER STYLE:
-- Answer in Vietnamese.
-- Be concise but complete.
-- Do not add introductions like "Dựa trên tài liệu...".
-- Do not wrap the whole answer in a code block.
-- Do not output HTML.
-"""
-
-    user_prompt = f"""Context:
-{context}
-
-Question:
-{query}
-
-Answer in Markdown:
-"""
+Mandatory rules:
+1. Answer ONLY based on the provided context. Do not use external knowledge.
+2. If the context is insufficient, reply: **Tài liệu không đề cập đến vấn đề này.**
+3. Answer in Markdown: short headings, bullet lists, tables when appropriate.
+4. Use **bold** for important terms.
+5. Do not include source tags in the answer.
+6. Do not wrap the entire answer in a code block.
+7. Answer in Vietnamese, concise but complete."""
 
     response = _client.chat.completions.create(
         model=model_name,
         messages=[
-            {
-                "role": "system",
-                "content": system_prompt,
-            },
-            {
-                "role": "user",
-                "content": user_prompt,
-            },
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": context + "\n\nQuestion: " + query},
         ],
         temperature=0.0,
-        max_tokens=2000,
+        max_tokens=max_tokens,
+        extra_body={
+            "think": think,
+            "keep_alive": keep_alive,
+            "options": {"num_ctx": num_ctx, "temperature": 0, "top_p": 0.1, "top_k": 1},
+        },
     )
 
     content = response.choices[0].message.content

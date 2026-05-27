@@ -18,3 +18,5 @@ PyJWT
 pycryptodome
 python-multipart
 cryptography
+underthesea
+symspellpy
