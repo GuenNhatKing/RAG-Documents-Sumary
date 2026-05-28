@@ -718,7 +718,11 @@ def clip_text(text: str, max_chars: int) -> str:
 
 
 def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] | None = None, document_id: str | None = None, stage: str = "", batch_index: int | None = None) -> dict[str, Any]:
-    """Call LLM and return parsed JSON."""
+    """Call LLM and return parsed JSON.
+
+    If response_format causes empty response (common with small models),
+    automatically retries without response_format.
+    """
 
     @_retry_json()
     def _call():
@@ -734,12 +738,21 @@ def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] |
                 "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
             },
         }
-        if LLM_USE_RESPONSE_FORMAT and response_format:
+        use_fmt = LLM_USE_RESPONSE_FORMAT and response_format
+        if use_fmt:
             kwargs["response_format"] = response_format
         t0 = time.time()
         resp = client.chat.completions.create(**kwargs)
         raw = resp.choices[0].message.content or ""
         elapsed = time.time() - t0
+        if not raw.strip() and use_fmt:
+            # Fallback: retry without response_format (small models often fail with schema)
+            _log(f"LLM empty with response_format for stage={stage}, retrying without")
+            kwargs.pop("response_format", None)
+            t0 = time.time()
+            resp = client.chat.completions.create(**kwargs)
+            raw = resp.choices[0].message.content or ""
+            elapsed = time.time() - t0
         if not raw.strip():
             _log_llm_call(stage, batch_index, len(prompt), 0, elapsed, False, "empty_response")
             raise EmptyLLMResponseError(f"LLM returned empty response for stage={stage}")
@@ -1228,6 +1241,48 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
     )
 
 
+def build_llm_review_prompt_v2(text: str, flagged: list[dict[str, Any]]) -> str:
+    """Build prompt with 3 options: pick from candidates, suggest new word, or skip.
+
+    Unlike build_llm_review_prompt, this allows the LLM to suggest words outside
+    the candidate list and to explicitly skip uncertain cases.
+    """
+    if not flagged:
+        return ""
+
+    error_lines = []
+    for item in flagged[:5]:
+        candidates = list(item.get("candidates", []))
+        compound_cands = item.get("compound_candidates", [])
+        compound_with = item.get("compound_with", "")
+        if compound_cands and compound_with:
+            candidates.extend([f"[{c}]" for c in compound_cands])
+        candidates_str = ", ".join(candidates)
+        reasons = ", ".join(item.get("reasons", []))
+        pos = item.get("position", -1)
+        ctx_before, ctx_after = "", ""
+        if pos >= 0:
+            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]))
+        context_part = ""
+        if ctx_before or ctx_after:
+            context_part = f' context: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
+        error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates_str}] (reasons: {reasons}){context_part}')
+
+    errors_text = "\n".join(error_lines)
+
+    return (
+        f"Fix Vietnamese OCR errors in this text.\n\n"
+        f"For each error, you have 3 options:\n"
+        f"1. Pick the best correction from the candidates list\n"
+        f"2. Suggest a better word if none of the candidates fit (must be a valid Vietnamese word)\n"
+        f"3. Skip if you are not sure\n\n"
+        f"Errors:\n{errors_text}\n\n"
+        f"Return ONLY valid JSON, no markdown fences, no explanation.\n"
+        f"Format: {{\"corrections\": [{{\"word\": \"<error>\", \"action\": \"pick|suggest|skip\", \"chosen\": \"<correction>\", \"reason\": \"<why>\"}}]}}\n"
+        f"If no corrections: {{\"corrections\": []}}"
+    )
+
+
 def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]], flagged: list[dict[str, Any]], sym: SymSpell) -> str:
     """Apply LLM-chosen corrections with strict validation.
 
@@ -1346,21 +1401,155 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
     return result
 
 
+def apply_validated_corrections_v2(text: str, llm_corrections: list[dict[str, Any]], flagged: list[dict[str, Any]], sym: SymSpell) -> str:
+    """Apply LLM corrections with pick/suggest/skip actions.
+
+    Unlike apply_validated_corrections:
+    - action="pick": validate chosen word is from candidates (same as before)
+    - action="suggest": accept LLM-suggested word if it exists in dictionary
+    - action="skip": skip this correction
+    """
+    if not llm_corrections:
+        return text
+
+    # Build lookup: word -> allowed candidates (including compound)
+    allowed_map: dict[str, list[str]] = {}
+    compound_map: dict[str, dict[str, Any]] = {}
+    for item in flagged:
+        allowed_map[item["token"].lower()] = item.get("candidates", [])
+        if item.get("compound_candidates") and item.get("compound_with"):
+            allowed_map[item["token"].lower()].extend(
+                [f"[{c}]" for c in item["compound_candidates"]]
+            )
+            compound_map[item["token"].lower()] = {
+                "second_word": item["compound_with"],
+                "candidates": item["compound_candidates"],
+                "end_pos": item.get("compound_position_end"),
+                "start_pos": item.get("compound_position_start"),
+            }
+
+    result = text
+    for corr in llm_corrections:
+        word = str(corr.get("word", "")).strip()
+        chosen = str(corr.get("chosen", "")).strip()
+        action = str(corr.get("action", "pick")).strip().lower()
+        reason = str(corr.get("reason", "")).strip()
+
+        if not word:
+            continue
+        if action == "skip" or not chosen:
+            continue
+
+        # Validate: word must be in flagged list (exact or fuzzy match)
+        word_lower = word.lower()
+        if word_lower not in allowed_map:
+            word_base = _strip_diacritics(word)
+            fuzzy_match = None
+            for flagged_word in allowed_map:
+                if _strip_diacritics(flagged_word) == word_base:
+                    fuzzy_match = flagged_word
+                    break
+            if fuzzy_match:
+                word_lower = fuzzy_match
+                word = fuzzy_match
+            else:
+                _log(f"LLM correction REJECTED: '{word}' not in flagged list")
+                continue
+
+        # Skip proper nouns
+        if _is_proper_noun(word):
+            _log(f"LLM correction REJECTED: '{word}' is a proper noun")
+            continue
+
+        is_compound = chosen.startswith("[") and chosen.endswith("]")
+        chosen_clean = chosen.strip("[]") if is_compound else chosen
+
+        if action == "suggest":
+            # LLM suggested a new word — validate against dictionary
+            if chosen_clean.lower() in sym.words:
+                _log(f"LLM suggestion ACCEPTED (in dict): '{word}' -> '{chosen_clean}'")
+            else:
+                # Check base form (LLM may have suggested without diacritics)
+                base = _strip_diacritics(chosen_clean)
+                if base in _BASE_FORM_INDEX:
+                    chosen_clean = _BASE_FORM_INDEX[base][0][0]
+                    _log(f"LLM suggestion ACCEPTED (base form): '{word}' -> '{chosen_clean}'")
+                else:
+                    _log(f"LLM suggestion REJECTED: '{chosen_clean}' not in dictionary")
+                    continue
+        else:
+            # action=pick: validate chosen is from candidates
+            allowed = [c.lower() for c in allowed_map[word_lower]]
+            if chosen_clean.lower() not in allowed and chosen.lower() not in allowed:
+                _log(f"LLM correction REJECTED: '{chosen}' not in candidates for '{word}'")
+                continue
+
+        # Apply correction
+        if is_compound and word_lower in compound_map:
+            # Compound replacement
+            info = compound_map[word_lower]
+            second_word = info["second_word"]
+            start_pos = info.get("start_pos")
+
+            if start_pos is not None:
+                idx = result.lower().find(word_lower)
+                if idx == -1:
+                    continue
+                span_end = idx + len(word)
+                actual_span = result[start_pos:span_end]
+                corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
+                result = result[:start_pos] + corrected + result[span_end:]
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason})")
+            else:
+                idx = result.find(word)
+                if idx == -1:
+                    idx = result.lower().find(word_lower)
+                if idx == -1:
+                    continue
+                search_start = idx + len(word)
+                idx2 = result.find(second_word, search_start)
+                if idx2 == -1:
+                    idx2 = result.lower().find(second_word.lower(), search_start)
+                if idx2 == -1:
+                    continue
+                span_end = idx2 + len(second_word)
+                actual_span = result[idx:span_end]
+                corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
+                result = result[:idx] + corrected + result[span_end:]
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason})")
+        else:
+            # Single word replacement
+            idx = result.find(word)
+            if idx == -1:
+                idx = result.lower().find(word_lower)
+            if idx == -1:
+                continue
+            actual_text = result[idx:idx + len(word)]
+            corrected = _match_case(actual_text, chosen_clean)
+            result = result[:idx] + corrected + result[idx + len(word):]
+            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (action={action}, reason: {reason})")
+
+    return result
+
+
 def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpell, client: OpenAI) -> str:
     """Ask LLM to review suspected errors and choose corrections.
 
-    The LLM sees the full text context and chooses from candidates.
-    Python validates and applies the choices.
-    Retries up to 2 times on empty response or timeout.
+    The LLM sees the full text context and can:
+    - Pick from candidates (validated strictly)
+    - Suggest a new word (validated against dictionary)
+    - Skip if unsure
+
+    No response_format constraint — uses prompt-based JSON instead.
     """
     if not flagged:
         return text
 
-    prompt = build_llm_review_prompt(text, flagged)
+    prompt = build_llm_review_prompt_v2(text, flagged)
     if not prompt:
         return text
 
-    base_kwargs = {
+    kwargs = {
         "model": LLM_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0,
@@ -1372,32 +1561,19 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
             "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
         },
     }
+    # No response_format — let the model return JSON freely
 
-    def _call(use_fmt: bool) -> str | None:
-        """Call LLM, return content or None on empty/fail."""
-        kw = {**base_kwargs}
-        if use_fmt and LLM_USE_RESPONSE_FORMAT:
-            kw["response_format"] = CORRECTION_RESPONSE_FORMAT
-        try:
-            resp = client.chat.completions.create(**kw)
-            return (resp.choices[0].message.content or "").strip() or None
-        except Exception as exc:
-            _log(f"LLM correction call failed: {exc}")
-            return None
-
-    # Try 1: with response_format
-    content = _call(use_fmt=True)
-
-    # Try 2: if empty, fallback without response_format
-    if not content:
-        _log("LLM empty with response_format, retrying without")
-        content = _call(use_fmt=False)
-
-    if not content:
-        _log("LLM returned empty for correction review (both attempts)")
+    try:
+        resp = client.chat.completions.create(**kwargs)
+        content = (resp.choices[0].message.content or "").strip()
+    except Exception as exc:
+        _log(f"LLM correction call failed: {exc}")
         return text
 
-    # Parse JSON response
+    if not content:
+        _log("LLM returned empty for correction review")
+        return text
+
     try:
         parsed = extract_json_object(content)
     except Exception:
@@ -1408,7 +1584,7 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
     if not isinstance(corrections, list):
         return text
 
-    return apply_validated_corrections(text, corrections, flagged, sym)
+    return apply_validated_corrections_v2(text, corrections, flagged, sym)
 
 
 # =========================================================
