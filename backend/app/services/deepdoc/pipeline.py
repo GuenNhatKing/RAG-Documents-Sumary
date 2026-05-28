@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw
 
 from .module.ocr import OCR as _OCR
 from .module import LayoutRecognizer, TableStructureRecognizer
+from .markdown_format import format_markdown
 
 # Singleton instances
 _ocr_instance = None
@@ -136,7 +137,8 @@ def image_to_markdown(pil_image, threshold=0.5):
         region_and_pos.append((0, text))
 
     region_and_pos.sort(key=lambda x: x[0])
-    return "\n\n".join([item[1] for item in region_and_pos])
+    md = "\n\n".join([item[1] for item in region_and_pos])
+    return format_markdown(md)
 
 
 def pdf_to_markdown(pdf_path, dpi=300, threshold=0.5):
