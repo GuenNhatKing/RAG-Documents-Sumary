@@ -56,9 +56,6 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:4b-q4_K_M")
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "300"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
-LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "4096"))
-LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
-LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
 OCR_BATCH_SIZE = int(os.getenv("OCR_BATCH_SIZE", "2"))
@@ -732,11 +729,6 @@ def call_llm_json(client: OpenAI, prompt: str, response_format: dict[str, Any] |
             "temperature": 0,
             "top_p": 0.9,
             "max_tokens": LLM_MAX_TOKENS,
-            "extra_body": {
-                "think": LLM_THINK,
-                "keep_alive": LLM_KEEP_ALIVE,
-                "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
-            },
         }
         use_fmt = LLM_USE_RESPONSE_FORMAT and response_format
         if use_fmt:
@@ -1223,20 +1215,21 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
         pos = item.get("position", -1)
         ctx_before, ctx_after = "", ""
         if pos >= 0:
-            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]))
+            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]), before=150, after=150)
         context_part = ""
         if ctx_before or ctx_after:
-            context_part = f' context: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
+            context_part = f' sentence: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
         error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates_str}] (reasons: {reasons}){context_part}')
 
     errors_text = "\n".join(error_lines)
 
     return (
         f"Fix Vietnamese OCR errors. Pick the best correction from candidates based on context.\n"
-        f"Skip words that are already correct. Do NOT fix proper nouns (capitalized names).\n\n"
+        f"Skip words that are already correct. Do NOT fix proper nouns (capitalized names).\n"
+        f"CRITICAL: Only correct if you are SURE the word is wrong in this context. If the word fits the sentence, SKIP it.\n\n"
         f"Errors:\n{errors_text}\n\n"
         f"Return JSON. Example:\n"
-        f'{{"corrections": [{{"word": "sap", "chosen": "sắp", "reason": "missing diacritics"}}]}}\n'
+        f'{{"corrections": [{{"word": "sap", "chosen": "sắp", "reason": "missing diacritics in sentence about scheduling"}}]}}\n'
         f"If no corrections needed: {{\"corrections\": []}}"
     )
 
@@ -1262,10 +1255,10 @@ def build_llm_review_prompt_v2(text: str, flagged: list[dict[str, Any]]) -> str:
         pos = item.get("position", -1)
         ctx_before, ctx_after = "", ""
         if pos >= 0:
-            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]))
+            ctx_before, ctx_after = _get_context_snippet(text, pos, len(item["token"]), before=150, after=150)
         context_part = ""
         if ctx_before or ctx_after:
-            context_part = f' context: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
+            context_part = f' sentence: "...{ctx_before} [{item["token"]}] {ctx_after}..."'
         error_lines.append(f'- "{item["token"]}" -> candidates: [{candidates_str}] (reasons: {reasons}){context_part}')
 
     errors_text = "\n".join(error_lines)
@@ -1276,9 +1269,11 @@ def build_llm_review_prompt_v2(text: str, flagged: list[dict[str, Any]]) -> str:
         f"1. Pick the best correction from the candidates list\n"
         f"2. Suggest a better word if none of the candidates fit (must be a valid Vietnamese word)\n"
         f"3. Skip if you are not sure\n\n"
+        f"CRITICAL: Only correct if you are SURE the word is wrong in this context. If the word fits the sentence, SKIP it.\n"
+        f"The 'reason' field MUST explain the semantic context, not just the error type.\n\n"
         f"Errors:\n{errors_text}\n\n"
         f"Return ONLY valid JSON, no markdown fences, no explanation.\n"
-        f"Format: {{\"corrections\": [{{\"word\": \"<error>\", \"action\": \"pick|suggest|skip\", \"chosen\": \"<correction>\", \"reason\": \"<why>\"}}]}}\n"
+        f"Format: {{\"corrections\": [{{\"word\": \"<error>\", \"action\": \"pick|suggest|skip\", \"chosen\": \"<correction>\", \"reason\": \"<explain why this word is wrong in this specific sentence context>\"}}]}}\n"
         f"If no corrections: {{\"corrections\": []}}"
     )
 
@@ -1367,7 +1362,8 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
                 actual_span = result[start_pos:span_end]
                 corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
                 result = result[:start_pos] + corrected + result[span_end:]
-                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason})")
+                ctx_b, ctx_a = _get_context_snippet(result, start_pos, len(corrected), before=50, after=50)
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
             else:
                 # Forward compound: current_word + next_word
                 idx = result.find(word)
@@ -1385,7 +1381,8 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
                 actual_span = result[idx:span_end]
                 corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
                 result = result[:idx] + corrected + result[span_end:]
-                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason})")
+                ctx_b, ctx_a = _get_context_snippet(result, idx, len(corrected), before=50, after=50)
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
         else:
             # Single word replacement
             idx = result.find(word)
@@ -1396,7 +1393,8 @@ def apply_validated_corrections(text: str, llm_corrections: list[dict[str, Any]]
             actual_text = result[idx:idx + len(word)]
             corrected = _match_case(actual_text, chosen_clean)
             result = result[:idx] + corrected + result[idx + len(word):]
-            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (reason: {reason})")
+            ctx_b, ctx_a = _get_context_snippet(result, idx, len(corrected), before=50, after=50)
+            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (action=pick, reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
 
     return result
 
@@ -1499,7 +1497,8 @@ def apply_validated_corrections_v2(text: str, llm_corrections: list[dict[str, An
                 actual_span = result[start_pos:span_end]
                 corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
                 result = result[:start_pos] + corrected + result[span_end:]
-                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason})")
+                ctx_b, ctx_a = _get_context_snippet(result, start_pos, len(corrected), before=50, after=50)
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
             else:
                 idx = result.find(word)
                 if idx == -1:
@@ -1516,7 +1515,8 @@ def apply_validated_corrections_v2(text: str, llm_corrections: list[dict[str, An
                 actual_span = result[idx:span_end]
                 corrected = _match_case(actual_span.split()[0] if actual_span.split() else "", chosen_clean)
                 result = result[:idx] + corrected + result[span_end:]
-                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason})")
+                ctx_b, ctx_a = _get_context_snippet(result, idx, len(corrected), before=50, after=50)
+                _log(f"LLM compound APPLIED: '{actual_span}' -> '{corrected}' (action={action}, reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
         else:
             # Single word replacement
             idx = result.find(word)
@@ -1527,7 +1527,8 @@ def apply_validated_corrections_v2(text: str, llm_corrections: list[dict[str, An
             actual_text = result[idx:idx + len(word)]
             corrected = _match_case(actual_text, chosen_clean)
             result = result[:idx] + corrected + result[idx + len(word):]
-            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (action={action}, reason: {reason})")
+            ctx_b, ctx_a = _get_context_snippet(result, idx, len(corrected), before=50, after=50)
+            _log(f"LLM correction APPLIED: '{word}' -> '{corrected}' (action={action}, reason: {reason}) ctx: \"...{ctx_b} [{corrected}] {ctx_a}...\"")
 
     return result
 
@@ -1555,11 +1556,6 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
         "temperature": 0,
         "top_p": 0.9,
         "max_tokens": min(LLM_MAX_TOKENS, 512),
-        "extra_body": {
-            "think": LLM_THINK,
-            "keep_alive": LLM_KEEP_ALIVE,
-            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
-        },
     }
     # No response_format — let the model return JSON freely
 
@@ -1679,11 +1675,6 @@ def llm_full_review(text: str, client: OpenAI) -> str:
         "temperature": 0,
         "top_p": 0.9,
         "max_tokens": min(LLM_MAX_TOKENS, 512),
-        "extra_body": {
-            "think": LLM_THINK,
-            "keep_alive": LLM_KEEP_ALIVE,
-            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
-        },
     }
 
     try:
@@ -2025,8 +2016,6 @@ def save_partial_normalized(document_id: str, name: str, text: str) -> None:
 def get_effective_env() -> dict[str, Any]:
     return {
         "LLM_MODEL": LLM_MODEL,
-        "LLM_NUM_CTX": LLM_NUM_CTX,
-        "LLM_THINK": LLM_THINK,
         "LLM_MAX_TOKENS": LLM_MAX_TOKENS,
         "OCR_BATCH_SIZE": OCR_BATCH_SIZE,
         "OCR_MAX_PROMPT_CHARS": OCR_MAX_PROMPT_CHARS,
