@@ -75,7 +75,7 @@ def list_documents(current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         query = db.query(Document).order_by(Document.created_at.desc())
-        # nguoi_dung/lanh_dao only see processed documents
+        # nguoi_dung only see processed documents
         if current_user.role not in ("admin", "can_bo"):
             query = query.filter(Document.status == DocumentStatus.PROCESSED)
         docs = query.all()
@@ -505,7 +505,7 @@ def get_stats(current_user: TokenData = Depends(get_current_user)):
 
         total_users = db.query(User).count()
         users_by_role = {}
-        for role_name in ["admin", "can_bo", "lanh_dao", "nguoi_dung"]:
+        for role_name in ["admin", "can_bo", "nguoi_dung"]:
             count = db.query(User).filter(User.role == role_name).count()
             users_by_role[role_name] = count
 

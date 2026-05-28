@@ -1030,6 +1030,7 @@ def validate_llm_decisions(
                 level_correction = expected_level
                 reason += f" → level corrected {llm_level}→{expected_level} (numbering match)"
 
+        final_level = level_correction or llm.get("level", 3)
         validated.append({
             "chunk_id": cid,
             "source_block_ids": chunk["source_block_ids"],
@@ -1038,7 +1039,7 @@ def validate_llm_decisions(
             "normalized_decision": llm_decision,
             "final_decision": final_decision,
             "final_role": llm_role,
-            "final_level": level_correction or llm.get("level", 3),
+            "final_level": final_level,
             "is_node": llm.get("is_node", False),
             "header": llm.get("header", ""),
             "summary": llm.get("summary", ""),
@@ -1047,6 +1048,17 @@ def validate_llm_decisions(
             "reason": reason,
             "applied": applied,
         })
+
+        trust_icon = {"accept": "OK", "reject": "REJECT", "flag_review": "FLAG"}.get(trust, "?")
+        change = ""
+        if llm_decision != final_decision:
+            change = f" [{llm_decision}->{final_decision}]"
+        level_change = ""
+        if level_correction:
+            level_change = f" level:{llm.get('level',3)}->{level_correction}"
+        _log(f"  VALIDATE {cid} role={llm_role} decision={llm_decision}{change} "
+             f"level={final_level}{level_change} trust={trust_icon} "
+             f"applied={'Y' if applied else 'N'} reason={clip(reason,60)}")
 
     return validated
 
@@ -1126,6 +1138,12 @@ def llm_recognize_chunks(
 
         # Normalize
         normalized = normalize_llm_output(raw)
+        for ch in normalized.get("chunks", []):
+            _log(f"  LLM chunk={ch['chunk_id']} role={ch.get('role')} decision={ch.get('decision')} "
+                 f"level={ch.get('level')} is_node={ch.get('is_node')} "
+                 f"header={clip(ch.get('header',''),60)} "
+                 f"risk={ch.get('risk_flags',[])} "
+                 f"reason={clip(ch.get('reason',''),80)}")
         all_chunks.extend(normalized.get("chunks", []))
         all_warnings.extend(normalized.get("document_warnings", []))
 
@@ -1160,6 +1178,12 @@ def llm_global_review(
         raw = call_json(c, prompt, docid, "global_review", None, GLOBAL_REVIEW_FORMAT)
         elapsed = time.time() - t0
         _log_llm_call("global_review", None, len(prompt), 0, elapsed, True)
+        for r in raw.get("reviews", []):
+            _log(f"  REVIEW {r.get('chunk_id')} suggestion={r.get('suggestion')} "
+                 f"reason={clip(r.get('reason',''),80)}")
+        for w in raw.get("document_notes", []):
+            _log(f"  NOTE type={w.get('type')} chunks={w.get('chunk_ids',[])} "
+                 f"reason={clip(w.get('reason',''),80)}")
         return raw
     except Exception as e:
         elapsed = time.time() - t0
@@ -1222,6 +1246,8 @@ def apply_safe_decisions(
             role=role,
             section_id=None,
         ))
+        _log(f"  NODE block={block.block_id} level={level} role={role} "
+             f"text={clip(block.first_line, 60)}")
 
     return sorted(nodes, key=lambda n: n.line_id)
 

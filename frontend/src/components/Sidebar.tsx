@@ -25,9 +25,6 @@ const roleMenus: Record<string, MenuItem[]> = {
     { label: "Quản lý tài liệu", href: "/files" },
     { label: "Thống kê", href: "/stats" },
   ],
-  lanh_dao: [
-    { label: "Hỏi đáp", href: "/chat" },
-  ],
 };
 
 export default function Sidebar() {

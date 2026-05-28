@@ -4,7 +4,7 @@ export const API = "http://localhost:8000";
 
 export interface TokenPayload {
   sub: string; // username
-  role: string; // admin | can_bo | lanh_dao | nguoi_dung
+  role: string; // admin | can_bo | nguoi_dung
   exp: number;
 }
 

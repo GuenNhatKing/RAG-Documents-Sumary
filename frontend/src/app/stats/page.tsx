@@ -20,7 +20,6 @@ const STATUS_LABELS: Record<string, string> = {
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   can_bo: "Cán bộ",
-  lanh_dao: "Lãnh đạo",
   nguoi_dung: "Người dùng",
 };
 
@@ -35,7 +34,6 @@ const STATUS_COLORS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   admin: "#8b5cf6",
   can_bo: "#3b82f6",
-  lanh_dao: "#f59e0b",
   nguoi_dung: "#6b7280",
 };
 
