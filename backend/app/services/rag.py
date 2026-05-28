@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from typing import List, Dict, Any
 from openai import OpenAI
 from app.env import load_backend_env
@@ -129,12 +130,8 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     if not content:
         raise ValueError("LLM trả về nội dung rỗng")
 
-    cleaned = (
-        content
-        .strip()
-        .replace("```json", "")
-        .replace("```", "")
-    )
+    cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+    cleaned = cleaned.replace("```json", "").replace("```", "").strip()
 
     result = json.loads(cleaned)
 

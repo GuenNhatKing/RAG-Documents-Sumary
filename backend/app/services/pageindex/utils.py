@@ -1,6 +1,7 @@
 import litellm
 import logging
 import os
+import re
 import textwrap
 from datetime import datetime
 import time
@@ -84,21 +85,27 @@ async def llm_acompletion(model, prompt):
             
             
 def get_json_content(response):
+    # Strip <think>...</think> blocks that some LLMs emit
+    response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+
     start_idx = response.find("```json")
     if start_idx != -1:
         start_idx += 7
         response = response[start_idx:]
-        
+
     end_idx = response.rfind("```")
     if end_idx != -1:
         response = response[:end_idx]
-    
+
     json_content = response.strip()
     return json_content
          
 
 def extract_json(content):
     try:
+        # Strip <think>...</think> blocks that some LLMs emit
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
         # First, try to extract JSON enclosed within ```json and ```
         start_idx = content.find("```json")
         if start_idx != -1:

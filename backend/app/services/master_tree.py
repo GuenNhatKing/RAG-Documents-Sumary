@@ -7,6 +7,7 @@ Structure: {doc_id: {filename, summary, node_count, created_at}}
 
 import json
 import os
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -153,7 +154,8 @@ Rules:
             return []
 
         # Clean response
-        cleaned = content.strip().replace("```json", "").replace("```", "")
+        cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+        cleaned = cleaned.replace("```json", "").replace("```", "").strip()
         result = json.loads(cleaned)
         doc_ids = result.get("relevant_docs", [])
 
