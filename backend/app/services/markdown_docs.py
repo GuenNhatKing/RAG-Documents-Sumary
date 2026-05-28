@@ -820,14 +820,27 @@ def client() -> OpenAI: return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY
 def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), wait=wait_exponential(multiplier=1, min=2, max=30), retry=retry_if_exception_type((EmptyLLMResponseError, LLMJSONParseError, APITimeoutError, APIConnectionError, TimeoutError, ConnectionError, OSError)), reraise=True)
 
 def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, fmt: dict|None) -> dict[str,Any]:
+    """Call LLM and return parsed JSON.
+
+    If response_format causes empty response (common with small models),
+    automatically retries without response_format.
+    """
     @retry_json()
     def _call():
         kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.9,"max_tokens":LLM_MAX_TOKENS,"extra_body":{"think":LLM_THINK,"keep_alive":LLM_KEEP_ALIVE,"options":{"num_ctx":LLM_NUM_CTX,"temperature":0,"top_p":0.9,"top_k":20}}}
-        if LLM_USE_RESPONSE_FORMAT and fmt: kw["response_format"]=fmt
+        use_fmt = LLM_USE_RESPONSE_FORMAT and fmt
+        if use_fmt: kw["response_format"]=fmt
         t0 = time.time()
         resp=c.chat.completions.create(**kw)
         content=resp.choices[0].message.content or ""
         elapsed = time.time() - t0
+        if not content.strip() and use_fmt:
+            _log(f"LLM empty with response_format for {stage} section={secid}, retrying without")
+            kw.pop("response_format", None)
+            t0 = time.time()
+            resp=c.chat.completions.create(**kw)
+            content=resp.choices[0].message.content or ""
+            elapsed = time.time() - t0
         if not content.strip():
             _log_llm_call(stage, secid, len(prompt), 0, elapsed, False, "empty_response")
             _save_debug_json(work_dir(docid)/"llm_failures"/f"section_{secid or 0:03d}.{stage}.{int(time.time()*1000)}.json", {"error":"LLM returned empty response","raw_response":"","prompt_preview":prompt[:2500]})
