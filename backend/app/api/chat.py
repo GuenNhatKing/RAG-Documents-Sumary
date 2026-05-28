@@ -207,8 +207,12 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
 
     sources = []
     if context:
-        for match in list(set(re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context))):
-            sources.append(SourceDetail(file=match[0], lines=match[1]))
+        seen_files: set[str] = set()
+        for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context):
+            filename = match[0].strip()
+            if filename not in seen_files:
+                seen_files.add(filename)
+                sources.append(SourceDetail(file=filename, lines=match[1].strip()))
 
     answer = generate_final_answer(context, request.question)
 
@@ -272,8 +276,12 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
 
     sources = []
     if combined_context:
-        for match in list(set(re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", combined_context))):
-            sources.append(SourceDetail(file=match[0], lines=match[1]))
+        seen_files: set[str] = set()
+        for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", combined_context):
+            filename = match[0].strip()
+            if filename not in seen_files:
+                seen_files.add(filename)
+                sources.append(SourceDetail(file=filename, lines=match[1].strip()))
 
     try:
         answer = generate_final_answer(combined_context, req.question)
