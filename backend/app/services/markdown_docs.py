@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError, APIConnectionError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 # =========================================================
@@ -20,7 +20,7 @@ WORK_DIR = Path(os.getenv("MD_WORK_DIR", str(DATA_DIR / "markdown_work")))
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:4b-q4_K_M")
-LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "240"))
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "4096"))
 LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
@@ -817,7 +817,7 @@ class LLMJSONParseError(Exception):
 
 
 def client() -> OpenAI: return OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=LLM_TIMEOUT_SECONDS)
-def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), wait=wait_exponential(multiplier=1, min=2, max=30), retry=retry_if_exception_type((EmptyLLMResponseError, LLMJSONParseError)), reraise=True)
+def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), wait=wait_exponential(multiplier=1, min=2, max=30), retry=retry_if_exception_type((EmptyLLMResponseError, LLMJSONParseError, APITimeoutError, APIConnectionError, TimeoutError, ConnectionError, OSError)), reraise=True)
 
 def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, fmt: dict|None) -> dict[str,Any]:
     @retry_json()

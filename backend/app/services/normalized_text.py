@@ -54,7 +54,7 @@ NORMALIZED_WORK_DIR = Path(os.getenv("NORMALIZED_WORK_DIR", str(DATA_DIR / "norm
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:4b-q4_K_M")
-LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "180"))
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "4096"))
 LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
@@ -953,33 +953,52 @@ def validate_with_context(text: str, flagged: list[dict[str, Any]], sym: SymSpel
     """Validate suspected errors by checking context (surrounding words).
 
     Context checks:
-    1. Word appears multiple times in text - likely correct (not flagged)
-    2. Word is part of a known phrase (e.g., "nhân dân" is always correct)
-    3. Word is adjacent to structural markers (e.g., "Số:", "Ngày:")
+    1. Word with diacritics appearing many times → likely correct (skip)
+    2. Word without diacritics appearing multiple times → still flag (OCR errors repeat)
+    3. Word immediately after structural markers on the same line → likely correct
 
     Returns filtered list of confirmed errors.
     """
     confirmed = []
     text_lower = text.lower()
 
+    # Build line boundaries for same-line checks
+    lines = text.split("\n")
+    line_starts = []
+    offset = 0
+    for line in lines:
+        line_starts.append(offset)
+        offset += len(line) + 1  # +1 for \n
+
+    def _get_line_start(pos: int) -> int:
+        """Find the start position of the line containing pos."""
+        for i in range(len(line_starts) - 1, -1, -1):
+            if pos >= line_starts[i]:
+                return line_starts[i]
+        return 0
+
     for item in flagged:
         token = item["token"]
         token_lower = token.lower()
+        has_diacritics = _has_vietnamese_diacritics(token)
 
-        # Skip if word appears multiple times (likely correct)
-        count = text_lower.count(token_lower)
-        if count > 1:
-            continue
+        # Rule 1: Word with diacritics appearing >3 times → likely correct
+        if has_diacritics:
+            count = text_lower.count(token_lower)
+            if count > 3:
+                continue
 
-        # Skip if word is adjacent to structural markers
+        # Rule 2: Structural marker check — only skip if marker is on the SAME line
         pos = item["position"]
-        context_before = text[max(0, pos-50):pos].lower()
-        context_after = text[pos+len(token):pos+len(token)+50].lower()
+        line_start = _get_line_start(pos)
+        context_on_line = text[line_start:pos].lower()
 
-        # Structural markers that indicate the word is likely correct
         structural_markers = ["số:", "ngày:", "tháng:", "năm:", "điều:", "khoản:", "mục:", "phần:"]
-        if any(marker in context_before for marker in structural_markers):
-            continue
+        if any(marker in context_on_line for marker in structural_markers):
+            # Only skip if the marker is within 30 chars before the word
+            recent_context = context_on_line[-30:]
+            if any(marker in recent_context for marker in structural_markers):
+                continue
 
         confirmed.append(item)
 
@@ -1179,7 +1198,7 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
         return ""
 
     error_lines = []
-    for item in flagged[:10]:  # Limit to 10 errors max
+    for item in flagged[:5]:  # Limit to 5 errors per batch
         candidates = list(item.get("candidates", []))
         # Add compound candidates (e.g., "tham quyen" -> "thẩm quyền")
         compound_cands = item.get("compound_candidates", [])
@@ -1200,16 +1219,12 @@ def build_llm_review_prompt(text: str, flagged: list[dict[str, Any]]) -> str:
     errors_text = "\n".join(error_lines)
 
     return (
-        f"/no_think\n"
-        f"Review this Vietnamese text for OCR errors. The following words are suspected errors:\n\n"
-        f"{errors_text}\n\n"
-        f"Text:\n{text}\n\n"
-        f"For each error, pick the best correction from the candidates based on context. "
-        f"If a word is actually correct, skip it.\n"
-        f"IMPORTANT: Do NOT correct proper nouns (person names, place names). "
-        f"If a word starts with uppercase and appears to be a name, skip it even if it has candidates.\n"
-        f"Return JSON:\n"
-        f'{{"corrections": [{{"word": "error", "chosen": "correction", "reason": "why"}}]}}'
+        f"Fix Vietnamese OCR errors. Pick the best correction from candidates based on context.\n"
+        f"Skip words that are already correct. Do NOT fix proper nouns (capitalized names).\n\n"
+        f"Errors:\n{errors_text}\n\n"
+        f"Return JSON. Example:\n"
+        f'{{"corrections": [{{"word": "sap", "chosen": "sắp", "reason": "missing diacritics"}}]}}\n'
+        f"If no corrections needed: {{\"corrections\": []}}"
     )
 
 
@@ -1336,6 +1351,7 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
 
     The LLM sees the full text context and chooses from candidates.
     Python validates and applies the choices.
+    Retries up to 2 times on empty response or timeout.
     """
     if not flagged:
         return text
@@ -1344,46 +1360,55 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
     if not prompt:
         return text
 
-    try:
-        kwargs = {
-            "model": LLM_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0,
-            "top_p": 0.1,
-            "max_tokens": min(LLM_MAX_TOKENS, 512),
-            "extra_body": {
-                "think": LLM_THINK,
-                "keep_alive": LLM_KEEP_ALIVE,
-                "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
-            },
-        }
-        if LLM_USE_RESPONSE_FORMAT:
-            kwargs["response_format"] = CORRECTION_RESPONSE_FORMAT
+    base_kwargs = {
+        "model": LLM_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "top_p": 0.1,
+        "max_tokens": min(LLM_MAX_TOKENS, 512),
+        "extra_body": {
+            "think": LLM_THINK,
+            "keep_alive": LLM_KEEP_ALIVE,
+            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
+        },
+    }
 
-        resp = client.chat.completions.create(**kwargs)
-        content = (resp.choices[0].message.content or "").strip()
-
-        if not content:
-            _log("LLM returned empty for correction review")
-            return text
-
-        # Parse JSON response
+    def _call(use_fmt: bool) -> str | None:
+        """Call LLM, return content or None on empty/fail."""
+        kw = {**base_kwargs}
+        if use_fmt and LLM_USE_RESPONSE_FORMAT:
+            kw["response_format"] = CORRECTION_RESPONSE_FORMAT
         try:
-            parsed = extract_json_object(content)
-        except Exception:
-            _log("LLM correction JSON parse failed")
-            return text
+            resp = client.chat.completions.create(**kw)
+            return (resp.choices[0].message.content or "").strip() or None
+        except Exception as exc:
+            _log(f"LLM correction call failed: {exc}")
+            return None
 
-        corrections = parsed.get("corrections", [])
-        if not isinstance(corrections, list):
-            return text
+    # Try 1: with response_format
+    content = _call(use_fmt=True)
 
-        # Apply with strict validation
-        return apply_validated_corrections(text, corrections, flagged, sym)
+    # Try 2: if empty, fallback without response_format
+    if not content:
+        _log("LLM empty with response_format, retrying without")
+        content = _call(use_fmt=False)
 
-    except Exception as exc:
-        _log(f"LLM correction review failed: {exc}")
+    if not content:
+        _log("LLM returned empty for correction review (both attempts)")
         return text
+
+    # Parse JSON response
+    try:
+        parsed = extract_json_object(content)
+    except Exception:
+        _log("LLM correction JSON parse failed")
+        return text
+
+    corrections = parsed.get("corrections", [])
+    if not isinstance(corrections, list):
+        return text
+
+    return apply_validated_corrections(text, corrections, flagged, sym)
 
 
 # =========================================================
@@ -1424,6 +1449,74 @@ def apply_symspell_direct(text: str, flagged: list[dict[str, Any]], sym: SymSpel
             result = result[:pos] + corrected + result[pos + len(item["token"]):]
 
     return result
+
+
+def _has_ascii_vietnamese_words(text: str) -> bool:
+    """Check if text contains enough ASCII-only words to warrant LLM review.
+
+    Only triggers when 3+ ASCII words have diacritized forms in the dictionary.
+    This avoids false positives on lines like "Thời gian ký: 27.05.2026" where
+    1-2 short words (min, nam) happen to match.
+    """
+    import re
+    words = re.findall(r'[a-zA-Z]{3,}', text)
+    if not words:
+        return False
+    match_count = 0
+    for w in words:
+        base = _strip_diacritics(w)
+        if base == w.lower() and w.lower() in _BASE_FORM_INDEX:
+            match_count += 1
+            if match_count >= 3:
+                return True
+    return False
+
+
+def llm_full_review(text: str, client: OpenAI) -> str:
+    """Ask LLM to review full text for missing diacritics that Python can't detect.
+
+    Used when Python heuristic finds no errors but the text contains ASCII words
+    that might be missing diacritics (e.g., "Cong hoa" -> "cộng hòa").
+    """
+    prompt = (
+        f"Fix missing Vietnamese diacritics in this OCR text.\n"
+        f"Only fix words missing diacritics. Do NOT change proper nouns (capitalized names).\n"
+        f"Return ONLY the corrected text, no explanation.\n\n"
+        f"Example: 'Cong hoa Xa hoi' -> 'Cộng hòa Xã hội'\n\n"
+        f"Text:\n{text}"
+    )
+
+    kwargs = {
+        "model": LLM_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "top_p": 0.1,
+        "max_tokens": min(LLM_MAX_TOKENS, 512),
+        "extra_body": {
+            "think": LLM_THINK,
+            "keep_alive": LLM_KEEP_ALIVE,
+            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
+        },
+    }
+
+    try:
+        resp = client.chat.completions.create(**kwargs)
+        content = (resp.choices[0].message.content or "").strip()
+
+        if not content:
+            _log("LLM full review returned empty")
+            return text
+
+        # Sanity check: result should be similar length
+        if len(content) < len(text) * 0.5 or len(content) > len(text) * 2:
+            _log(f"LLM full review result length suspicious ({len(content)} vs {len(text)}), skipping")
+            return text
+
+        return content
+
+    except Exception as exc:
+        _log(f"LLM full review failed: {exc}")
+        return text
 
 
 # =========================================================
@@ -1471,16 +1564,38 @@ def process_segments_hybrid(
         detect_time = time.time() - t0
 
         if not flagged_with_candidates:
-            corrected.append(seg_text)
-            report_items.append({
-                "segment_id": seg.segment_id,
-                "kind": seg.kind,
-                "raw_errors": len(flagged_raw),
-                "confirmed_errors": len(flagged),
-                "corrected": False,
-                "before": seg.text,
-                "after": seg_text,
-            })
+            # Python found no errors — but check if segment has ASCII words
+            # that might be missing diacritics (e.g., "Cong hoa", "Uy ban")
+            if _has_ascii_vietnamese_words(seg_text):
+                t_llm = time.time()
+                reviewed_text = llm_full_review(seg_text, client)
+                llm_time = time.time() - t_llm
+                changed = reviewed_text.strip() != seg_text.strip()
+                if changed:
+                    segments_corrected += 1
+                corrected.append(reviewed_text)
+                report_items.append({
+                    "segment_id": seg.segment_id,
+                    "kind": seg.kind,
+                    "raw_errors": 0,
+                    "confirmed_errors": 0,
+                    "corrected": changed,
+                    "llm_full_review": True,
+                    "llm_duration": f"{llm_time:.2f}s",
+                    "before": seg.text,
+                    "after": reviewed_text,
+                })
+            else:
+                corrected.append(seg_text)
+                report_items.append({
+                    "segment_id": seg.segment_id,
+                    "kind": seg.kind,
+                    "raw_errors": len(flagged_raw),
+                    "confirmed_errors": len(flagged),
+                    "corrected": False,
+                    "before": seg.text,
+                    "after": seg_text,
+                })
             continue
 
         segments_with_errors += 1
