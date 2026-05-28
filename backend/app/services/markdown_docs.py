@@ -20,7 +20,7 @@ WORK_DIR = Path(os.getenv("MD_WORK_DIR", str(DATA_DIR / "markdown_work")))
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:4b-q4_K_M")
-LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "300"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "4096"))
 LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
@@ -822,7 +822,7 @@ def retry_json(): return retry(stop=stop_after_attempt(MD_JSON_RETRY_ATTEMPTS), 
 def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, fmt: dict|None) -> dict[str,Any]:
     @retry_json()
     def _call():
-        kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.1,"max_tokens":LLM_MAX_TOKENS,"extra_body":{"think":LLM_THINK,"keep_alive":LLM_KEEP_ALIVE,"options":{"num_ctx":LLM_NUM_CTX,"temperature":0,"top_p":0.1,"top_k":1}}}
+        kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.9,"max_tokens":LLM_MAX_TOKENS,"extra_body":{"think":LLM_THINK,"keep_alive":LLM_KEEP_ALIVE,"options":{"num_ctx":LLM_NUM_CTX,"temperature":0,"top_p":0.9,"top_k":20}}}
         if LLM_USE_RESPONSE_FORMAT and fmt: kw["response_format"]=fmt
         t0 = time.time()
         resp=c.chat.completions.create(**kw)

@@ -49,7 +49,7 @@ Mandatory rules:
         extra_body={
             "think": think,
             "keep_alive": keep_alive,
-            "options": {"num_ctx": num_ctx, "temperature": 0, "top_p": 0.1, "top_k": 1},
+            "options": {"num_ctx": num_ctx, "temperature": 0, "top_p": 0.9, "top_k": 20},
         },
     )
 

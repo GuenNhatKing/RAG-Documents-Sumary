@@ -129,7 +129,7 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
         extra_body={
             "think": LLM_THINK,
             "keep_alive": LLM_KEEP_ALIVE,
-            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.1, "top_k": 1},
+            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
         },
     )
 
