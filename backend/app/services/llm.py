@@ -35,6 +35,8 @@ Mandatory rules:
 6. Do not wrap the entire answer in a code block.
 7. Answer in Vietnamese, concise but complete."""
 
+    context = _truncate_context(context)
+
     response = _client.chat.completions.create(
         model=model_name,
         messages=[
@@ -58,6 +60,14 @@ _SUMMARY_LENGTH_INSTRUCTIONS = {
     "medium": "Summarize all main points, 1-2 sentences per point.",
     "long": "Summarize in detail, covering all important points and illustrative examples.",
 }
+
+
+def _truncate_context(context: str, max_chars: int = 6000) -> str:
+    """Truncate context to fit model's context window, keeping start and end."""
+    if len(context) <= max_chars:
+        return context
+    half = max_chars // 2
+    return context[:half] + "\n\n...[TRUNCATED]...\n\n" + context[-half:]
 
 
 @retry(
@@ -91,6 +101,8 @@ Rules:
 3. Use **bold** for important terms.
 4. Do not include code blocks.
 5. Respond in Vietnamese."""
+
+    context = _truncate_context(context)
 
     user_prompt = f"""Summarize the following document.
 

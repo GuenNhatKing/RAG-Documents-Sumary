@@ -193,11 +193,15 @@ def get_messages(session_id: str, db: Session = Depends(get_db), current_user: T
 # ============================================================
 @router.post("/ask", response_model=ChatResponse)
 async def ask_document(request: ChatRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
-    json_path = f"/work/backend/data/semantic_trees/{request.doc_id}.json"
-    markdown_path = f"/work/backend/data/markdown_docs/{request.doc_id}.md"
-
-    if not os.path.exists(json_path) or not os.path.exists(markdown_path):
+    from app.models import Document
+    doc = db.query(Document).filter(Document.id == request.doc_id).first()
+    if not doc:
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
+
+    markdown_path = doc.markdown_path
+    json_path = doc.json_tree_path
+    if not markdown_path or not json_path or not os.path.exists(json_path) or not os.path.exists(markdown_path):
+        raise HTTPException(status_code=404, detail="Tài liệu chưa được xử lý.")
 
     with open(json_path, 'r', encoding='utf-8') as f:
         tree_data = json.load(f)
@@ -317,10 +321,14 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
 @router.post("/summarize", response_model=ChatResponse)
 def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     """Summarize a document with user-selected length: short, medium, or long."""
-    markdown_path = f"/work/backend/data/markdown_docs/{req.doc_id}.md"
+    from app.models import Document
+    doc = db.query(Document).filter(Document.id == req.doc_id).first()
+    if not doc or not doc.markdown_path:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
+    markdown_path = doc.markdown_path
 
     if not os.path.exists(markdown_path):
-        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
+        raise HTTPException(status_code=404, detail="Không tìm thấy file markdown.")
 
     # Read full markdown content for summarization
     with open(markdown_path, "r", encoding="utf-8") as f:

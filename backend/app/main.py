@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import os
 import uuid
+import traceback
 
 from .env import load_backend_env
 
@@ -20,6 +21,7 @@ from .services.normalized_text import generate_normalized_text
 from .services.markdown_docs import generate_markdown_doc
 from .services.semantic_trees import generate_semantic_tree
 from .services.ocr import extract_text
+from .services.ocr_to_markdown import process_to_markdown
 from .services.master_tree import remove_doc_from_master_tree
 from .api.auth import get_current_user, TokenData
 
@@ -166,20 +168,28 @@ async def extract_text_api(document_id: str, current_user: TokenData = Depends(g
         db.commit()
 
         file_path = doc.raw_file_path
-        extract_text(file_path, document_id)
+        md_path = process_to_markdown(file_path, document_id)
 
-        doc.status = DocumentStatus.PROCESSED
+        doc.status = DocumentStatus.PENDING_REVIEW
+        doc.markdown_path = str(md_path)
         db.commit()
 
         return {
             "status": "ok",
             "document_id": document_id,
-            "output_dir": f"data/extracted_text/{document_id}"
+            "markdown_path": str(md_path),
+            "message": "OCR pipeline hoàn tất. Markdown đã sẵn sàng để review."
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"OCR Extraction failed: {str(e)}")
+        traceback.print_exc()
+        if doc:
+            doc.status = DocumentStatus.ERROR
+            db.commit()
+        raise HTTPException(status_code=500, detail=f"OCR pipeline thất bại: {str(e)}")
     finally:
         db.close()
 
@@ -195,35 +205,26 @@ async def generate_md_api(document_id: str, current_user: TokenData = Depends(ge
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        doc.status = DocumentStatus.PROCESSING
-        db.commit()
+        if not doc.markdown_path or not Path(doc.markdown_path).exists():
+            raise HTTPException(
+                status_code=400,
+                detail="Chưa có markdown. Gọi /extract-text trước để chạy OCR pipeline."
+            )
 
-        # Phase 1: Normalize text
-        normalized_path = generate_normalized_text(document_id)
-
-        # Phase 2: Generate markdown
-        markdown_path = generate_markdown_doc(
-            document_id=document_id,
-            normalized_path=normalized_path,
-        )
-
-        # Dừng ở đây — chuyển status sang PENDING_REVIEW
         doc.status = DocumentStatus.PENDING_REVIEW
-        doc.markdown_path = str(markdown_path)
         db.commit()
 
         return {
             "status": "ok",
             "document_id": document_id,
-            "markdown_path": str(markdown_path),
-            "message": "Markdown generated. Waiting for review."
+            "markdown_path": doc.markdown_path,
+            "message": "Markdown đã sẵn sàng để review."
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        if doc:
-            doc.status = DocumentStatus.ERROR
-            db.commit()
         raise HTTPException(status_code=500, detail=f"Markdown generation failed: {str(e)}")
     finally:
         db.close()
@@ -234,22 +235,27 @@ async def generate_md_api(document_id: str, current_user: TokenData = Depends(ge
 # =========================================================
 @app.get("/documents/{doc_id}/markdown")
 def get_document_markdown(doc_id: str, current_user: TokenData = Depends(get_current_user)):
-    markdown_path = (
-        Path("/work/backend/data/markdown_docs") / f"{doc_id}.md"
-    )
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
 
-    if not markdown_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail=f"Markdown not found for doc_id={doc_id}",
-        )
+        md_path = Path(doc.markdown_path) if doc.markdown_path else None
+        if not md_path or not md_path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Markdown not found for doc_id={doc_id}",
+            )
 
-    markdown = markdown_path.read_text(encoding="utf-8")
+        markdown = md_path.read_text(encoding="utf-8")
 
-    return {
-        "doc_id": doc_id,
-        "markdown": markdown,
-    }
+        return {
+            "doc_id": doc_id,
+            "markdown": markdown,
+        }
+    finally:
+        db.close()
 
 
 # =========================================================

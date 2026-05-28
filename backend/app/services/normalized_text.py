@@ -823,7 +823,7 @@ def _load_symspell_vi() -> SymSpell:
         _log(f"WARNING: SymSpell dictionary not found at {dict_path}")
         _SYMSPELL_INSTANCE = sym
         return sym
-    sym.load_dictionary(str(dict_path), term_index=0, count_index=1, separator="\t")
+    sym.load_dictionary(str(dict_path), term_index=0, count_index=1, separator="\t", encoding="utf-8")
     _SYMSPELL_INSTANCE = sym
     # Build base_form index: stripped_form -> [(original_word, freq), ...]
     # Index all words (single + compound) for missing-diacritics lookup

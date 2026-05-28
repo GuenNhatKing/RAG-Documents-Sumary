@@ -9,15 +9,15 @@ from pathlib import Path
 from typing import Any
 
 import fitz  # PyMuPDF
-import pytesseract
 from PIL import Image
+
+from .deepdoc.wrapper import extract_text_from_image
 
 
 DATA_DIR = Path("data")
 EXTRACTED_TEXT_DIR = DATA_DIR / "extracted_text"
 EXTRACT_WORK_DIR = DATA_DIR / "extract_work"
 
-OCR_LANG = "vie+eng"
 OCR_DPI = 300
 SAVE_DEBUG_FILES = os.getenv("SAVE_DEBUG_FILES", "false").lower() == "true"
 MIN_NATIVE_TEXT_CHARS = 500
@@ -106,7 +106,7 @@ def _ocr_page(page: fitz.Page) -> str:
     pix = page.get_pixmap(dpi=OCR_DPI)
     img_data = pix.tobytes("png")
     image = Image.open(io.BytesIO(img_data))
-    return pytesseract.image_to_string(image, lang=OCR_LANG).strip()
+    return extract_text_from_image(image).strip()
 
 
 def _choose_text(native_text: str, ocr_text: str, reason: str) -> tuple[str, str]:

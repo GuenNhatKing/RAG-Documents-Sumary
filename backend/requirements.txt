@@ -7,7 +7,6 @@ openai
 redis
 celery
 pymupdf
-pytesseract
 pillow
 litellm
 PyPDF2
@@ -20,3 +19,16 @@ python-multipart
 cryptography
 underthesea
 symspellpy
+
+# DeepDoc VietOCR dependencies
+torch
+torchvision
+onnxruntime
+opencv-python
+pdfplumber
+huggingface_hub
+shapely
+pyclipper
+ruamel.yaml
+cachetools
+vietocr
