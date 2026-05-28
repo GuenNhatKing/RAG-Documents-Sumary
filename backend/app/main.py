@@ -464,15 +464,25 @@ def delete_document(doc_id: str, current_user: TokenData = Depends(get_current_u
                 if p.exists():
                     p.unlink()
 
-        # Delete extracted_text directory
-        extract_dir = Path(f"data/extracted_text/{doc_id}")
-        if extract_dir.exists():
-            shutil.rmtree(extract_dir)
+        # Delete normalized_text file (and any sidecar JSONs)
+        for pattern in [f"{doc_id}.txt", f"{doc_id}.*.json"]:
+            for f in Path("data/normalized_text").glob(pattern):
+                f.unlink(missing_ok=True)
 
-        # Delete extract_work directory
-        work_dir = Path(f"data/extract_work/{doc_id}")
-        if work_dir.exists():
-            shutil.rmtree(work_dir)
+        # Delete markdown_docs and semantic_trees files (fallback if not in DB paths)
+        Path(f"data/markdown_docs/{doc_id}.md").unlink(missing_ok=True)
+        Path(f"data/semantic_trees/{doc_id}.json").unlink(missing_ok=True)
+
+        # Delete all work/data directories for this document
+        for subdir in [
+            "extracted_text",
+            "extract_work",
+            "normalized_work",
+            "markdown_work",
+        ]:
+            d = Path(f"data/{subdir}/{doc_id}")
+            if d.exists():
+                shutil.rmtree(d)
 
         # Delete chat sessions for this document (and their messages via ORM cascade)
         sessions = db.query(ChatSession).filter(ChatSession.doc_id == doc_id).all()
