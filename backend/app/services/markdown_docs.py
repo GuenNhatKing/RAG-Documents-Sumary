@@ -22,9 +22,6 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:4b-q4_K_M")
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "300"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
-LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "4096"))
-LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
-LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "30m")
 LLM_USE_RESPONSE_FORMAT = os.getenv("LLM_USE_RESPONSE_FORMAT", "true").lower() == "true"
 
 MD_MAX_PROMPT_CHARS = int(os.getenv("MD_MAX_PROMPT_CHARS", "7500"))
@@ -174,9 +171,9 @@ def effective_config() -> dict[str, Any]:
         "DATA_DIR": str(DATA_DIR), "NORMALIZED_TEXT_DIR": str(NORMALIZED_DIR),
         "MARKDOWN_DOCS_DIR": str(MARKDOWN_DIR), "MD_WORK_DIR": str(WORK_DIR),
         "LLM_BASE_URL": LLM_BASE_URL, "LLM_API_KEY": "***" if LLM_API_KEY else "",
-        "LLM_MODEL": LLM_MODEL, "LLM_NUM_CTX": LLM_NUM_CTX, "LLM_THINK": LLM_THINK,
+        "LLM_MODEL": LLM_MODEL,
         "LLM_MAX_TOKENS": LLM_MAX_TOKENS, "LLM_TIMEOUT_SECONDS": LLM_TIMEOUT_SECONDS,
-        "LLM_USE_RESPONSE_FORMAT": LLM_USE_RESPONSE_FORMAT, "LLM_KEEP_ALIVE": LLM_KEEP_ALIVE,
+        "LLM_USE_RESPONSE_FORMAT": LLM_USE_RESPONSE_FORMAT,
         "MD_MAX_PROMPT_CHARS": MD_MAX_PROMPT_CHARS,
         "MD_SECTION_MAX_BLOCKS": MD_SECTION_MAX_BLOCKS, "MD_SECTION_MAX_CHARS": MD_SECTION_MAX_CHARS,
         "MD_BLOCK_TEXT_CHARS": MD_BLOCK_TEXT_CHARS, "MD_MAX_HEADING_LEVEL": MD_MAX_HEADING_LEVEL,
@@ -827,7 +824,7 @@ def call_json(c: OpenAI, prompt: str, docid: str, stage: str, secid: int|None, f
     """
     @retry_json()
     def _call():
-        kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.9,"max_tokens":LLM_MAX_TOKENS,"extra_body":{"think":LLM_THINK,"keep_alive":LLM_KEEP_ALIVE,"options":{"num_ctx":LLM_NUM_CTX,"temperature":0,"top_p":0.9,"top_k":20}}}
+        kw={"model":LLM_MODEL,"messages":[{"role":"user","content":prompt}],"temperature":0,"top_p":0.9,"max_tokens":LLM_MAX_TOKENS}
         use_fmt = LLM_USE_RESPONSE_FORMAT and fmt
         if use_fmt: kw["response_format"]=fmt
         t0 = time.time()

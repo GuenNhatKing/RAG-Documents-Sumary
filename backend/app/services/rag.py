@@ -11,10 +11,6 @@ load_backend_env()
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL")
 LLM_MODEL = os.getenv("LLM_MODEL")
-LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "8192"))
-LLM_THINK = os.getenv("LLM_THINK", "false").lower() == "true"
-LLM_KEEP_ALIVE = os.getenv("LLM_KEEP_ALIVE", "10m")
-
 _client = OpenAI(
     api_key=LLM_API_KEY,
     base_url=LLM_BASE_URL,
@@ -126,11 +122,6 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
         ],
         max_tokens=1500,
         temperature=0.0,
-        extra_body={
-            "think": LLM_THINK,
-            "keep_alive": LLM_KEEP_ALIVE,
-            "options": {"num_ctx": LLM_NUM_CTX, "temperature": 0, "top_p": 0.9, "top_k": 20},
-        },
     )
 
     content = response.choices[0].message.content
