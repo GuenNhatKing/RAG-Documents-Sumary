@@ -1571,7 +1571,18 @@ def llm_review_and_correct(text: str, flagged: list[dict[str, Any]], sym: SymSpe
         return text
 
     if not content:
-        _log("LLM returned empty for correction review")
+        # Retry with forced response instruction
+        _log("LLM returned empty for correction review, retrying with forced response")
+        forced_prompt = prompt + "\n\nIMPORTANT: You MUST return valid JSON. Do NOT return empty. If no corrections, return {\"corrections\": []}."
+        kwargs["messages"] = [{"role": "user", "content": forced_prompt}]
+        try:
+            resp = client.chat.completions.create(**kwargs)
+            content = (resp.choices[0].message.content or "").strip()
+        except Exception:
+            pass
+
+    if not content:
+        _log("LLM returned empty for correction review (both attempts)")
         return text
 
     try:
@@ -1680,7 +1691,18 @@ def llm_full_review(text: str, client: OpenAI) -> str:
         content = (resp.choices[0].message.content or "").strip()
 
         if not content:
-            _log("LLM full review returned empty")
+            # Retry with forced response instruction
+            _log("LLM full review returned empty, retrying with forced response")
+            forced_prompt = prompt + "\n\nIMPORTANT: You MUST return the corrected text. Do NOT return empty. If no changes needed, return the original text exactly."
+            kwargs["messages"] = [{"role": "user", "content": forced_prompt}]
+            try:
+                resp = client.chat.completions.create(**kwargs)
+                content = (resp.choices[0].message.content or "").strip()
+            except Exception:
+                pass
+
+        if not content:
+            _log("LLM full review returned empty (both attempts)")
             return text
 
         # Sanity check: result should be similar length

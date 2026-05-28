@@ -133,3 +133,32 @@ export async function askGlobal(
   if (!res.ok) throw new Error("Global ask failed");
   return res.json();
 }
+
+// ============================================================
+// DOCUMENT SUMMARIZATION
+// ============================================================
+export type SummaryLength = "short" | "medium" | "long";
+
+export const SUMMARY_LENGTH_OPTIONS: { value: SummaryLength; label: string }[] = [
+  { value: "short", label: "Ngắn (chỉ ý quan trọng)" },
+  { value: "medium", label: "Vừa" },
+  { value: "long", label: "Chi tiết" },
+];
+
+export async function summarizeDocument(
+  docId: string,
+  length: SummaryLength,
+  sessionId?: string
+): Promise<{ answer: string; sources: { file: string; lines: string }[] }> {
+  const res = await fetch(`${API}/chat/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ doc_id: docId, length, session_id: sessionId }),
+  });
+  if (!res.ok) throw new Error("Summarize failed");
+  const data = await res.json();
+  return {
+    answer: data.result.answer,
+    sources: data.result.sources,
+  };
+}

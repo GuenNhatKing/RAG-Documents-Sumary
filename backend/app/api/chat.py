@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.services.rag import reasoning_search_tree, build_context_from_markdown
-from app.services.llm import generate_final_answer
+from app.services.llm import generate_final_answer, generate_summary
 from app.database import SessionLocal
 from app.models import ChatSession, ChatMessage, User
 from app.api.auth import get_current_user, TokenData
@@ -106,6 +106,12 @@ class GlobalAskResponse(BaseModel):
     answer: str
     sources: List[SourceDetail]
     relevant_docs: List[DocResult]
+
+
+class SummarizeRequest(BaseModel):
+    doc_id: str
+    length: str  # "short" | "medium" | "long"
+    session_id: Optional[str] = None
 
 
 # ============================================================
@@ -295,3 +301,47 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
         sources=sources,
         relevant_docs=[DocResult(**d) for d in relevant_docs],
     )
+
+
+# ============================================================
+# SUMMARIZE — document summarization (protected)
+# ============================================================
+@router.post("/summarize", response_model=ChatResponse)
+def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    """Summarize a document with user-selected length: short, medium, or long."""
+    markdown_path = f"/work/backend/data/markdown_docs/{req.doc_id}.md"
+
+    if not os.path.exists(markdown_path):
+        raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
+
+    # Read full markdown content for summarization
+    with open(markdown_path, "r", encoding="utf-8") as f:
+        full_text = f.read()
+
+    if not full_text.strip():
+        raise HTTPException(status_code=400, detail="Tài liệu trống.")
+
+    # Validate length parameter
+    valid_lengths = {"short", "medium", "long"}
+    length = req.length if req.length in valid_lengths else "medium"
+
+    # Generate summary
+    answer = generate_summary(full_text, length)
+
+    # Save messages to session if session_id provided
+    if req.session_id:
+        user_id = _get_user_id(current_user, db)
+        session = db.query(ChatSession).filter(ChatSession.id == req.session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        _check_ownership(session, user_id)
+
+        length_labels = {"short": "Ngắn", "medium": "Vừa", "long": "Chi tiết"}
+        user_msg = f"[Tóm tắt văn bản - Độ dài: {length_labels.get(length, 'Vừa')}]"
+        db.add(ChatMessage(session_id=req.session_id, role="user", content=user_msg))
+        db.add(ChatMessage(session_id=req.session_id, role="assistant", content=answer))
+        if not session.title:
+            session.title = f"Tóm tắt tài liệu"
+        db.commit()
+
+    return ChatResponse(result=ChatResult(answer=answer, sources=[]))

@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SessionList from "@/components/SessionList";
 import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
-import { ChatMessage, getMessages, askQuestion } from "@/lib/chat";
+import { ChatMessage, getMessages, askQuestion, summarizeDocument, SummaryLength, SUMMARY_LENGTH_OPTIONS } from "@/lib/chat";
 import { API, getToken } from "@/lib/auth";
 import { getDocumentDetail } from "@/lib/documents";
 
@@ -43,6 +43,7 @@ export default function ChatPage({ params }: PageProps) {
   const [markdown, setMarkdown] = useState<string>("");
   const [docLoading, setDocLoading] = useState(true);
   const [docFilename, setDocFilename] = useState(doc_id);
+  const [showSummaryMenu, setShowSummaryMenu] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,14 @@ export default function ChatPage({ params }: PageProps) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Close summary menu when clicking outside
+  useEffect(() => {
+    if (!showSummaryMenu) return;
+    const handleClickOutside = () => setShowSummaryMenu(false);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showSummaryMenu]);
 
   const loadSession = useCallback(async (sid: string) => {
     setSessionId(sid);
@@ -156,6 +165,40 @@ export default function ChatPage({ params }: PageProps) {
 
   const handleSourceClick = (src: SourceTag) => {
     setHighlight(src.lines);
+  };
+
+  const handleSummarize = async (length: SummaryLength) => {
+    if (loading) return;
+    setShowSummaryMenu(false);
+
+    const lengthLabels: Record<SummaryLength, string> = {
+      short: "Ngắn (chỉ ý quan trọng)",
+      medium: "Vừa",
+      long: "Chi tiết",
+    };
+
+    const userMsg: Message = {
+      role: "user",
+      content: `[Tóm tắt văn bản - Độ dài: ${lengthLabels[length]}]`,
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await summarizeDocument(doc_id, length, sessionId);
+      const assistantMsg: Message = {
+        role: "assistant",
+        content: data.answer,
+        sources: data.sources.length > 0 ? data.sources : undefined,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (err) {
+      setError("Đã xảy ra lỗi khi tóm tắt văn bản.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -314,6 +357,35 @@ export default function ChatPage({ params }: PageProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
+              {/* Summarize button */}
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
+                  disabled={loading}
+                  className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Tóm tắt văn bản"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
+                {showSummaryMenu && (
+                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
+                      Chọn độ dài tóm tắt
+                    </div>
+                    {SUMMARY_LENGTH_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleSummarize(opt.value)}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
