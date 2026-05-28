@@ -9,6 +9,7 @@ import {
   saveDocumentMarkdown,
   confirmDocumentMd,
 } from "@/lib/documents";
+import { API, getToken } from "@/lib/auth";
 
 type Status = "loading" | "ready" | "saving" | "confirming" | "done" | "error";
 
@@ -22,6 +23,10 @@ export default function ReviewPage() {
   const [docStatus, setDocStatus] = useState("");
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPdf, setShowPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -49,6 +54,40 @@ export default function ReviewPage() {
     }
     load();
   }, [docId, router]);
+
+  // Cleanup PDF object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
+  const loadPdf = async () => {
+    if (pdfUrl) return;
+    setPdfLoading(true);
+    setPdfError("");
+    try {
+      const token = getToken();
+      const headers: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+      const res = await fetch(`${API}/documents/${docId}/raw`, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      setPdfUrl(URL.createObjectURL(blob));
+    } catch {
+      setPdfError("Không thể tải file PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleTogglePdf = () => {
+    if (!showPdf) {
+      loadPdf();
+    }
+    setShowPdf(!showPdf);
+  };
 
   const handleSave = async () => {
     setStatus("saving");
@@ -116,6 +155,19 @@ export default function ReviewPage() {
           </div>
           {status === "ready" && (
             <div className="flex gap-2">
+              <button
+                onClick={handleTogglePdf}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium transition-all ${
+                  showPdf
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                {showPdf ? "Ẩn PDF" : "Xem PDF gốc"}
+              </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
@@ -188,12 +240,58 @@ export default function ReviewPage() {
         )}
 
         {status === "ready" && (
-          <textarea
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            className="flex-1 min-h-[400px] w-full p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#2fa084]"
-            spellCheck={false}
-          />
+          <div className="flex-1 flex gap-4 min-h-[400px]">
+            <textarea
+              value={markdown}
+              onChange={(e) => setMarkdown(e.target.value)}
+              className={`${showPdf ? "w-1/2" : "w-full"} p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#2fa084]`}
+              spellCheck={false}
+            />
+            {showPdf && (
+              <div className="w-1/2 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex flex-col">
+                <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border-b border-gray-200">
+                  <span className="text-xs font-medium text-gray-600">PDF gốc</span>
+                  {pdfUrl && (
+                    <a
+                      href={pdfUrl}
+                      download={filename.replace(/\.[^.]+$/, ".pdf")}
+                      className="text-xs text-[#2fa084] hover:underline"
+                    >
+                      Tải xuống
+                    </a>
+                  )}
+                </div>
+                <div className="flex-1">
+                  {pdfLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin h-6 w-6 border-4 border-emerald-600 border-t-transparent rounded-full" />
+                    </div>
+                  ) : pdfError ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-sm text-red-500">{pdfError}</p>
+                    </div>
+                  ) : pdfUrl ? (
+                    <object
+                      data={pdfUrl}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    >
+                      <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+                        <p className="text-sm text-gray-500">Trình duyệt không hỗ trợ xem PDF.</p>
+                        <a
+                          href={pdfUrl}
+                          download
+                          className="text-sm px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                          Tải file PDF
+                        </a>
+                      </div>
+                    </object>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </ProtectedRoute>

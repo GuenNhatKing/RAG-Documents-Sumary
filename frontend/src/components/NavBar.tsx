@@ -19,11 +19,11 @@ export default function NavBar() {
     router.replace("/login");
   };
 
-  const [payload, setPayload] = useState(isAuthenticated() ? getPayload() : null);
+  const [payload, setPayload] = useState<ReturnType<typeof getPayload>>(null);
 
   // Re‑check auth state periodically (e.g., every 500 ms) to pick up cookie changes
   useEffect(() => {
-    const timer = setInterval(() => {
+    const check = () => {
       const newPayload = isAuthenticated() ? getPayload() : null;
       setPayload((prev) => {
         // shallow compare to avoid unnecessary renders
@@ -31,7 +31,9 @@ export default function NavBar() {
         if (prev && newPayload && prev.sub === newPayload.sub && prev.role === newPayload.role) return prev;
         return newPayload;
       });
-    }, 500);
+    };
+    check(); // initial check on mount
+    const timer = setInterval(check, 500);
     return () => clearInterval(timer);
   }, []);
 

@@ -1,11 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getPayload } from "@/lib/auth";
 
 export default function StatsPage() {
-  const payload = getPayload();
-  const allowed = payload && (payload.role === "admin" || payload.role === "quan_ly");
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    const payload = getPayload();
+    setAllowed(!!(payload && (payload.role === "admin" || payload.role === "quan_ly")));
+  }, []);
 
   return (
     <ProtectedRoute>

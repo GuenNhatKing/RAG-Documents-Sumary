@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getPayload } from "@/lib/auth";
@@ -33,9 +33,14 @@ const roleMenus: Record<string, MenuItem[]> = {
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [role, setRole] = useState<string>("nguoi_dung");
   const pathname = usePathname();
-  const payload = getPayload();
-  const role = payload?.role ?? "nguoi_dung";
+
+  useEffect(() => {
+    const payload = getPayload();
+    setRole(payload?.role ?? "nguoi_dung");
+  }, []);
+
   const menus = roleMenus[role] ?? [];
 
   return (
