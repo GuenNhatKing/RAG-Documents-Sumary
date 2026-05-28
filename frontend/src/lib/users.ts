@@ -14,8 +14,15 @@ function authHeaders(): Record<string, string> {
   return {};
 }
 
-export async function getUsers(): Promise<UserItem[]> {
-  const res = await fetch(`${API}/auth/users`, { headers: authHeaders() });
+export interface PaginatedUsers {
+  total: number;
+  page: number;
+  page_size: number;
+  items: UserItem[];
+}
+
+export async function getUsers(page = 1, pageSize = 20): Promise<PaginatedUsers> {
+  const res = await fetch(`${API}/auth/users?page=${page}&page_size=${pageSize}`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch users");
   return res.json();
 }

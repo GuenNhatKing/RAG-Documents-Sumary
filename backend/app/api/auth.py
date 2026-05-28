@@ -119,14 +119,24 @@ async def get_current_user(token: str = Depends(auth_scheme)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate token")
 
-@router.get("/users", response_model=list[UserResponse])
+@router.get("/users")
 def list_users(
+    page: int = 1,
+    page_size: int = 20,
     current_user: TokenData = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    return db.query(User).all()
+    query = db.query(User).order_by(User.username)
+    total = query.count()
+    users = query.offset((page - 1) * page_size).limit(page_size).all()
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "items": [{"id": u.id, "username": u.username, "role": u.role} for u in users],
+    }
 
 @router.patch("/users/{user_id}/role", response_model=UserResponse)
 def update_user_role(

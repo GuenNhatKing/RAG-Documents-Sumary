@@ -25,16 +25,16 @@ export default function HomePage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
-      fetch(`${API}/documents`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`${API}/documents?page_size=1000`, { headers }).then((r) => (r.ok ? r.json() : { items: [] })),
       fetch(`${API}/chat/sessions`, { headers }).then((r) =>
         r.ok ? r.json() : []
       ),
     ])
       .then(([docs, sessions]) => {
-        const docArr = Array.isArray(docs) ? docs : [];
+        const docArr = Array.isArray(docs?.items) ? docs.items : Array.isArray(docs) ? docs : [];
         setStats({
-          totalDocs: docArr.length,
-          processedDocs: docArr.filter((d: any) => d.status === "processed")
+          totalDocs: docs?.total ?? docArr.length,
+          processedDocs: docArr.filter((d: Record<string, string>) => d.status === "processed")
             .length,
           totalSessions: Array.isArray(sessions) ? sessions.length : 0,
         });

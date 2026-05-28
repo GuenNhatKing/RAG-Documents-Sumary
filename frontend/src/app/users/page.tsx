@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getUsers, updateUserRole, UserItem } from "@/lib/users";
+import Pagination from "@/components/Pagination";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
@@ -15,11 +16,16 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 15;
 
-  const loadUsers = async () => {
+  const loadUsers = async (p: number) => {
     try {
       setLoading(true);
-      setUsers(await getUsers());
+      const data = await getUsers(p, pageSize);
+      setUsers(data.items);
+      setTotal(data.total);
     } catch {
       setError("Không thể tải danh sách người dùng.");
     } finally {
@@ -28,8 +34,8 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(page);
+  }, [page]);
 
   const handleRoleChange = async (user: UserItem, newRole: string) => {
     if (newRole === user.role) return;
@@ -37,7 +43,7 @@ export default function UsersPage() {
     setError("");
     try {
       await updateUserRole(user.id, newRole);
-      await loadUsers();
+      await loadUsers(page);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Lỗi cập nhật vai trò.");
     } finally {
@@ -100,6 +106,8 @@ export default function UsersPage() {
             </table>
           </div>
         )}
+
+        <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
       </section>
     </ProtectedRoute>
   );

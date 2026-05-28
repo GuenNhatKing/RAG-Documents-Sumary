@@ -58,13 +58,13 @@ export default function ChatMasterPage() {
         ? { Authorization: `Bearer ${token}` }
         : {};
       const [docsRes, sessionsData] = await Promise.all([
-        fetch(`${API}/documents`, { headers }).then((r) => {
+        fetch(`${API}/documents?page_size=1000`, { headers }).then((r) => {
           if (!r.ok) throw new Error(`Documents API ${r.status}`);
           return r.json();
         }),
         getSessions(),
       ]);
-      setDocuments(Array.isArray(docsRes) ? docsRes : []);
+      setDocuments(Array.isArray(docsRes?.items) ? docsRes.items : Array.isArray(docsRes) ? docsRes : []);
       setSessions(sessionsData);
     } catch (err) {
       console.error("Failed to load data:", err);

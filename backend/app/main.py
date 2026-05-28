@@ -71,26 +71,36 @@ async def ping():
 # LIST DOCUMENTS ENDPOINT (auth required, role-filtered)
 # =========================================================
 @app.get("/documents")
-def list_documents(current_user: TokenData = Depends(get_current_user)):
+def list_documents(
+    page: int = 1,
+    page_size: int = 20,
+    current_user: TokenData = Depends(get_current_user),
+):
     db = SessionLocal()
     try:
         query = db.query(Document).order_by(Document.created_at.desc())
         # nguoi_dung only see processed documents
         if current_user.role not in ("admin", "can_bo"):
             query = query.filter(Document.status == DocumentStatus.PROCESSED)
-        docs = query.all()
-        return [
-            {
-                "id": d.id,
-                "filename": d.filename,
-                "status": d.status.value if hasattr(d.status, 'value') else d.status,
-                "total_pages": d.total_pages,
-                "created_at": d.created_at.isoformat(),
-                "markdown_path": d.markdown_path,
-                "json_tree_path": d.json_tree_path,
-            }
-            for d in docs
-        ]
+        total = query.count()
+        docs = query.offset((page - 1) * page_size).limit(page_size).all()
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "items": [
+                {
+                    "id": d.id,
+                    "filename": d.filename,
+                    "status": d.status.value if hasattr(d.status, 'value') else d.status,
+                    "total_pages": d.total_pages,
+                    "created_at": d.created_at.isoformat(),
+                    "markdown_path": d.markdown_path,
+                    "json_tree_path": d.json_tree_path,
+                }
+                for d in docs
+            ],
+        }
     finally:
         db.close()
 

@@ -19,9 +19,16 @@ export type DocumentDetail = DocumentItem & {
   raw_file_path: string;
 };
 
-export async function getDocuments(): Promise<DocumentItem[]> {
-  const res = await fetch(`${API}/documents`, { headers: authHeaders() });
-  if (!res.ok) return [];
+export interface PaginatedResponse<T> {
+  total: number;
+  page: number;
+  page_size: number;
+  items: T[];
+}
+
+export async function getDocuments(page = 1, pageSize = 20): Promise<PaginatedResponse<DocumentItem>> {
+  const res = await fetch(`${API}/documents?page=${page}&page_size=${pageSize}`, { headers: authHeaders() });
+  if (!res.ok) return { total: 0, page: 1, page_size: pageSize, items: [] };
   return res.json();
 }
 

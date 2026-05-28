@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getDocuments, deleteDocument, renameDocument, type DocumentItem } from "@/lib/documents";
+import Pagination from "@/components/Pagination";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "Chờ xử lý", color: "bg-gray-100 text-gray-600" },
@@ -18,17 +19,21 @@ export default function FilesPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 15;
 
-  const loadDocs = useCallback(async () => {
+  const loadDocs = useCallback(async (p: number) => {
     setLoading(true);
-    const data = await getDocuments();
-    setDocs(data);
+    const data = await getDocuments(p, pageSize);
+    setDocs(data.items);
+    setTotal(data.total);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadDocs();
-  }, [loadDocs]);
+    loadDocs(page);
+  }, [loadDocs, page]);
 
   const handleRenameStart = (docId: string, currentName: string) => {
     setEditingId(docId);
@@ -61,7 +66,7 @@ export default function FilesPage() {
     if (!confirm(`Xác nhận xóa tài liệu "${filename}"?`)) return;
     const ok = await deleteDocument(docId);
     if (ok) {
-      setDocs((prev) => prev.filter((d) => d.id !== docId));
+      loadDocs(page);
     } else {
       alert("Xóa thất bại.");
     }
@@ -194,6 +199,8 @@ export default function FilesPage() {
             </table>
           </div>
         )}
+
+        <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
       </div>
     </ProtectedRoute>
   );
