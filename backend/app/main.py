@@ -11,6 +11,7 @@ from .env import load_backend_env
 
 load_backend_env()
 
+from sqlalchemy import func
 from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User
 from .database import SessionLocal, engine
 from celery import Celery
@@ -511,6 +512,49 @@ def get_stats(current_user: TokenData = Depends(get_current_user)):
         total_sessions = db.query(ChatSession).count()
         total_messages = db.query(ChatMessage).filter(ChatMessage.role == "user").count()
 
+        # Sessions by role
+        sessions_by_role: dict[str, int] = {}
+        session_rows = (
+            db.query(User.role, func.count(ChatSession.id))
+            .outerjoin(ChatSession, ChatSession.user_id == User.id)
+            .group_by(User.role)
+            .all()
+        )
+        for role_name, cnt in session_rows:
+            if cnt > 0:
+                sessions_by_role[role_name] = cnt
+
+        # Questions by role (messages with role="user" joined through session)
+        questions_by_role: dict[str, int] = {}
+        question_rows = (
+            db.query(User.role, func.count(ChatMessage.id))
+            .outerjoin(ChatSession, ChatSession.user_id == User.id)
+            .outerjoin(ChatMessage, (ChatMessage.session_id == ChatSession.id) & (ChatMessage.role == "user"))
+            .group_by(User.role)
+            .all()
+        )
+        for role_name, cnt in question_rows:
+            if cnt > 0:
+                questions_by_role[role_name] = cnt
+
+        # Feature usage: global Q&A vs document Q&A
+        global_session_ids = (
+            db.query(ChatSession.id)
+            .filter(ChatSession.doc_id == "__global__")
+            .subquery()
+        )
+        global_questions = (
+            db.query(func.count(ChatMessage.id))
+            .filter(ChatMessage.role == "user", ChatMessage.session_id.in_(global_session_ids))
+            .scalar()
+        )
+        doc_questions = total_messages - global_questions
+
+        feature_usage = {
+            "Hỏi đáp": global_questions,
+            "Hỏi tài liệu": doc_questions,
+        }
+
         return {
             "total_docs": total_docs,
             "docs_by_status": docs_by_status,
@@ -518,6 +562,9 @@ def get_stats(current_user: TokenData = Depends(get_current_user)):
             "users_by_role": users_by_role,
             "total_sessions": total_sessions,
             "total_questions": total_messages,
+            "sessions_by_role": sessions_by_role,
+            "questions_by_role": questions_by_role,
+            "feature_usage": feature_usage,
         }
     finally:
         db.close()

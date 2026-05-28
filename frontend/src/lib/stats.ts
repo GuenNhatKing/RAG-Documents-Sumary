@@ -7,6 +7,9 @@ export interface StatsData {
   users_by_role: Record<string, number>;
   total_sessions: number;
   total_questions: number;
+  sessions_by_role: Record<string, number>;
+  questions_by_role: Record<string, number>;
+  feature_usage: Record<string, number>;
 }
 
 function authHeaders(): Record<string, string> {
