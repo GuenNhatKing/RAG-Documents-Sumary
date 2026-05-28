@@ -34,7 +34,12 @@ export const getPayload = (): TokenPayload | null => {
   const token = getToken();
   if (!token) return null;
   try {
-    return jwtDecode<TokenPayload>(token);
+    const payload = jwtDecode<TokenPayload>(token);
+    if (payload.exp && Date.now() / 1000 > payload.exp) {
+      clearToken();
+      return null;
+    }
+    return payload;
   } catch {
     return null;
   }

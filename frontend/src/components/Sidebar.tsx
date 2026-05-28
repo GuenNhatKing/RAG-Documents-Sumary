@@ -27,7 +27,6 @@ const roleMenus: Record<string, MenuItem[]> = {
   ],
   lanh_dao: [
     { label: "Hỏi đáp", href: "/chat" },
-    { label: "Thống kê", href: "/stats" },
   ],
 };
 
@@ -39,7 +38,7 @@ export default function Sidebar() {
   useEffect(() => {
     const payload = getPayload();
     setRole(payload?.role ?? "nguoi_dung");
-  }, []);
+  }, [pathname]);
 
   const menus = roleMenus[role] ?? [];
 

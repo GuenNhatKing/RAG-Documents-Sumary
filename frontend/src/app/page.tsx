@@ -139,7 +139,7 @@ export default function HomePage() {
             </Link>
           )}
 
-          {(role === "admin" || role === "lanh_dao") && (
+          {role === "admin" && (
             <Link
               href="/stats"
               className="flex items-center gap-4 bg-white rounded-lg border border-gray-200 p-5 hover:border-primary hover:shadow-md transition-all"

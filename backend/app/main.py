@@ -11,7 +11,7 @@ from .env import load_backend_env
 
 load_backend_env()
 
-from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage
+from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User
 from .database import SessionLocal, engine
 from celery import Celery
 
@@ -483,6 +483,42 @@ def delete_document(doc_id: str, current_user: TokenData = Depends(get_current_u
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+    finally:
+        db.close()
+
+
+# =========================================================
+# STATS ENDPOINT (admin only)
+# =========================================================
+@app.get("/stats")
+def get_stats(current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    db = SessionLocal()
+    try:
+        total_docs = db.query(Document).count()
+        docs_by_status = {}
+        for s in DocumentStatus:
+            count = db.query(Document).filter(Document.status == s).count()
+            docs_by_status[s.value] = count
+
+        total_users = db.query(User).count()
+        users_by_role = {}
+        for role_name in ["admin", "can_bo", "lanh_dao", "nguoi_dung"]:
+            count = db.query(User).filter(User.role == role_name).count()
+            users_by_role[role_name] = count
+
+        total_sessions = db.query(ChatSession).count()
+        total_messages = db.query(ChatMessage).filter(ChatMessage.role == "user").count()
+
+        return {
+            "total_docs": total_docs,
+            "docs_by_status": docs_by_status,
+            "total_users": total_users,
+            "users_by_role": users_by_role,
+            "total_sessions": total_sessions,
+            "total_questions": total_messages,
+        }
     finally:
         db.close()
 
