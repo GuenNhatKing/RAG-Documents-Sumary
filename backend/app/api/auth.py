@@ -36,7 +36,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     username: str
     password: str
-    role: str  # nguoi_dung, admin, quan_ly, can_bo
+    role: str  # nguoi_dung, admin, lanh_dao, can_bo
 
 # Database-backed user handling – imported below
 from sqlalchemy.orm import Session

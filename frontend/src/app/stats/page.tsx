@@ -9,7 +9,7 @@ export default function StatsPage() {
 
   useEffect(() => {
     const payload = getPayload();
-    setAllowed(!!(payload && (payload.role === "admin" || payload.role === "quan_ly")));
+    setAllowed(!!(payload && (payload.role === "admin" || payload.role === "lanh_dao")));
   }, []);
 
   return (

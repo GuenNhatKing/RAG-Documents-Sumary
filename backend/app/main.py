@@ -74,7 +74,7 @@ def list_documents(current_user: TokenData = Depends(get_current_user)):
     db = SessionLocal()
     try:
         query = db.query(Document).order_by(Document.created_at.desc())
-        # nguoi_dung/quan_ly only see processed documents
+        # nguoi_dung/lanh_dao only see processed documents
         if current_user.role not in ("admin", "can_bo"):
             query = query.filter(Document.status == DocumentStatus.PROCESSED)
         docs = query.all()

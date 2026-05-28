@@ -35,7 +35,7 @@ const PROTECTED_PREFIXES = ["/chat", "/upload", "/files", "/stats", "/documents"
 const ROLE_ROUTES: Record<string, string[]> = {
   "/upload": ["admin", "can_bo"],
   "/files": ["admin", "can_bo"],
-  "/stats": ["admin", "quan_ly"],
+  "/stats": ["admin", "lanh_dao"],
 };
 
 // Routes accessible only by guests (redirect to / if already logged in)

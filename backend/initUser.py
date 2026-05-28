@@ -1,5 +1,5 @@
 # initUser.py
-"""Script to insert privileged users (admin, can_bo, quan_ly) into the database.
+"""Script to insert privileged users (admin, can_bo, lanh_dao) into the database.
 Run this once after the tables are created.
 """
 
@@ -26,4 +26,4 @@ def add_user(username: str, password: str, role: str):
 if __name__ == "__main__":
     add_user("admin", "12345678", "admin")
     add_user("canbo", "12345678", "can_bo")
-    add_user("quanly", "12345678", "quan_ly")
+    add_user("lanhdao", "12345678", "lanh_dao")

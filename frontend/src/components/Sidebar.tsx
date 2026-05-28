@@ -25,7 +25,7 @@ const roleMenus: Record<string, MenuItem[]> = {
     { label: "Quản lý tài liệu", href: "/files" },
     { label: "Thống kê", href: "/stats" },
   ],
-  quan_ly: [
+  lanh_dao: [
     { label: "Hỏi đáp", href: "/chat" },
     { label: "Thống kê", href: "/stats" },
   ],
