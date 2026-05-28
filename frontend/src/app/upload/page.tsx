@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -19,9 +19,14 @@ type UploadStatus =
 export default function UploadPage() {
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [docId, setDocId] = useState("");
+  const [filename, setFilename] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [markdown, setMarkdown] = useState("");
   const [markdownLoading, setMarkdownLoading] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
 
   const authHeaders = () => {
     const token = getToken();
@@ -44,6 +49,7 @@ export default function UploadPage() {
       });
       const id = uploadRes.data.id as string;
       setDocId(id);
+      setFilename(file.name);
 
       // 2. Extract text (OCR)
       setStatus("extracting");
@@ -80,6 +86,36 @@ export default function UploadPage() {
     } finally {
       setMarkdownLoading(false);
     }
+  };
+
+  // Cleanup PDF object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
+  const loadPdf = async () => {
+    if (pdfUrl) return;
+    setPdfLoading(true);
+    setPdfError("");
+    try {
+      const res = await fetch(`${API}/documents/${docId}/raw`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      setPdfUrl(URL.createObjectURL(blob));
+    } catch {
+      setPdfError("Không thể tải file PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleTogglePdf = () => {
+    if (!showPdf) loadPdf();
+    setShowPdf(!showPdf);
   };
 
   const handleSaveMarkdown = async () => {
@@ -126,8 +162,11 @@ export default function UploadPage() {
   const resetUpload = () => {
     setStatus("idle");
     setDocId("");
+    setFilename("");
     setErrorMsg("");
     setMarkdown("");
+    setShowPdf(false);
+    setPdfUrl(null);
   };
 
   return (
@@ -201,13 +240,25 @@ export default function UploadPage() {
 
         {/* Review markdown */}
         {status === "pending_review" && (
-          <div className="w-full max-w-4xl mt-4">
+          <div className={`w-full mt-4 ${showPdf ? "max-w-7xl" : "max-w-4xl"}`}>
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b">
                 <h2 className="text-lg font-semibold text-blue-800">
                   Xác nhận nội dung Markdown
                 </h2>
                 <div className="flex gap-2">
+                  <button
+                    onClick={handleTogglePdf}
+                    className={`px-4 py-2 rounded text-sm flex items-center gap-1.5 ${
+                      showPdf ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    {showPdf ? "Ẩn PDF" : "Xem PDF gốc"}
+                  </button>
                   <button
                     onClick={handleSaveMarkdown}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
@@ -222,16 +273,50 @@ export default function UploadPage() {
                   </button>
                 </div>
               </div>
-              <div className="p-4">
-                {markdownLoading ? (
-                  <p className="text-gray-500">Đang tải nội dung…</p>
-                ) : (
-                  <textarea
-                    value={markdown}
-                    onChange={(e) => setMarkdown(e.target.value)}
-                    className="w-full h-[500px] p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    spellCheck={false}
-                  />
+              <div className="p-4 flex gap-4">
+                <div className={showPdf ? "w-1/2" : "w-full"}>
+                  {markdownLoading ? (
+                    <p className="text-gray-500">Đang tải nội dung…</p>
+                  ) : (
+                    <textarea
+                      value={markdown}
+                      onChange={(e) => setMarkdown(e.target.value)}
+                      className={`w-full h-[500px] p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      spellCheck={false}
+                    />
+                  )}
+                </div>
+                {showPdf && (
+                  <div className="w-1/2 border border-gray-300 rounded-lg overflow-hidden flex flex-col">
+                    <div className="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-600">PDF gốc</span>
+                      {pdfUrl && (
+                        <a
+                          href={pdfUrl}
+                          download={filename.replace(/\.[^.]+$/, ".pdf")}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Tải về
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex-1 min-h-0">
+                      {pdfLoading ? (
+                        <p className="text-sm text-gray-400 p-4">Đang tải PDF…</p>
+                      ) : pdfError ? (
+                        <p className="text-sm text-red-500 p-4">{pdfError}</p>
+                      ) : pdfUrl ? (
+                        <object data={pdfUrl} type="application/pdf" className="w-full h-full">
+                          <p className="text-sm text-gray-500 p-4">
+                            Trình duyệt không hỗ trợ xem PDF.{" "}
+                            <a href={pdfUrl} className="text-blue-600 underline" download>
+                              Tải file
+                            </a>
+                          </p>
+                        </object>
+                      ) : null}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
