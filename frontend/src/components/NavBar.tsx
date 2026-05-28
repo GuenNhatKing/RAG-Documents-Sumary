@@ -48,7 +48,7 @@ export default function NavBar() {
           <>
             <span>Hello, {payload.sub}</span>
             {payload.role === "admin" && (
-              <Link href="/admin" className="underline">
+              <Link href="/stats" className="underline">
                 Admin
               </Link>
             )}
