@@ -52,9 +52,7 @@ def process_to_markdown(file_path: str, document_id: str) -> Path:
     try:
         if ext == ".pdf":
             pages = pdf_to_markdown(str(path))
-            full_md = "\n\n---\n\n".join(
-                f"# Trang {p['page']}\n\n{p['markdown']}" for p in pages
-            )
+            full_md = "\n\n".join(p["markdown"] for p in pages)
             _log(f"Processed {len(pages)} pages")
         elif ext in image_exts:
             md = image_file_to_markdown(str(path))
