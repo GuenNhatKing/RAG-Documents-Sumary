@@ -23,6 +23,7 @@ const roleMenus: Record<string, MenuItem[]> = {
     { label: "Hỏi đáp", href: "/chat" },
     { label: "Upload tài liệu", href: "/upload" },
     { label: "Quản lý tài liệu", href: "/files" },
+    { label: "Quản lý người dùng", href: "/users" },
     { label: "Thống kê", href: "/stats" },
   ],
 };

@@ -29,13 +29,14 @@ function decodePayload(token: string): { sub: string; role: string; exp: number 
 // ============================================================
 
 // Routes that require authentication
-const PROTECTED_PREFIXES = ["/chat", "/upload", "/files", "/stats", "/documents"];
+const PROTECTED_PREFIXES = ["/chat", "/upload", "/files", "/stats", "/documents", "/users"];
 
 // Routes that require specific roles (prefix → allowed roles)
 const ROLE_ROUTES: Record<string, string[]> = {
   "/upload": ["admin", "can_bo"],
   "/files": ["admin", "can_bo"],
   "/stats": ["admin"],
+  "/users": ["admin"],
 };
 
 // Routes accessible only by guests (redirect to / if already logged in)

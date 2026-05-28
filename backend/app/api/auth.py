@@ -38,6 +38,17 @@ class RegisterRequest(BaseModel):
     password: str
     role: str  # nguoi_dung, admin, can_bo
 
+class UpdateRoleRequest(BaseModel):
+    role: str  # can_bo or nguoi_dung only
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
 # Database-backed user handling – imported below
 from sqlalchemy.orm import Session
 from ..database import SessionLocal
@@ -107,3 +118,33 @@ async def get_current_user(token: str = Depends(auth_scheme)):
         return token_data
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate token")
+
+@router.get("/users", response_model=list[UserResponse])
+def list_users(
+    current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    return db.query(User).all()
+
+@router.patch("/users/{user_id}/role", response_model=UserResponse)
+def update_user_role(
+    user_id: str,
+    req: UpdateRoleRequest,
+    current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    if req.role not in ("can_bo", "nguoi_dung"):
+        raise HTTPException(status_code=400, detail="Chỉ có thể đặt vai trò: can_bo hoặc nguoi_dung")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Không thể thay đổi vai trò admin")
+    user.role = req.role
+    db.commit()
+    db.refresh(user)
+    return user
