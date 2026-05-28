@@ -81,10 +81,7 @@ def generate_summary(context: str, length: str = "medium") -> str:
     length_instruction = _SUMMARY_LENGTH_INSTRUCTIONS.get(length, _SUMMARY_LENGTH_INSTRUCTIONS["medium"])
 
     model_name = os.getenv("LLM_MODEL")
-    num_ctx = int(os.getenv("LLM_NUM_CTX", "8192"))
     max_tokens = int(os.getenv("LLM_MAX_TOKENS", "4096"))
-    think = os.getenv("LLM_THINK", "false").lower() == "true"
-    keep_alive = os.getenv("LLM_KEEP_ALIVE", "10m")
 
     system_prompt = """You are a Vietnamese administrative document summarization assistant.
 
@@ -110,11 +107,6 @@ Document:
         ],
         temperature=0.0,
         max_tokens=max_tokens,
-        extra_body={
-            "think": think,
-            "keep_alive": keep_alive,
-            "options": {"num_ctx": num_ctx, "temperature": 0, "top_p": 0.9, "top_k": 20},
-        },
     )
 
     content = response.choices[0].message.content
