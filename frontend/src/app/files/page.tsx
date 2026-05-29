@@ -192,7 +192,7 @@ export default function FilesPage() {
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
                             onBlur={() => handleRenameSave(doc.id)}
-                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-secondary text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
+                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-secondary text-primary text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
                             autoFocus
                           />
                         </div>
