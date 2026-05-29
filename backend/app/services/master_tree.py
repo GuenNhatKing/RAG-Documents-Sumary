@@ -94,12 +94,23 @@ def add_doc_to_master_tree(
     nodes = structure_to_list(structure) if structure else []
     node_count = len(nodes)
 
+    # Extract top headings (depth=0 node titles)
+    top_titles = []
+    if isinstance(structure, list):
+        top_titles = [node.get("title", "") for node in structure if node.get("title")]
+    elif isinstance(structure, dict):
+        top_titles = [structure.get("title", "")] if structure.get("title") else []
+    
+    clean_top_titles = [t.strip() for t in top_titles if t.strip()]
+    top_headings = ", ".join(clean_top_titles[:8]) # Limit to top 8 headings
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
         "filename": filename,
         "summary": summary.strip(),
         "node_count": node_count,
+        "top_headings": top_headings,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)
@@ -127,9 +138,10 @@ def search_master_tree(query: str) -> List[Dict[str, str]]:
     # Build catalog for LLM
     catalog_lines = []
     for doc_id, info in tree.items():
-        catalog_lines.append(
-            f"- [{doc_id}] {info['filename']}: {info['summary']}"
-        )
+        entry = f"- [{doc_id}] {info['filename']}: {info['summary']}"
+        if "top_headings" in info and info["top_headings"]:
+            entry += f" (Chủ đề chính: {info['top_headings']})"
+        catalog_lines.append(entry)
     catalog = "\n".join(catalog_lines)
 
     prompt = f"""You are a document search assistant. Given a catalog of documents and a user query, find the most relevant documents.

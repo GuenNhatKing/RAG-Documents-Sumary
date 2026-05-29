@@ -126,11 +126,11 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
         messages=[
             {
                 "role": "system",
-                "content": "You are a document analysis AI. Answer precisely and concisely. Return only JSON, no explanation.",
+                "content": "You are a document analysis AI. Answer precisely and concisely. Return only JSON, no explanation. Do not output any reasoning_content or thinking process.",
             },
             {"role": "user", "content": prompt},
         ],
-        max_tokens=1500,
+        max_tokens=500,
         temperature=0.0,
         extra_body=extra_body if extra_body else None,
     )
@@ -159,8 +159,10 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     return result
 
 
-def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0) -> str:
+def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0, max_depth: int = 99) -> str:
     """Chuyển đổi cây đã được chuẩn hóa thành dạng outline thụt lề bằng văn bản gọn nhẹ."""
+    if indent_level > max_depth:
+        return ""
     lines = []
     indent = "  " * indent_level
     for node in nodes:
@@ -177,7 +179,9 @@ def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0) ->
         lines.append(line)
         
         if "children" in node and node["children"]:
-            lines.append(_tree_to_text_outline(node["children"], indent_level + 1))
+            child_outline = _tree_to_text_outline(node["children"], indent_level + 1, max_depth)
+            if child_outline:
+                lines.append(child_outline)
             
     return "\n".join(lines)
 
@@ -196,12 +200,23 @@ def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
         ]
     }
 
+    # Giới hạn kích thước outline để tránh vượt quá context window của LLM cục bộ (~4k tokens)
+    outline = ""
+    for depth in [5, 4, 3, 2, 1]:
+        outline = _tree_to_text_outline(normalized_tree["nodes"], max_depth=depth)
+        if len(outline) <= 6000:
+            break
+            
+    # Dự phòng cuối cùng nếu vẫn quá dài: cắt chuỗi trực tiếp
+    if len(outline) > 6000:
+        outline = outline[:6000] + "\n...[TRUNCATED Outline due to size limit]..."
+
     prompt = f"""You are a document navigation expert. Find the IDs of the nodes that are most likely to contain the answer to the user's question.
 
 Question: {query}
 
 Tree structure outline:
-{_tree_to_text_outline(normalized_tree["nodes"])}
+{outline}
 
 Return only a JSON object with the "node_list" key containing the list of relevant node IDs.
 Example: {{"node_list": ["id_1", "id_2"]}}
