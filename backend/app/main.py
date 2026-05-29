@@ -3,10 +3,13 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pathlib import Path
+import json
 import shutil
 import os
 import uuid
 import traceback
+import asyncio
+import functools
 
 from .env import load_backend_env
 
@@ -168,7 +171,11 @@ async def extract_text_api(document_id: str, current_user: TokenData = Depends(g
         db.commit()
 
         file_path = doc.raw_file_path
-        md_path = process_to_markdown(file_path, document_id)
+        loop = asyncio.get_event_loop()
+        md_path = await loop.run_in_executor(
+            None,
+            functools.partial(process_to_markdown, file_path, document_id)
+        )
 
         doc.status = DocumentStatus.PENDING_REVIEW
         doc.markdown_path = str(md_path)
@@ -192,6 +199,26 @@ async def extract_text_api(document_id: str, current_user: TokenData = Depends(g
         raise HTTPException(status_code=500, detail=f"OCR pipeline thất bại: {str(e)}")
     finally:
         db.close()
+
+
+@app.get("/documents/{document_id}/extract-progress")
+async def get_extract_progress(document_id: str, current_user: TokenData = Depends(get_current_user)):
+    from .services.progress_store import get as get_progress
+    cached = get_progress(document_id)
+    if cached:
+        return cached
+
+    from .services.ocr import EXTRACT_WORK_DIR
+    from .services.semantic_trees import TREE_WORK_DIR
+    for base in (EXTRACT_WORK_DIR, Path("data") / "md_work", TREE_WORK_DIR):
+        p = base / document_id / "progress.json"
+        if p.exists():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                return data
+            except Exception:
+                pass
+    return {"status": "unknown", "current_page": 0, "total_pages": 0}
 
 
 # =========================================================

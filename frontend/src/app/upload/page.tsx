@@ -29,6 +29,8 @@ export default function UploadPage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [ocrProgress, setOcrProgress] = useState({ current_page: 0, total_pages: 0 });
+  const [treeProgress, setTreeProgress] = useState({ message: "Đang khởi tạo..." });
 
   const authHeaders = (): Record<string, string> => {
     const token = getToken();
@@ -92,6 +94,28 @@ export default function UploadPage() {
     };
   }, [pdfUrl]);
 
+  useEffect(() => {
+    if ((status !== "extracting" && status !== "building_tree") || !docId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API}/documents/${docId}/extract-progress`, {
+          headers: authHeaders(),
+        });
+        const data = res.data;
+        console.log("[Poll]", status, data);
+        if (status === "extracting" && data.current_page && data.total_pages) {
+          setOcrProgress({ current_page: data.current_page, total_pages: data.total_pages });
+        }
+        if (status === "building_tree" && data.message) {
+          setTreeProgress({ message: data.message });
+        }
+      } catch (e) {
+        console.warn("[Poll error]", e);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status, docId]);
+
   const loadPdf = async () => {
     if (pdfUrl) return;
     setPdfLoading(true);
@@ -132,6 +156,7 @@ export default function UploadPage() {
   const handleConfirmMarkdown = async () => {
     if (!docId) return;
     setStatus("building_tree");
+    setTreeProgress({ message: "Đang khởi tạo..." });
     setErrorMsg("");
     try {
       await axios.patch(
@@ -228,6 +253,29 @@ export default function UploadPage() {
               {status === "generating_md" && "Đang trích xuất cấu trúc Markdown..."}
               {status === "building_tree" && "Đang lập chỉ mục Vector RAG..."}
             </h3>
+            {status === "extracting" && ocrProgress.total_pages > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="w-full h-2 bg-tertiary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((ocrProgress.current_page / ocrProgress.total_pages) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted font-bold">
+                  Trang {ocrProgress.current_page} / {ocrProgress.total_pages}
+                </p>
+              </div>
+            )}
+            {status === "building_tree" && treeProgress.message && (
+              <div className="mt-4 space-y-2">
+                <div className="w-full h-2 bg-tertiary rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full animate-pulse" style={{ width: "60%" }} />
+                </div>
+                <p className="text-[11px] text-muted font-bold">
+                  {treeProgress.message}
+                </p>
+              </div>
+            )}
             <p className="text-[11px] text-muted mt-2 font-bold leading-normal">
               Hệ thống AI đang phân tích dữ liệu. Vui lòng giữ trình duyệt mở.
             </p>

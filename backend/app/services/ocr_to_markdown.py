@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .deepdoc.pipeline import pdf_to_markdown, image_file_to_markdown
+from .progress_store import update as update_progress
 
 
 DATA_DIR = Path("data")
@@ -28,6 +29,7 @@ def _update_progress(document_id: str, **data: Any) -> None:
     payload["document_id"] = document_id
     payload["updated_at"] = time.time()
     _save_json(WORK_DIR / document_id / "progress.json", payload)
+    update_progress(document_id, **data)
 
 
 def process_to_markdown(file_path: str, document_id: str) -> Path:
@@ -51,7 +53,10 @@ def process_to_markdown(file_path: str, document_id: str) -> Path:
 
     try:
         if ext == ".pdf":
-            pages = pdf_to_markdown(str(path))
+            def _on_page(current: int, total: int):
+                _update_progress(document_id, status="processing", current_page=current, total_pages=total)
+                _log(f"Page {current}/{total}")
+            pages = pdf_to_markdown(str(path), progress_callback=_on_page)
             full_md = "\n\n".join(p["markdown"] for p in pages)
             _log(f"Processed {len(pages)} pages")
         elif ext in image_exts:

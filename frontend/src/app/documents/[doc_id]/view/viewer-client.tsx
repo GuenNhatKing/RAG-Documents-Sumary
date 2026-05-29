@@ -115,7 +115,7 @@ export default function DocumentViewerClient({
     <div className="flex-1 min-h-0 bg-primary text-primary">
       {viewMode === "md" ? (
         <div className="h-full overflow-auto">
-          <main className="bg-primary px-10 py-8 text-slate-350">
+          <main className="bg-primary px-10 py-8 text-secondary">
             <article className="mx-auto max-w-4xl text-[15px] leading-7">
               {lines.map((line, index) => {
                 const lineNumber = index + 1;
@@ -156,7 +156,7 @@ export default function DocumentViewerClient({
                             </h3>
                           ),
                           h4: ({ children }) => (
-                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 dark:border-indigo-500 bg-emerald-500/10 dark:bg-indigo-500/10 px-3 py-2 text-base font-semibold text-emerald-200 dark:text-indigo-200">
+                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 dark:border-indigo-500 bg-emerald-500/10 dark:bg-indigo-500/10 px-3 py-2 text-base font-semibold text-emerald-700 dark:text-indigo-300">
                               {children}
                             </h4>
                           ),
@@ -215,7 +215,7 @@ export default function DocumentViewerClient({
             <a
               href={pdfUrl}
               download
-              className="px-4 py-2 bg-emerald-650 dark:bg-indigo-650 text-white rounded-xl hover:bg-emerald-550 dark:hover:bg-indigo-550 text-xs font-bold transition-all"
+              className="px-4 py-2 bg-emerald-600 dark:bg-indigo-600 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-indigo-700 text-xs font-bold transition-all"
             >
               Tải file PDF
             </a>

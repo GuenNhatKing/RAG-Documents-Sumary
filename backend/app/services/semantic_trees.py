@@ -19,10 +19,27 @@ except Exception:
 from app.services.pageindex.page_index_md import md_to_tree
 from app.services.pageindex.utils import ConfigLoader
 from app.services.master_tree import add_doc_to_master_tree
+from app.services.progress_store import update as update_progress_store
+
+
+TREE_WORK_DIR = Path("data") / "tree_work"
 
 
 def _log(step: str) -> None:
     print(f"[TREE] {step}", flush=True)
+
+
+def _save_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _update_progress(document_id: str, **data) -> None:
+    payload = dict(data)
+    payload["document_id"] = document_id
+    payload["updated_at"] = time.time()
+    _save_json(TREE_WORK_DIR / document_id / "progress.json", payload)
+    update_progress_store(document_id, **data)
 
 
 def ensure_markdown_doc(document_id: str, md_path: str | Path | None = None) -> Path:
@@ -54,6 +71,7 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
 
     md_path = ensure_markdown_doc(document_id=document_id, md_path=md_path)
     _log(f"Markdown ready: {md_path}")
+    _update_progress(document_id, status="parsing", message="Đang phân tích Markdown...")
 
     out_dir = Path("data/semantic_trees")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -65,8 +83,7 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
 
         config_loader = ConfigLoader()
         opt = config_loader.load({})
-
-        _log(f"Model thực tế đang chuẩn bị chạy: {opt.model}")
+        _update_progress(document_id, status="building", message="Đang xây dựng cây ngữ nghĩa...", model=opt.model)
 
         semantic_tree = await md_to_tree(
             md_path=str(md_path),
@@ -85,19 +102,23 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
 
         with out_path.open("w", encoding="utf-8") as f:
             json.dump(semantic_tree, f, ensure_ascii=False, indent=2)
+        _update_progress(document_id, status="saving", message="Đang lưu cây ngữ nghĩa...")
 
         _log(f"SAVED: {out_path}")
 
         # Update master tree with document summary
         try:
             doc_name = Path(md_path).stem
+            _update_progress(document_id, status="updating", message="Đang cập nhật cây tổng thể...")
             add_doc_to_master_tree(document_id, doc_name, semantic_tree)
             _log("Master tree updated.")
         except Exception as mt_err:
             _log(f"Warning: master tree update failed: {mt_err}")
 
+        _update_progress(document_id, status="done", message="Hoàn thành")
         return out_path
 
     except Exception as e:
+        _update_progress(document_id, status="error", message=str(e))
         _log(f"ERROR OCCURRED: {str(e)}")
         raise

@@ -141,7 +141,7 @@ def image_to_markdown(pil_image, threshold=0.5):
     return format_markdown(md)
 
 
-def pdf_to_markdown(pdf_path, dpi=300, threshold=0.5):
+def pdf_to_markdown(pdf_path, dpi=300, threshold=0.5, progress_callback=None):
     try:
         import pdfplumber
     except ImportError:
@@ -152,7 +152,10 @@ def pdf_to_markdown(pdf_path, dpi=300, threshold=0.5):
     results = []
 
     pdf = pdfplumber.open(pdf_path)
+    total_pages = len(pdf.pages)
     for page_num, page in enumerate(pdf.pages):
+        if progress_callback:
+            progress_callback(page_num + 1, total_pages)
         img = page.to_image(resolution=72 * dpi // 72).annotated
         md = image_to_markdown(img, threshold)
         results.append({"page": page_num + 1, "markdown": md})
