@@ -18,6 +18,14 @@ _client = OpenAI(
 )
 
 
+def _get_extra_body() -> dict | None:
+    """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    llm_think = os.getenv("LLM_THINK", "true").lower()
+    if llm_think == "false":
+        return {"think": False}
+    return None
+
+
 def _normalize_tree_node(node_data: Dict[str, Any]) -> Dict[str, Any]:
     """Chuẩn hóa cây để gửi cho LLM, giữ cấu trúc cha-con."""
     normalized = {
@@ -112,6 +120,7 @@ def _find_node_and_boundary(tree_data: Any, target_id: str) -> Dict[str, Any]:
 )
 def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     """Gọi LLM để tìm node liên quan, có retry bằng tenacity."""
+    extra_body = _get_extra_body()
     response = _client.chat.completions.create(
         model=LLM_MODEL,
         messages=[
@@ -123,6 +132,7 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
         ],
         max_tokens=1500,
         temperature=0.0,
+        extra_body=extra_body if extra_body else None,
     )
 
     content = response.choices[0].message.content

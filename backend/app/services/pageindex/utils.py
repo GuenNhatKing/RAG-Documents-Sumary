@@ -86,6 +86,8 @@ async def llm_acompletion(model, prompt):
                 kwargs["api_base"] = api_base
             if api_key:
                 kwargs["api_key"] = api_key
+            if os.getenv("LLM_THINK", "true").lower() == "false":
+                kwargs["extra_body"] = {"think": False}
             response = await litellm.acompletion(**kwargs)
             return response.choices[0].message.content
         except Exception as e:

@@ -11,6 +11,14 @@ _client = OpenAI(
 )
 
 
+def _get_extra_body() -> dict | None:
+    """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    llm_think = os.getenv("LLM_THINK", "true").lower()
+    if llm_think == "false":
+        return {"think": False}
+    return None
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -37,6 +45,7 @@ Mandatory rules:
 
     context = _truncate_context(context)
 
+    extra_body = _get_extra_body()
     response = _client.chat.completions.create(
         model=model_name,
         messages=[
@@ -45,6 +54,7 @@ Mandatory rules:
         ],
         temperature=0.0,
         max_tokens=max_tokens,
+        extra_body=extra_body if extra_body else None,
     )
 
     content = response.choices[0].message.content
@@ -111,6 +121,7 @@ Rules:
 Document:
 {context}"""
 
+    extra_body = _get_extra_body()
     response = _client.chat.completions.create(
         model=model_name,
         messages=[
@@ -119,6 +130,7 @@ Document:
         ],
         temperature=0.0,
         max_tokens=max_tokens,
+        extra_body=extra_body if extra_body else None,
     )
 
     content = response.choices[0].message.content
@@ -144,6 +156,7 @@ Respond to the user's greeting, small talk, or conversational message in a polit
 Remind them gently that you are here to assist with document analysis or answering questions based on the uploaded documents.
 Be concise (1-2 sentences). Do not include any sources or references."""
 
+    extra_body = _get_extra_body()
     response = _client.chat.completions.create(
         model=model_name,
         messages=[
@@ -152,6 +165,7 @@ Be concise (1-2 sentences). Do not include any sources or references."""
         ],
         temperature=0.7,
         max_tokens=max_tokens,
+        extra_body=extra_body if extra_body else None,
     )
 
     content = response.choices[0].message.content

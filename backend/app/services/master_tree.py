@@ -31,6 +31,14 @@ _client = OpenAI(
     base_url=os.getenv("LLM_BASE_URL"),
 )
 
+
+def _get_extra_body() -> dict | None:
+    """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    llm_think = os.getenv("LLM_THINK", "true").lower()
+    if llm_think == "false":
+        return {"think": False}
+    return None
+
 LLM_MODEL = os.getenv("LLM_MODEL")
 
 
@@ -143,11 +151,13 @@ Rules:
 """
 
     try:
+        extra_body = _get_extra_body()
         response = _client.chat.completions.create(
             model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.0,
+            extra_body=extra_body if extra_body else None,
         )
         content = response.choices[0].message.content
         if not content:
