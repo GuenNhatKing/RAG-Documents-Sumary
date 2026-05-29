@@ -64,7 +64,7 @@ export default function Sidebar() {
     >
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-2.5 top-5 p-1 rounded-full bg-secondary border border-theme text-muted hover:text-indigo-500 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
+          className="absolute -right-2.5 top-5 p-1 rounded-full bg-secondary border border-theme text-muted hover:text-emerald-500 dark:hover:text-indigo-500 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
         aria-label={collapsed ? "Mở rộng" : "Thu gọn"}
       >
         {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
@@ -86,12 +86,12 @@ export default function Sidebar() {
                 ${collapsed ? "justify-center" : "justify-start gap-3"}
                 ${
                   isActive
-                    ? "bg-sidebar-active text-indigo-600 dark:text-indigo-300 font-semibold border border-indigo-500/20 dark:border-indigo-500/15"
+                    ? "bg-sidebar-active text-emerald-600 dark:text-indigo-600 dark:text-emerald-300 dark:text-indigo-300 font-semibold border border-emerald-500/20 dark:border-indigo-500/20 dark:border-emerald-500/15 dark:border-indigo-500/15"
                     : "text-muted hover:text-primary hover:bg-sidebar-hover font-medium"
                 }
               `}
             >
-              <div className={`${isActive ? "text-indigo-500 dark:text-indigo-400" : "text-muted group-hover:text-primary"} transition-colors duration-200`}>
+              <div className={`${isActive ? "text-emerald-500 dark:text-indigo-500 dark:text-emerald-400 dark:text-indigo-400" : "text-muted group-hover:text-primary"} transition-colors duration-200`}>
                 {item.icon}
               </div>
 
@@ -106,8 +106,8 @@ export default function Sidebar() {
       </nav>
 
       {!collapsed && (
-        <div className="p-2.5 m-2 rounded-lg bg-sidebar-active border border-indigo-500/15">
-          <p className="text-[9px] uppercase font-semibold text-center tracking-widest text-indigo-500/50 dark:text-indigo-400/50">
+        <div className="p-2.5 m-2 rounded-lg bg-sidebar-active border border-emerald-500/15 dark:border-indigo-500/15">
+          <p className="text-[9px] uppercase font-semibold text-center tracking-widest text-emerald-500/50 dark:text-indigo-500/50 dark:text-emerald-400/50 dark:text-indigo-400/50">
             DocAI System
           </p>
         </div>

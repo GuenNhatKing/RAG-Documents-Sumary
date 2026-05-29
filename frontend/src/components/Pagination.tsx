@@ -38,7 +38,7 @@ export default function Pagination({ page, total, pageSize, onPageChange }: Pagi
             onClick={() => onPageChange(p)}
             className={`px-2.5 py-1 text-sm rounded border ${
               p === page
-                ? "bg-indigo-500 text-white border-indigo-500"
+                ? "bg-emerald-500 dark:bg-indigo-500 text-white border-emerald-500 dark:border-indigo-500"
                 : "border-theme bg-secondary hover:bg-tertiary text-secondary"
             }`}
           >

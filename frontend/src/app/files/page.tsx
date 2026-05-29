@@ -33,8 +33,8 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
   },
   pending_review: { 
     label: "Chờ review", 
-    color: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20", 
-    dot: "bg-indigo-400" 
+    color: "bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 border border-emerald-500/20 dark:border-indigo-500/20", 
+    dot: "bg-emerald-400 dark:bg-indigo-400" 
   },
   processed: { 
     label: "Hoàn thành", 
@@ -155,7 +155,7 @@ export default function FilesPage() {
         {/* Content panel */}
         {loading ? (
           <div className="flex items-center justify-center py-24 gap-3">
-            <Loader2 className="animate-spin h-7 w-7 text-indigo-400" />
+            <Loader2 className="animate-spin h-7 w-7 text-emerald-400 dark:text-indigo-400" />
             <span className="text-muted text-xs font-bold">Đang tải danh sách tài liệu...</span>
           </div>
         ) : docs.length === 0 ? (
@@ -192,15 +192,15 @@ export default function FilesPage() {
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
                             onBlur={() => handleRenameSave(doc.id)}
-                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-secondary text-primary text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
+                            className="w-full px-3 py-1.5 rounded-xl border border-emerald-500 dark:border-indigo-500 bg-secondary text-primary text-xs outline-none focus:ring-4 focus:ring-emerald-500/10 dark:focus:ring-indigo-500/10 font-bold"
                             autoFocus
                           />
                         </div>
                       ) : (
                         <div className="flex items-center gap-2.5">
-                          <FileText className="w-4 h-4 text-indigo-400" />
+                          <FileText className="w-4 h-4 text-emerald-400 dark:text-indigo-400" />
                           <span
-                            className="cursor-pointer hover:text-indigo-400 transition-colors truncate max-w-xs md:max-w-md"
+                            className="cursor-pointer hover:text-emerald-400 dark:hover:text-indigo-400 transition-colors truncate max-w-xs md:max-w-md"
                             title="Click để đổi tên"
                             onClick={() => handleRenameStart(doc.id, doc.filename)}
                           >
@@ -225,7 +225,7 @@ export default function FilesPage() {
                       {doc.status === "pending_review" && (
                         <Link
                           href={`/files/${doc.id}/review`}
-                          className="p-1.5 hover:bg-indigo-500/10 text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all"
+                          className="p-1.5 hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all"
                           title="Review"
                         >
                           <Lock className="w-4 h-4" />
@@ -251,7 +251,7 @@ export default function FilesPage() {
                       )}
                       <button
                         onClick={() => handleRenameStart(doc.id, doc.filename)}
-                        className="p-1.5 hover:bg-indigo-500/10 text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-none outline-none"
+                        className="p-1.5 hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-none outline-none"
                         title="Đổi tên"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -283,7 +283,7 @@ export default function FilesPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
           
           <div className="rounded-2xl glass-card p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 flex items-center justify-center">
               <HardDrive className="w-5 h-5" />
             </div>
             <div>

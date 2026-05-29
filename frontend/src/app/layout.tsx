@@ -31,8 +31,8 @@ export default function RootLayout({
         className={`flex flex-col h-screen w-screen overflow-hidden ${inter.variable} font-sans antialiased bg-primary text-primary selection:bg-primary/20 relative`}
       >
         <div className="fixed inset-0 pointer-events-none -z-10">
-          <div className="absolute top-[-5%] left-[5%] w-[35%] h-[35%] bg-indigo-500/10 blur-[150px] rounded-full" />
-          <div className="absolute bottom-[-5%] right-[5%] w-[30%] h-[30%] bg-violet-500/8 blur-[150px] rounded-full" />
+          <div className="absolute top-[-5%] left-[5%] w-[35%] h-[35%] bg-emerald-500/10 dark:bg-indigo-500/10 blur-[150px] rounded-full" />
+          <div className="absolute bottom-[-5%] right-[5%] w-[30%] h-[30%] bg-emerald-500/8 dark:bg-indigo-500/8 blur-[150px] rounded-full" />
           <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[20%] h-[20%] bg-blue-500/6 blur-[120px] rounded-full" />
         </div>
 

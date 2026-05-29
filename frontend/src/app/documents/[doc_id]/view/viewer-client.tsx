@@ -156,7 +156,7 @@ export default function DocumentViewerClient({
                             </h3>
                           ),
                           h4: ({ children }) => (
-                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-indigo-500 bg-indigo-500/10 px-3 py-2 text-base font-semibold text-indigo-200">
+                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 dark:border-indigo-500 bg-emerald-500/10 dark:bg-indigo-500/10 px-3 py-2 text-base font-semibold text-emerald-200 dark:text-indigo-200">
                               {children}
                             </h4>
                           ),
@@ -198,7 +198,7 @@ export default function DocumentViewerClient({
         </div>
       ) : pdfLoading ? (
         <div className="h-full flex items-center justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-emerald-500 dark:border-indigo-500 border-t-transparent rounded-full" />
         </div>
       ) : pdfError ? (
         <div className="h-full flex items-center justify-center">
@@ -215,7 +215,7 @@ export default function DocumentViewerClient({
             <a
               href={pdfUrl}
               download
-              className="px-4 py-2 bg-indigo-650 text-white rounded-xl hover:bg-indigo-550 text-xs font-bold transition-all"
+              className="px-4 py-2 bg-emerald-650 dark:bg-indigo-650 text-white rounded-xl hover:bg-emerald-550 dark:hover:bg-indigo-550 text-xs font-bold transition-all"
             >
               Tải file PDF
             </a>

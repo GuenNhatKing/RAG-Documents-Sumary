@@ -130,7 +130,7 @@ export default function StatsPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-24 gap-3">
-                <Loader2 className="animate-spin h-7 w-7 text-indigo-500" />
+                <Loader2 className="animate-spin h-7 w-7 text-emerald-500 dark:text-indigo-500" />
                 <span className="text-muted text-xs font-bold">Đang tải dữ liệu phân tích...</span>
               </div>
             ) : stats && (
@@ -140,7 +140,7 @@ export default function StatsPage() {
                 <div className="grid grid-cols-2 gap-6">
                   
                   <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-500 dark:text-indigo-500 flex items-center justify-center">
                       <FileText className="w-6 h-6" />
                     </div>
                     <div>
@@ -150,7 +150,7 @@ export default function StatsPage() {
                   </div>
 
                   <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-500 dark:text-indigo-500 flex items-center justify-center">
                       <UsersIcon className="w-6 h-6" />
                     </div>
                     <div>

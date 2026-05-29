@@ -55,7 +55,7 @@ function RoleDropdown({ value, disabled, onChange }: { value: string; disabled: 
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-theme bg-secondary text-primary text-xs font-bold transition-all outline-none hover:border-theme-accent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-theme bg-secondary text-primary text-xs font-bold transition-all outline-none hover:border-theme-accent focus:border-emerald-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-emerald-500/10 dark:focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
       >
         <span>{ROLE_LABELS[value] ?? value}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -70,7 +70,7 @@ function RoleDropdown({ value, disabled, onChange }: { value: string; disabled: 
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={`w-full text-left px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                 opt.value === value
-                  ? "bg-indigo-500/15 text-indigo-400"
+                  ? "bg-emerald-500/15 dark:bg-indigo-500/15 text-emerald-400 dark:text-indigo-400"
                   : "text-muted hover:bg-tertiary hover:text-secondary"
               }`}
             >
@@ -148,7 +148,7 @@ export default function UsersPage() {
         {/* User table grid */}
         {loading ? (
           <div className="flex items-center justify-center py-24 gap-3">
-            <Loader2 className="animate-spin h-7 w-7 text-indigo-400" />
+            <Loader2 className="animate-spin h-7 w-7 text-emerald-400 dark:text-indigo-400" />
             <span className="text-muted text-xs font-bold">Đang tải danh sách thành viên...</span>
           </div>
         ) : (
@@ -168,20 +168,20 @@ export default function UsersPage() {
                   className="grid grid-cols-12 gap-4 px-6 py-4 items-center glass-card hover:z-10 group"
                 >
                   <div className="col-span-5 font-bold text-primary text-xs flex items-center gap-2">
-                    <Users className="w-4 h-4 text-indigo-400" />
+                    <Users className="w-4 h-4 text-emerald-400 dark:text-indigo-400" />
                     <span>{user.username}</span>
                   </div>
                   
                   <div className="col-span-3">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
                       user.role === "admin"
-                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                        ? "bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 border border-emerald-500/20 dark:border-indigo-500/20"
                         : user.role === "can_bo"
-                          ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                          ? "bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 border border-emerald-500/20 dark:border-indigo-500/20"
                           : "bg-slate-500/10 text-slate-400 border border-slate-500/20"
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
-                        user.role === "admin" ? "bg-purple-500" : user.role === "can_bo" ? "bg-indigo-500" : "bg-slate-400"
+                        user.role === "admin" ? "bg-emerald-500 dark:bg-indigo-500" : user.role === "can_bo" ? "bg-emerald-500 dark:bg-indigo-500" : "bg-slate-400"
                       }`} />
                       {ROLE_LABELS[user.role] ?? user.role}
                     </span>

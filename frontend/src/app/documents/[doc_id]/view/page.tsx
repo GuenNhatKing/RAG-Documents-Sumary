@@ -70,7 +70,7 @@ export default function DocumentViewPage() {
     return (
       <main className="min-h-[calc(100vh-64px)] flex items-center justify-center p-6">
         <div className="glass-panel p-8 rounded-3xl max-w-sm w-full text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3 mx-auto" />
+          <div className="animate-spin h-8 w-8 border-4 border-emerald-600 dark:border-indigo-600 border-t-transparent rounded-full mb-3 mx-auto" />
           <p className="text-slate-400 font-medium text-sm">Đang tải tài liệu…</p>
         </div>
       </main>
@@ -92,7 +92,7 @@ export default function DocumentViewPage() {
             onClick={() => setViewMode("md")}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "md"
-                ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/20"
+                ? "bg-gradient-to-r from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 text-white shadow-sm shadow-emerald-500/20 dark:shadow-indigo-500/20"
                 : "border border-theme bg-secondary text-secondary hover:bg-tertiary hover:border-theme-accent"
             }`}
           >
@@ -103,7 +103,7 @@ export default function DocumentViewPage() {
             onClick={() => setViewMode("raw")}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "raw"
-                ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/20"
+                ? "bg-gradient-to-r from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 text-white shadow-sm shadow-emerald-500/20 dark:shadow-indigo-500/20"
                 : "border border-theme bg-secondary text-secondary hover:bg-tertiary hover:border-theme-accent"
             }`}
           >

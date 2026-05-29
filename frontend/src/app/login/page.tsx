@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.detail ?? "Đăng nhập thất bại");
       setToken(data.access_token);
       router.refresh();
-      router.push("/");
+      router.push("/chat");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -39,9 +39,9 @@ export default function LoginPage() {
     <section className="relative flex min-h-[calc(100vh-64px)] items-center justify-center py-12 px-4 overflow-hidden select-none">
       {/* Decorative blurs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-8%] left-[-8%] w-[500px] h-[500px] bg-indigo-500/15 dark:bg-indigo-500/10 blur-[140px] rounded-full" />
-        <div className="absolute bottom-[-8%] right-[-8%] w-[600px] h-[600px] bg-purple-500/15 dark:bg-purple-500/10 blur-[140px] rounded-full" />
-        <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-indigo-400/10 dark:bg-indigo-400/5 blur-[100px] rounded-full" />
+        <div className="absolute top-[-8%] left-[-8%] w-[500px] h-[500px] bg-emerald-500/15 dark:bg-indigo-500/15 dark:bg-emerald-500/10 dark:bg-indigo-500/10 blur-[140px] rounded-full" />
+        <div className="absolute bottom-[-8%] right-[-8%] w-[600px] h-[600px] bg-emerald-500/15 dark:bg-indigo-500/15 dark:bg-emerald-500/10 dark:bg-indigo-500/10 blur-[140px] rounded-full" />
+        <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-emerald-400/10 dark:bg-indigo-400/10 dark:bg-emerald-400/5 dark:bg-indigo-400/5 blur-[100px] rounded-full" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -51,7 +51,7 @@ export default function LoginPage() {
         <div className="relative rounded-3xl bg-card backdrop-blur-xl border border-theme shadow-card p-8 sm:p-10">
           {/* Branding */}
           <div className="flex flex-col items-center gap-4 mb-9">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 ring-1 ring-white/10 dark:ring-white/20">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 dark:shadow-indigo-500/20 ring-1 ring-white/10 dark:ring-white/20">
               <Sparkles className="w-7 h-7" />
             </div>
             <div className="text-center space-y-1.5">
@@ -71,12 +71,12 @@ export default function LoginPage() {
                 Tên đăng nhập
               </label>
               <div className="relative group">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors duration-200" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-emerald-500 dark:group-focus-within:text-indigo-500 transition-colors duration-200" />
                 <input
                   id="username"
                   required
                   placeholder="Nhập tên người dùng"
-                  className="w-full h-11 pl-10 pr-4 bg-secondary border border-theme hover:border-indigo-400/30 focus:border-indigo-500 rounded-xl text-sm text-primary placeholder-muted font-medium outline-none transition-all duration-200 focus:ring-[3px] focus:ring-indigo-500/15"
+                  className="w-full h-11 pl-10 pr-4 bg-secondary border border-theme hover:border-emerald-400/30 dark:hover:border-indigo-400/30 focus:border-emerald-500 dark:focus:border-indigo-500 rounded-xl text-sm text-primary placeholder-muted font-medium outline-none transition-all duration-200 focus:ring-[3px] focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15"
                   value={user.username}
                   onChange={e => setUser({ ...user, username: e.target.value })}
                   disabled={loading}
@@ -89,13 +89,13 @@ export default function LoginPage() {
                 Mật khẩu
               </label>
               <div className="relative group">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors duration-200" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-emerald-500 dark:group-focus-within:text-indigo-500 transition-colors duration-200" />
                 <input
                   id="password"
                   required
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full h-11 pl-10 pr-10 bg-secondary border border-theme hover:border-indigo-400/30 focus:border-indigo-500 rounded-xl text-sm text-primary placeholder-muted font-medium outline-none transition-all duration-200 focus:ring-[3px] focus:ring-indigo-500/15"
+                  className="w-full h-11 pl-10 pr-10 bg-secondary border border-theme hover:border-emerald-400/30 dark:hover:border-indigo-400/30 focus:border-emerald-500 dark:focus:border-indigo-500 rounded-xl text-sm text-primary placeholder-muted font-medium outline-none transition-all duration-200 focus:ring-[3px] focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15"
                   value={user.password}
                   onChange={e => setUser({ ...user, password: e.target.value })}
                   disabled={loading}
@@ -120,7 +120,7 @@ export default function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="peer sr-only"
                   />
-                  <div className="w-[18px] h-[18px] rounded-md border border-theme bg-secondary peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all duration-200 flex items-center justify-center shadow-sm">
+                  <div className="w-[18px] h-[18px] rounded-md border border-theme bg-secondary peer-checked:bg-emerald-500 dark:peer-checked:bg-indigo-500 peer-checked:border-emerald-500 dark:peer-checked:border-indigo-500 transition-all duration-200 flex items-center justify-center shadow-sm">
                     <Check className={`w-3 h-3 text-white transition-all duration-200 ${rememberMe ? "opacity-100 scale-100" : "opacity-0 scale-75"}`} />
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function LoginPage() {
                   Ghi nhớ đăng nhập
                 </span>
               </label>
-              <a href="#" className="text-xs font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline transition-colors duration-200">
+              <a href="#" className="text-xs font-bold text-emerald-500 dark:text-indigo-500 hover:text-emerald-600 dark:hover:text-indigo-600 dark:text-emerald-400 dark:text-indigo-400 dark:hover:text-emerald-300 dark:hover:text-indigo-300 hover:underline transition-colors duration-200">
                 Quên mật khẩu?
               </a>
             </div>
@@ -145,7 +145,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="relative w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus:ring-[3px] focus:ring-indigo-500/25 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg overflow-hidden group"
+              className="relative w-full h-11 bg-gradient-to-r from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 hover:from-emerald-400 dark:hover:from-indigo-400 hover:to-emerald-500 dark:hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 dark:shadow-indigo-500/20 hover:shadow-emerald-500/30 dark:hover:shadow-indigo-500/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus:ring-[3px] focus:ring-emerald-500/25 dark:focus:ring-indigo-500/25 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg overflow-hidden group"
             >
               <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="relative flex items-center justify-center gap-2">
@@ -171,7 +171,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-4 mt-8 pt-6 border-t border-theme">
             <p className="text-xs text-muted font-medium">
               Chưa có tài khoản?{" "}
-              <a href="/register" className="font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline transition-colors duration-200">
+              <a href="/register" className="font-bold text-emerald-500 dark:text-indigo-500 hover:text-emerald-600 dark:hover:text-indigo-600 dark:text-emerald-400 dark:text-indigo-400 dark:hover:text-emerald-300 dark:hover:text-indigo-300 hover:underline transition-colors duration-200">
                 Đăng ký ngay
               </a>
             </p>

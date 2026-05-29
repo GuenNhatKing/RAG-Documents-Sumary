@@ -219,7 +219,7 @@ export default function UploadPage() {
           status === "building_tree") && (
           <div className="mx-auto mt-12 text-center p-8 rounded-3xl glass-panel border border-theme shadow-2xl max-w-md w-full hover:shadow-neon-indigo transition-all duration-300">
             <div className="relative flex items-center justify-center w-12 h-12 mx-auto mb-6">
-              <RefreshCw className="animate-spin h-7 w-7 text-indigo-400" />
+              <RefreshCw className="animate-spin h-7 w-7 text-emerald-400 dark:text-indigo-400" />
             </div>
             
             <h3 className="text-base font-extrabold text-primary">
@@ -245,7 +245,7 @@ export default function UploadPage() {
                     Kiểm duyệt nội dung Markdown
                   </h2>
                   <p className="text-[10px] text-muted mt-1 font-bold">
-                    Tên file: <span className="text-indigo-500">{filename}</span>
+                    Tên file: <span className="text-emerald-500 dark:text-indigo-500">{filename}</span>
                   </p>
                 </div>
                 
@@ -283,14 +283,14 @@ export default function UploadPage() {
                 <div className={showPdf ? "w-full lg:w-1/2" : "w-full"}>
                   {markdownLoading ? (
                     <div className="flex items-center justify-center h-48">
-                      <RefreshCw className="animate-spin h-6 w-6 text-indigo-500" />
+                      <RefreshCw className="animate-spin h-6 w-6 text-emerald-500 dark:text-indigo-500" />
                     </div>
                   ) : (
                     <textarea
                       name="markdown_editor"
                       value={markdown}
                       onChange={(e) => setMarkdown(e.target.value)}
-                      className="w-full h-[520px] p-4.5 rounded-2xl border border-theme bg-tertiary text-primary font-mono text-xs resize-y shadow-inner transition-all duration-350 outline-none focus:border-indigo-500/40 focus:ring-4 focus:ring-indigo-500/15 leading-relaxed"
+                      className="w-full h-[520px] p-4.5 rounded-2xl border border-theme bg-tertiary text-primary font-mono text-xs resize-y shadow-inner transition-all duration-350 outline-none focus:border-emerald-500/40 dark:focus:border-indigo-500/40 focus:ring-4 focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15 leading-relaxed"
                       spellCheck={false}
                     />
                   )}
@@ -304,7 +304,7 @@ export default function UploadPage() {
                         <a
                           href={pdfUrl}
                           download={filename}
-                          className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold hover:underline"
+                          className="text-[10px] text-emerald-400 dark:text-indigo-400 hover:text-emerald-300 dark:hover:text-indigo-300 font-bold hover:underline"
                         >
                           Tải PDF
                         </a>
@@ -319,7 +319,7 @@ export default function UploadPage() {
                         <object data={pdfUrl} type="application/pdf" className="w-full h-full absolute inset-0">
                           <p className="text-xs text-muted p-4">
                             Không hỗ trợ xem trực tuyến.{" "}
-                            <a href={pdfUrl} className="text-indigo-500 underline font-bold" download>
+                            <a href={pdfUrl} className="text-emerald-500 dark:text-indigo-500 underline font-bold" download>
                               Nhấp vào đây để tải file PDF gốc
                             </a>
                           </p>

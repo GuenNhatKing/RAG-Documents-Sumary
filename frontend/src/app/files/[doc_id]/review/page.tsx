@@ -154,7 +154,7 @@ export default function ReviewPage() {
               <h1 className="text-3xl font-extrabold text-primary tracking-tight">
                 Kiểm duyệt nội dung Markdown
               </h1>
-              <p className="text-sm font-bold text-indigo-400 mt-1">
+              <p className="text-sm font-bold text-emerald-400 dark:text-indigo-400 mt-1">
                 Tên file: <span className="text-secondary">{filename}</span>
               </p>
           </div>
@@ -164,7 +164,7 @@ export default function ReviewPage() {
                 onClick={handleTogglePdf}
                 className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer border ${
                   showPdf
-                    ? "bg-indigo-600 text-white shadow-indigo-500/20 hover:bg-indigo-500 border-indigo-500/30"
+                    ? "bg-emerald-600 dark:bg-indigo-600 text-white shadow-emerald-500/20 dark:shadow-indigo-500/20 hover:bg-emerald-500 dark:hover:bg-indigo-500 border-emerald-500/30 dark:border-indigo-500/30"
                     : "btn-accent-sky"
                 }`}
               >
@@ -189,7 +189,7 @@ export default function ReviewPage() {
               ) : (
                 <button
                   onClick={handleRebuild}
-                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-50 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-md shadow-purple-500/10 hover:shadow-lg transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 dark:from-indigo-600 to-emerald-600 dark:to-indigo-600 hover:from-emerald-50 dark:hover:from-indigo-50 hover:to-emerald-500 dark:hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-500/10 dark:shadow-indigo-500/10 hover:shadow-lg transition-all cursor-pointer"
                 >
                   Lưu & Tạo lại cây
                 </button>
@@ -200,15 +200,15 @@ export default function ReviewPage() {
 
         {status === "loading" && (
           <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
-            <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
+            <div className="animate-spin h-8 w-8 border-4 border-emerald-600 dark:border-indigo-600 border-t-transparent rounded-full mb-3" />
             <p className="text-muted font-medium">Đang tải nội dung…</p>
           </div>
         )}
 
         {(status === "saving" || status === "confirming") && (
           <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
-            <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
-            <p className="text-indigo-500 font-bold">
+            <div className="animate-spin h-8 w-8 border-4 border-emerald-600 dark:border-indigo-600 border-t-transparent rounded-full mb-3" />
+            <p className="text-emerald-500 dark:text-indigo-500 font-bold">
               {status === "saving"
                 ? "Đang lưu chỉnh sửa..."
                 : docStatus === "pending_review"
@@ -268,7 +268,7 @@ export default function ReviewPage() {
               name="markdown_editor"
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
-              className={`${showPdf ? "md:w-1/2" : "w-full"} p-5 border border-theme rounded-2xl bg-tertiary backdrop-blur-sm text-primary placeholder:text-muted shadow-inner font-mono text-sm resize-y focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500/40 transition-all`}
+              className={`${showPdf ? "md:w-1/2" : "w-full"} p-5 border border-theme rounded-2xl bg-tertiary backdrop-blur-sm text-primary placeholder:text-muted shadow-inner font-mono text-sm resize-y focus:outline-none focus:ring-4 focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15 focus:border-emerald-500/40 dark:focus:border-indigo-500/40 transition-all`}
               spellCheck={false}
             />
             {showPdf && (
@@ -279,7 +279,7 @@ export default function ReviewPage() {
                     <a
                       href={pdfUrl}
                       download={filename.replace(/\.[^.]+$/, ".pdf")}
-                      className="text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline"
+                      className="text-xs font-bold text-emerald-400 dark:text-indigo-400 hover:text-emerald-300 dark:hover:text-indigo-300 hover:underline"
                     >
                       Tải xuống
                     </a>
@@ -288,7 +288,7 @@ export default function ReviewPage() {
                 <div className="flex-1">
                   {pdfLoading ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin h-6 w-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
+                      <div className="animate-spin h-6 w-6 border-4 border-emerald-600 dark:border-indigo-600 border-t-transparent rounded-full" />
                     </div>
                   ) : pdfError ? (
                     <div className="flex items-center justify-center h-full">
@@ -305,7 +305,7 @@ export default function ReviewPage() {
                         <a
                           href={pdfUrl}
                           download
-                          className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-500"
+                          className="text-sm px-4 py-2 bg-emerald-600 dark:bg-indigo-600 text-white rounded-xl font-semibold hover:bg-emerald-500 dark:hover:bg-indigo-500"
                         >
                           Tải file PDF
                         </a>

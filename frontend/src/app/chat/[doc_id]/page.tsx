@@ -233,12 +233,12 @@ export default function ChatPage({ params }: PageProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSessions(!showSessions)}
-                className="p-1.5 rounded-lg text-muted hover:text-indigo-400 hover:bg-tertiary transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-muted hover:text-emerald-400 dark:hover:text-indigo-400 hover:bg-tertiary transition-colors cursor-pointer"
               >
                 {showSessions ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted">
-                <FileText className="w-4 h-4 text-indigo-400" />
+                <FileText className="w-4 h-4 text-emerald-400 dark:text-indigo-400" />
                 <span className="hidden sm:inline">{docFilename}</span>
                 <span className="sm:hidden">Tài liệu</span>
               </div>
@@ -256,7 +256,7 @@ export default function ChatPage({ params }: PageProps) {
           <div className="flex-1 overflow-hidden flex flex-col">
             {docLoading ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="animate-spin h-8 w-8 text-indigo-400" />
+                <Loader2 className="animate-spin h-8 w-8 text-emerald-400 dark:text-indigo-400" />
               </div>
             ) : (
               <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} />
@@ -270,9 +270,9 @@ export default function ChatPage({ params }: PageProps) {
           <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
             <span className="text-sm font-semibold text-primary">Trợ lý Phân tích AI</span>
             <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-tight">RAG Active</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 dark:bg-indigo-500/10 rounded-full border border-emerald-500/20 dark:border-indigo-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-indigo-400 animate-pulse" />
+                <span className="text-[9px] text-emerald-400 dark:text-indigo-400 font-bold uppercase tracking-tight">RAG Active</span>
               </div>
             </div>
           </header>
@@ -281,12 +281,12 @@ export default function ChatPage({ params }: PageProps) {
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
             {messages.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 flex items-center justify-center mb-4">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-semibold text-secondary">Trợ lý Phân tích AI</h3>
                 <p className="text-xs text-muted mt-1.5 max-w-[240px] leading-relaxed">
-                  Đã sẵn sàng phân tích tài liệu. Nhập câu hỏi hoặc chọn <span className="text-indigo-400 font-medium">Tóm tắt AI</span> để bắt đầu.
+                  Đã sẵn sàng phân tích tài liệu. Nhập câu hỏi hoặc để bắt đầu.
                 </p>
               </div>
             )}
@@ -296,12 +296,12 @@ export default function ChatPage({ params }: PageProps) {
                 /* AI Message */
                 <div key={idx} className="flex flex-col items-start gap-1.5">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
                       <Bot className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
+                    <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
                   </div>
-                  <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-indigo-500/40">
+                  <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-emerald-500/40 dark:border-indigo-500/40">
                     <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-primary">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
@@ -332,7 +332,7 @@ export default function ChatPage({ params }: PageProps) {
               ) : (
                 /* User Message */
                 <div key={idx} className="flex flex-col items-end gap-1">
-                  <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-indigo-500/10">
+                  <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-emerald-500/10 dark:shadow-indigo-500/10">
                     <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 </div>
@@ -342,16 +342,16 @@ export default function ChatPage({ params }: PageProps) {
             {loading && (
               <div className="flex flex-col items-start gap-1.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
+                  <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
                 </div>
                 <div className="ai-bubble rounded-2xl rounded-tl-none px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -371,7 +371,7 @@ export default function ChatPage({ params }: PageProps) {
             <div className="flex items-center gap-2">
               <div className="relative group flex-1">
                 <div className="chat-input flex items-center gap-2 px-4 py-1.5">
-                  <MessageSquare className="w-4 h-4 text-indigo-400/60 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 text-emerald-400/60 dark:text-indigo-400/60 flex-shrink-0" />
                   <input
                     ref={inputRef}
                     type="text"
@@ -390,10 +390,9 @@ export default function ChatPage({ params }: PageProps) {
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
                   disabled={loading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 btn-accent-violet rounded-full text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-1.5 btn-accent-violet rounded-full text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap hover:scale-110 hover:bg-emerald-600 dark:hover:bg-indigo-500 hover:text-white transition-all duration-200"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  Tóm tắt AI
                 </button>
                 {showSummaryMenu && (
                   <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-44 glass-panel border border-theme-light rounded-xl overflow-hidden shadow-2xl z-30">
@@ -401,7 +400,7 @@ export default function ChatPage({ params }: PageProps) {
                       <button
                         key={opt.value}
                         onClick={() => handleSummarize(opt.value)}
-                        className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-tertiary hover:text-primary transition-all cursor-pointer"
+                        className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 hover:text-emerald-700 dark:hover:text-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                       >
                         {opt.label}
                       </button>
