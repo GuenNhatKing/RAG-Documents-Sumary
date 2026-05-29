@@ -287,6 +287,12 @@ export default function ChatMasterPage() {
                       <h3 className="font-semibold text-primary truncate pr-5 mt-1 text-sm">
                         {session.title || "Cuộc trò chuyện"}
                       </h3>
+                      {!isGlobal && (
+                        <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate mt-1 flex items-center gap-1">
+                          <FileText className="w-3 h-3 flex-shrink-0 text-emerald-500/70" />
+                          <span className="truncate">{docName}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5 text-[10px] text-muted mt-2.5 pt-2.5 border-t border-theme-light">
                         <Calendar className="w-3 h-3" />
                         <span>{formatDate(session.updated_at)}</span>

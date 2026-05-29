@@ -289,11 +289,11 @@ export default function UploadPage() {
               {/* Header row */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-theme">
                 <div>
-                  <h2 className="text-xl font-black text-white">
+                  <h2 className="text-xl font-black text-primary">
                     Kiểm duyệt nội dung Markdown
                   </h2>
-                  <p className="text-[10px] text-muted mt-1 font-bold">
-                    Tên file: <span className="text-emerald-500 dark:text-indigo-500">{filename}</span>
+                  <p className="text-sm text-muted mt-1.5 font-bold">
+                    Tên file: <span className="text-emerald-500 dark:text-indigo-500 text-lg font-black">{filename}</span>
                   </p>
                 </div>
                 
@@ -338,7 +338,7 @@ export default function UploadPage() {
                       name="markdown_editor"
                       value={markdown}
                       onChange={(e) => setMarkdown(e.target.value)}
-                      className="w-full h-[520px] p-4.5 rounded-2xl border border-theme bg-tertiary text-primary font-mono text-xs resize-y shadow-inner transition-all duration-350 outline-none focus:border-emerald-500/40 dark:focus:border-indigo-500/40 focus:ring-4 focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15 leading-relaxed"
+                      className="w-full h-[520px] p-4.5 rounded-2xl border border-theme bg-input text-primary font-mono text-xs resize-y shadow-inner transition-all duration-350 outline-none focus:border-emerald-500/40 dark:focus:border-indigo-500/40 focus:ring-4 focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15 leading-relaxed"
                       spellCheck={false}
                     />
                   )}

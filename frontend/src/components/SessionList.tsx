@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChatSession, createSession, getSessions, deleteSession } from "@/lib/chat";
 import { Plus, Trash2, MessageSquare, History } from "lucide-react";
  
@@ -21,6 +21,7 @@ export default function SessionList({
 }: SessionListProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const creatingRef = useRef(false);
  
   useEffect(() => {
     loadSessions();
@@ -31,9 +32,15 @@ export default function SessionList({
     try {
       const data = await getSessions(docId);
       if (data.length === 0) {
-        const session = await createSession(docId);
-        setSessions([session]);
-        onSelect(session.id);
+        if (creatingRef.current) return;
+        creatingRef.current = true;
+        try {
+          const session = await createSession(docId);
+          setSessions([session]);
+          onSelect(session.id);
+        } finally {
+          creatingRef.current = false;
+        }
       } else {
         setSessions(data);
         if (!currentSessionId && data.length > 0) {
