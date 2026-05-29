@@ -333,7 +333,7 @@ def edit_document_markdown(doc_id: str, body: dict, current_user: TokenData = De
             raise HTTPException(status_code=400, detail="Missing 'markdown' field")
 
         md_path = Path(doc.markdown_path) if doc.markdown_path else (
-            Path("/work/backend/data/markdown_docs") / f"{doc_id}.md"
+            Path("data/markdown_docs") / f"{doc_id}.md"
         )
         md_path.write_text(new_markdown, encoding="utf-8")
 

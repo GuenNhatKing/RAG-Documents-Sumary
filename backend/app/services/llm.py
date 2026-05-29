@@ -127,3 +127,32 @@ Document:
         return "**Không thể tạo tóm tắt. Vui lòng thử lại.**"
 
     return content.strip()
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+)
+def generate_conversational_response(query: str) -> str:
+    """Generate a friendly response for general greetings or small talk."""
+    model_name = os.getenv("LLM_MODEL")
+    max_tokens = int(os.getenv("LLM_MAX_TOKENS", "4096"))
+
+    system_prompt = """You are a helpful, professional Vietnamese document analysis AI assistant.
+Respond to the user's greeting, small talk, or conversational message in a polite, friendly, and helpful way in Vietnamese.
+Remind them gently that you are here to assist with document analysis or answering questions based on the uploaded documents.
+Be concise (1-2 sentences). Do not include any sources or references."""
+
+    response = _client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query},
+        ],
+        temperature=0.7,
+        max_tokens=max_tokens,
+    )
+
+    content = response.choices[0].message.content
+    return content.strip() if content else "Xin chào! Tôi có thể giúp gì cho bạn về tài liệu này?"

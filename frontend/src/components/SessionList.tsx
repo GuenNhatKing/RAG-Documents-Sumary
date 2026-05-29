@@ -9,6 +9,7 @@ interface SessionListProps {
   currentSessionId?: string;
   onSelect: (sessionId: string) => void;
   onNewSession: () => void;
+  refreshTrigger?: number;
 }
  
 export default function SessionList({
@@ -16,19 +17,29 @@ export default function SessionList({
   currentSessionId,
   onSelect,
   onNewSession,
+  refreshTrigger,
 }: SessionListProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
  
   useEffect(() => {
     loadSessions();
-  }, [docId]);
+  }, [docId, refreshTrigger]);
  
   const loadSessions = async () => {
     setLoading(true);
     try {
       const data = await getSessions(docId);
-      setSessions(data);
+      if (data.length === 0) {
+        const session = await createSession(docId);
+        setSessions([session]);
+        onSelect(session.id);
+      } else {
+        setSessions(data);
+        if (!currentSessionId && data.length > 0) {
+          onSelect(data[0].id);
+        }
+      }
     } catch (err) {
       console.error("Failed to load sessions:", err);
     } finally {

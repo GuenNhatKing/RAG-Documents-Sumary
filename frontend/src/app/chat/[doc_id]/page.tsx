@@ -22,7 +22,7 @@ import {
   Eye,
   Menu
 } from "lucide-react";
-import { ChatMessage, getMessages, askQuestion, summarizeDocument, SummaryLength, SUMMARY_LENGTH_OPTIONS } from "@/lib/chat";
+import { ChatMessage, getMessages, askQuestion, summarizeDocument, SummaryLength, SUMMARY_LENGTH_OPTIONS, createSession } from "@/lib/chat";
 import { API, getToken } from "@/lib/auth";
 import { getDocumentDetail } from "@/lib/documents";
 
@@ -47,6 +47,7 @@ export default function ChatPage({ params }: PageProps) {
   const { doc_id } = use(params);
   const searchParams = useSearchParams();
   const initialSessionId = searchParams.get("session") || undefined;
+  const initialHighlight = searchParams.get("highlight") || "";
 
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,12 +55,13 @@ export default function ChatPage({ params }: PageProps) {
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
   const [showSessions, setShowSessions] = useState(true);
-  const [highlight, setHighlight] = useState("");
+  const [highlight, setHighlight] = useState(initialHighlight);
   const [markdown, setMarkdown] = useState<string>("");
   const [docLoading, setDocLoading] = useState(true);
   const [docFilename, setDocFilename] = useState(doc_id);
   const [showSummaryMenu, setShowSummaryMenu] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("md");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,12 +142,21 @@ export default function ChatPage({ params }: PageProps) {
 
     const userMsg: Message = { role: "user", content: question };
     setMessages((prev) => [...prev, userMsg]);
+    const currentQuestion = question;
     setQuestion("");
     setLoading(true);
     setError("");
 
     try {
-      const data = await askQuestion(doc_id, question, sessionId);
+      let activeSessionId = sessionId;
+      if (!activeSessionId) {
+        const newSession = await createSession(doc_id, currentQuestion.slice(0, 100));
+        activeSessionId = newSession.id;
+        setSessionId(activeSessionId);
+        setRefreshTrigger((prev) => prev + 1);
+      }
+
+      const data = await askQuestion(doc_id, currentQuestion, activeSessionId);
 
       const cleanAnswer = data.answer
         .replace(/\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?/g, "")
@@ -200,13 +211,23 @@ export default function ChatPage({ params }: PageProps) {
     setError("");
 
     try {
-      const data = await summarizeDocument(doc_id, length, sessionId);
+      let activeSessionId = sessionId;
+      if (!activeSessionId) {
+        const newSession = await createSession(doc_id, `Tóm tắt tài liệu`);
+        activeSessionId = newSession.id;
+        setSessionId(activeSessionId);
+        setRefreshTrigger((prev) => prev + 1);
+      }
+      const data = await summarizeDocument(doc_id, length, activeSessionId);
       const assistantMsg: Message = {
         role: "assistant",
         content: data.answer,
         sources: data.sources.length > 0 ? data.sources : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+    } catch (err) {
+      setError("Đã xảy ra lỗi khi tóm tắt.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -223,6 +244,7 @@ export default function ChatPage({ params }: PageProps) {
               currentSessionId={sessionId}
               onSelect={handleSelectSession}
               onNewSession={handleNewSession}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         )}
@@ -322,16 +344,17 @@ export default function ChatPage({ params }: PageProps) {
                     {msg.sources && msg.sources.length > 0 && (
                       <div className="mt-3 pt-2.5 border-t border-theme-light">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[9px] font-medium text-muted mr-1">Tham chiếu:</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 mr-1">Tham chiếu dòng:</span>
                           {msg.sources.map((src, sIdx) => (
                             <button
                               key={sIdx}
                               onClick={() => handleSourceClick(src)}
-                              className={`text-[9px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${highlight === src.lines
-                                ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-400"
-                                : "bg-primary border-theme-light text-muted hover:text-secondary"
+                              className={`text-xs px-3 py-1 rounded-lg border font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${highlight === src.lines
+                                ? "bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 shadow-sm"
+                                : "bg-primary border-theme-light text-muted hover:text-secondary hover:border-theme-accent"
                                 }`}
                             >
+                              <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                               {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
                             </button>
                           ))}
