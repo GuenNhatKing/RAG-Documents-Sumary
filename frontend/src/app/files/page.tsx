@@ -174,7 +174,7 @@ export default function FilesPage() {
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#27273a]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#2a3148]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
               {docs.map((doc) => {
                 const cfg = statusConfig[doc.status] ?? statusConfig.pending;
                 return (
@@ -191,7 +191,7 @@ export default function FilesPage() {
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
                             onBlur={() => handleRenameSave(doc.id)}
-                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-[#1e1e2d]/60 text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
+                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-[#222840]/60 text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
                             autoFocus
                           />
                         </div>

@@ -32,14 +32,14 @@ export default function NavBar() {
   }, []);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-5 sm:px-8 py-3.5 bg-[#0b0d12]/85 backdrop-blur-xl border-b border-white/[0.04] transition-all duration-300">
+    <nav className="sticky top-0 z-50 flex items-center justify-between px-5 sm:px-8 py-3.5 bg-[#1a1f2e]/85 backdrop-blur-xl border-b border-white/[0.06] transition-all duration-300">
       <Link href="/" className="flex items-center gap-2.5 font-semibold text-base tracking-tight select-none group">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
           <span className="text-white text-sm font-bold">R</span>
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-white font-semibold">DocAI</span>
-          <span className="text-[10px] font-medium text-indigo-400/60 hidden sm:inline">v2.0</span>
+              <span className="text-[10px] font-medium text-indigo-400/80 hidden sm:inline">v2.0</span>
         </div>
       </Link>
 
@@ -48,7 +48,7 @@ export default function NavBar() {
           <>
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm font-medium text-slate-300">
               <User size={14} className="text-indigo-400" />
-              <span>{payload.sub}</span>
+              <span className="text-slate-200">{payload.sub}</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-medium uppercase tracking-wider">
                 {payload.role === "admin" ? "Admin" : payload.role === "can_bo" ? "Cán bộ" : "User"}
               </span>

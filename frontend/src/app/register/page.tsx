@@ -85,7 +85,7 @@ export default function RegisterPage() {
                 id="username"
                 required
                 placeholder="Tên người dùng viết liền không dấu"
-                className="w-full bg-[#1e1e2d]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={form.username}
                 onChange={e => setForm({ ...form, username: e.target.value })}
                 disabled={loading}
@@ -105,7 +105,7 @@ export default function RegisterPage() {
                 required
                 type={showPassword ? "text" : "password"}
                 placeholder="Nhập mật khẩu an toàn"
-                className="w-full bg-[#1e1e2d]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
                 disabled={loading}

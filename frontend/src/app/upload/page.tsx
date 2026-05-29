@@ -191,7 +191,7 @@ export default function UploadPage() {
         {status === "idle" && (
           <div
             {...getRootProps()}
-            className={`w-full p-20 border-2 border-dashed rounded-3xl text-center cursor-pointer transition-all duration-500 bg-[#27273a]/20 backdrop-blur-xl shadow-premium relative overflow-hidden group ${
+            className={`w-full p-20 border-2 border-dashed rounded-3xl text-center cursor-pointer transition-all duration-500 bg-[#2a3148]/20 backdrop-blur-xl shadow-premium relative overflow-hidden group ${
               isDragActive 
                 ? "border-[#c3c0ff] bg-[#c3c0ff]/10 scale-[1.005]" 
                 : "border-white/10 hover:border-[#c3c0ff]/70"
@@ -309,7 +309,7 @@ export default function UploadPage() {
                         </a>
                       )}
                     </div>
-                    <div className="flex-1 min-h-[460px] relative bg-[#1e1e2d]/40">
+                    <div className="flex-1 min-h-[460px] relative bg-[#222840]/40">
                       {pdfLoading ? (
                         <p className="text-xs text-slate-400 p-4 font-bold">Đang tải tài liệu PDF...</p>
                       ) : pdfError ? (

@@ -78,7 +78,7 @@ export default function DocumentViewPage() {
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      <div className="flex-shrink-0 px-5 py-3.5 bg-[#27273a]/60 backdrop-blur-md border-b border-white/10">
+      <div className="flex-shrink-0 px-5 py-3.5 bg-[#2a3148]/60 backdrop-blur-md border-b border-white/10">
         <button
           onClick={() => router.push("/files")}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-bold cursor-pointer"

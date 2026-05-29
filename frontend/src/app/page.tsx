@@ -101,13 +101,13 @@ export default function HomePage() {
               <div key={i} className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
                   style={{ background: `linear-gradient(135deg, ${s.color.replace("from-", "").split(" ")[0]}, ${s.color.replace("to-", "").split(" ")[0]})` }} />
-                <div className="relative rounded-xl border border-white/10 bg-[#1e1e2d]/80 backdrop-blur-sm p-6 flex items-center gap-5 group-hover:-translate-y-1 transition-all duration-300">
+                  <div className="relative rounded-xl border border-white/10 bg-[#222840]/80 backdrop-blur-sm p-6 flex items-center gap-5 group-hover:-translate-y-1 transition-all duration-300">
                   <div className={`p-3.5 rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
                     <s.icon size={24} className="text-white" />
                   </div>
                   <div>
                     <p className="text-3xl font-bold text-white">{s.value}</p>
-                    <p className="text-sm text-slate-400 font-medium">{s.label}</p>
+                    <p className="text-sm text-slate-300 font-medium">{s.label}</p>
                   </div>
                 </div>
               </div>
@@ -118,7 +118,7 @@ export default function HomePage() {
         <motion.div variants={item}>
           <div className="flex items-center gap-3 mb-6">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            <h2 className="text-lg font-semibold text-slate-300 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
               <Zap size={18} className="text-indigo-400" />
               Truy cập nhanh
             </h2>
@@ -131,13 +131,13 @@ export default function HomePage() {
                 <div className="group relative cursor-pointer h-full">
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-sm"
                     style={{ background: `linear-gradient(135deg, ${action.color.replace("from-", "").split(" ")[0]}, ${action.color.replace("to-", "").split(" ")[0]})` }} />
-                  <div className="relative h-full rounded-xl border border-white/10 bg-[#1e1e2d]/60 backdrop-blur-sm p-6 flex flex-col gap-4 group-hover:-translate-y-1.5 group-hover:border-white/20 transition-all duration-300">
+                  <div className="relative h-full rounded-xl border border-white/10 bg-[#222840]/60 backdrop-blur-sm p-6 flex flex-col gap-4 group-hover:-translate-y-1.5 group-hover:border-white/20 transition-all duration-300">
                     <div className={`p-3 w-fit rounded-xl bg-gradient-to-br ${action.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                       <action.icon size={22} className="text-white" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-white mb-1.5 text-base">{action.label}</h3>
-                      <p className="text-sm text-slate-500 leading-relaxed">{action.desc}</p>
+                      <p className="text-sm text-slate-400 leading-relaxed">{action.desc}</p>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <span>Đi đến</span>
@@ -158,18 +158,18 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="font-semibold text-white mb-2">Hướng dẫn nhanh</h3>
-                <ul className="space-y-2 text-sm text-slate-400">
+                <ul className="space-y-2 text-sm text-slate-300">
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2 shrink-0" />
-                    <span><strong className="text-slate-300">Upload</strong> — Tải file PDF lên hệ thống</span>
+                    <span><strong className="text-slate-200">Upload</strong> — Tải file PDF lên hệ thống</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2 shrink-0" />
-                    <span><strong className="text-slate-300">Xử lý</strong> — OCR → Chuẩn hóa → Markdown → Cây ngữ nghĩa</span>
+                    <span><strong className="text-slate-200">Xử lý</strong> — OCR → Chuẩn hóa → Markdown → Cây ngữ nghĩa</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2 shrink-0" />
-                    <span><strong className="text-slate-300">Hỏi đáp</strong> — Đặt câu hỏi, AI trả lời dựa trên tài liệu</span>
+                    <span><strong className="text-slate-200">Hỏi đáp</strong> — Đặt câu hỏi, AI trả lời dựa trên tài liệu</span>
                   </li>
                 </ul>
               </div>

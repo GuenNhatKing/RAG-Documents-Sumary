@@ -3,11 +3,11 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #0b0d12;
-  --foreground: #e8edf5;
+  --background: #1a1f2e;
+  --foreground: #eef2f8;
 
-  --card: rgba(20, 23, 33, 0.7);
-  --card-border: rgba(255, 255, 255, 0.06);
+  --card: rgba(30, 36, 56, 0.8);
+  --card-border: rgba(255, 255, 255, 0.1);
 
   --primary: #818cf8;
   --primary-foreground: #0f0a2e;
@@ -15,14 +15,14 @@
   --secondary: #a78bfa;
   --secondary-foreground: #1c0a3a;
 
-  --muted: #1a1d2e;
-  --muted-foreground: #7c829a;
+  --muted: #262d44;
+  --muted-foreground: #a0a8c0;
 
   --accent: #6366f1;
   --accent-foreground: #e0e7ff;
 
-  --border: rgba(255, 255, 255, 0.06);
-  --ring: rgba(129, 140, 248, 0.4);
+  --border: rgba(255, 255, 255, 0.1);
+  --ring: rgba(129, 140, 248, 0.5);
 }
 
 @theme inline {
@@ -44,9 +44,9 @@
   --color-border: var(--border);
   --color-ring: var(--ring);
 
-  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.3);
-  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.12);
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.2);
+  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
 
   --radius-xl: 0.8rem;
   --radius-2xl: 1.2rem;
@@ -72,6 +72,7 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: var(--foreground);
 }
 
 .btn-primary {
@@ -96,23 +97,23 @@ body {
 }
 
 .glass-panel {
-  background: rgba(20, 23, 33, 0.65);
+  background: rgba(25, 30, 48, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.2s ease;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(129, 140, 248, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(129, 140, 248, 0.3);
 }
 
 ::-webkit-scrollbar {
@@ -123,11 +124,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(129, 140, 248, 0.15);
+  background: rgba(129, 140, 248, 0.2);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(129, 140, 248, 0.3);
+  background: rgba(129, 140, 248, 0.35);
 }
 
 .prose.prose-invert,
@@ -167,8 +168,8 @@ body {
 }
 
 .prose.prose-invert pre {
-  background: rgba(11, 13, 18, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(19, 24, 38, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 

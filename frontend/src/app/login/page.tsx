@@ -72,7 +72,7 @@ export default function LoginPage() {
                 id="username"
                 required
                 placeholder="Nhập tên người dùng"
-                className="w-full bg-[#1e1e2d]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={user.username}
                 onChange={e => setUser({ ...user, username: e.target.value })}
                 disabled={loading}
@@ -92,7 +92,7 @@ export default function LoginPage() {
                 required
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full bg-[#1e1e2d]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={user.password}
                 onChange={e => setUser({ ...user, password: e.target.value })}
                 disabled={loading}

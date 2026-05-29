@@ -103,11 +103,11 @@ export default function DocumentViewerClient({
   const lines = (markdown ?? "").split("\n");
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e2d] text-slate-200">
+    <div className="flex flex-col h-full bg-[#222840] text-slate-200">
       {/* Content area */}
       <div className="flex-1 overflow-auto">
         {viewMode === "md" ? (
-          <main className="bg-[#1e1e2d] px-10 py-8 text-slate-350">
+          <main className="bg-[#222840] px-10 py-8 text-slate-350">
             <article className="mx-auto max-w-4xl text-[15px] leading-7">
               {lines.map((line, index) => {
                 const lineNumber = index + 1;
@@ -168,7 +168,7 @@ export default function DocumentViewerClient({
                             </table>
                           ),
                           th: ({ children }) => (
-                            <th className="border border-white/10 bg-[#27273a] px-3 py-2 text-left font-semibold text-slate-200">
+                            <th className="border border-white/10 bg-[#2a3148] px-3 py-2 text-left font-semibold text-slate-200">
                               {children}
                             </th>
                           ),
@@ -217,7 +217,7 @@ export default function DocumentViewerClient({
 
       {/* Toggle buttons */}
       {docId && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-[#27273a]/60 backdrop-blur-md border-t border-white/10">
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-[#2a3148]/60 backdrop-blur-md border-t border-white/10">
           <button
             onClick={() => setViewMode("md")}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${

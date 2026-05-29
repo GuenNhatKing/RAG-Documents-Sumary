@@ -58,13 +58,13 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`relative transition-all duration-300 ease-in-out flex flex-col bg-[#0b0d12]/60 backdrop-blur-md border border-white/[0.04] rounded-xl m-3 ${
+      className={`relative transition-all duration-300 ease-in-out flex flex-col bg-[#1a1f2e]/70 backdrop-blur-md border border-white/[0.06] rounded-xl m-3 ${
         collapsed ? "w-[60px]" : "w-56"
       }`}
     >
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-2.5 top-5 p-1 rounded-full bg-[#1a1d2e] border border-white/[0.06] text-slate-500 hover:text-indigo-400 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-2.5 top-5 p-1 rounded-full bg-[#2a3148] border border-white/[0.08] text-slate-400 hover:text-indigo-400 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
         aria-label={collapsed ? "Mở rộng" : "Thu gọn"}
       >
         {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
@@ -86,12 +86,12 @@ export default function Sidebar() {
                 ${collapsed ? "justify-center" : "justify-start gap-3"}
                 ${
                   isActive
-                    ? "bg-gradient-to-r from-indigo-500/10 to-violet-500/10 text-indigo-300 font-medium border border-indigo-500/10"
-                    : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03] font-medium"
+                    ? "bg-gradient-to-r from-indigo-500/15 to-violet-500/15 text-indigo-300 font-medium border border-indigo-500/15"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] font-medium"
                 }
               `}
             >
-              <div className={`${isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"} transition-colors duration-200`}>
+              <div className={`${isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"} transition-colors duration-200`}>
                 {item.icon}
               </div>
 

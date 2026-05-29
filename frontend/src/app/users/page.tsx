@@ -90,7 +90,7 @@ export default function UsersPage() {
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#27273a]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#2a3148]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
               {users.map((user) => (
                 <div
                   key={user.id}
@@ -118,7 +118,7 @@ export default function UsersPage() {
 
                   <div className="col-span-4 flex justify-end pr-6">
                     {user.role === "admin" ? (
-                      <span className="text-[10px] text-slate-400 font-bold bg-[#1e1e2d]/60 px-2.5 py-1 rounded-lg select-none">
+                      <span className="text-[10px] text-slate-400 font-bold bg-[#222840]/60 px-2.5 py-1 rounded-lg select-none">
                         Quản trị viên tối cao
                       </span>
                     ) : (
@@ -126,10 +126,10 @@ export default function UsersPage() {
                         value={user.role}
                         disabled={updating === user.id}
                         onChange={(e) => handleRoleChange(user, e.target.value)}
-                        className="w-full max-w-[160px] px-3.5 py-1.5 rounded-xl border border-white/10 bg-[#1e1e2d]/60 text-slate-100 text-xs font-bold shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
+                        className="w-full max-w-[160px] px-3.5 py-1.5 rounded-xl border border-white/10 bg-[#222840]/60 text-slate-100 text-xs font-bold shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
                       >
-                        <option value="nguoi_dung" className="bg-[#27273a] text-slate-100">Người dùng</option>
-                        <option value="can_bo" className="bg-[#27273a] text-slate-100">Cán bộ</option>
+                        <option value="nguoi_dung" className="bg-[#2a3148] text-slate-100">Người dùng</option>
+                        <option value="can_bo" className="bg-[#2a3148] text-slate-100">Cán bộ</option>
                       </select>
                     )}
                   </div>
