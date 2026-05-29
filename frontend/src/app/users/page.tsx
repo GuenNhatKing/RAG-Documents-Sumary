@@ -1,16 +1,87 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getUsers, updateUserRole, UserItem } from "@/lib/users";
 import Pagination from "@/components/Pagination";
-import { Users, ShieldAlert, Loader2 } from "lucide-react";
+import { Users, ShieldAlert, Loader2, ChevronDown } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   can_bo: "Cán bộ",
   nguoi_dung: "Người dùng",
 };
+
+const ROLE_OPTIONS = [
+  { value: "nguoi_dung", label: "Người dùng" },
+  { value: "can_bo", label: "Cán bộ" },
+];
+
+function RoleDropdown({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const handleScroll = () => setOpen(false);
+    document.addEventListener("mousedown", handle);
+    document.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handle);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative w-full max-w-[160px]">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-white/10 bg-[#222840]/60 text-slate-100 text-xs font-bold transition-all outline-none hover:border-white/20 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
+      >
+        <span>{ROLE_LABELS[value] ?? value}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div style={dropdownStyle} className="rounded-xl border border-white/10 bg-[#1a1f2e] shadow-2xl overflow-hidden">
+          {ROLE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full text-left px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                opt.value === value
+                  ? "bg-indigo-500/15 text-indigo-400"
+                  : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -122,15 +193,11 @@ export default function UsersPage() {
                         Quản trị viên tối cao
                       </span>
                     ) : (
-                      <select
+                      <RoleDropdown
                         value={user.role}
                         disabled={updating === user.id}
-                        onChange={(e) => handleRoleChange(user, e.target.value)}
-                        className="w-full max-w-[160px] px-3.5 py-1.5 rounded-xl border border-white/10 bg-[#222840]/60 text-slate-100 text-xs font-bold shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
-                      >
-                        <option value="nguoi_dung" className="bg-[#2a3148] text-slate-100">Người dùng</option>
-                        <option value="can_bo" className="bg-[#2a3148] text-slate-100">Cán bộ</option>
-                      </select>
+                        onChange={(val) => handleRoleChange(user, val)}
+                      />
                     )}
                   </div>
                 </div>

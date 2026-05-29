@@ -17,9 +17,9 @@ import {
   Layers,
   ChevronRight,
   Clock,
-  Plus,
   Bot,
-  User
+  User,
+  SmartToy
 } from "lucide-react";
 import {
   getSessions,
@@ -197,9 +197,7 @@ export default function ChatMasterPage() {
       <ProtectedRoute>
         <div className="flex items-center justify-center h-full">
           <div className="flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="animate-spin h-10 w-10 border-[3px] border-indigo-500/30 border-t-indigo-500 rounded-full" />
-            </div>
+            <div className="animate-spin h-10 w-10 border-[3px] border-indigo-500/30 border-t-indigo-500 rounded-full" />
             <p className="text-sm text-slate-400">Đang tải dữ liệu...</p>
           </div>
         </div>
@@ -221,7 +219,7 @@ export default function ChatMasterPage() {
             </p>
           </div>
 
-          {/* Search Bar */}
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
@@ -238,9 +236,7 @@ export default function ChatMasterPage() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-4 h-4 text-indigo-400" />
-                <h2 className="text-sm font-semibold text-slate-300">
-                  Gần đây
-                </h2>
+                <h2 className="text-sm font-semibold text-slate-300">Gần đây</h2>
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.04] text-slate-500">
                   {Math.min(sessions.length, 9)}
                 </span>
@@ -261,7 +257,6 @@ export default function ChatMasterPage() {
                       <button
                         onClick={(e) => handleDeleteSession(session.id, e)}
                         className="absolute top-2.5 right-2.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all cursor-pointer"
-                        title="Xóa phiên"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -282,24 +277,20 @@ export default function ChatMasterPage() {
             </section>
           )}
 
-          {/* Documents */}
+          {/* Document Library */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-sm font-semibold text-slate-300">
-                Thư viện tài liệu
-              </h2>
+              <h2 className="text-sm font-semibold text-slate-300">Thư viện tài liệu</h2>
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.04] text-slate-500">
                 {filteredDocs.length}
               </span>
             </div>
             {filteredDocs.length === 0 ? (
-              <div               className="text-center py-16 rounded-xl border border-dashed border-white/[0.06] bg-[#222840]/20">
+              <div className="text-center py-16 rounded-xl border border-dashed border-white/[0.06] bg-[#222840]/20">
                 <FileText className="mx-auto h-8 w-8 text-slate-600 mb-3" />
                 <p className="text-sm text-slate-500">
-                  {searchQuery
-                    ? "Không tìm thấy tài liệu nào khớp"
-                    : "Chưa có tài liệu nào sẵn sàng"}
+                  {searchQuery ? "Không tìm thấy tài liệu nào khớp" : "Chưa có tài liệu nào sẵn sàng"}
                 </p>
               </div>
             ) : (
@@ -310,21 +301,17 @@ export default function ChatMasterPage() {
                     href={`/chat/${doc.id}`}
                     className="group rounded-xl border border-white/[0.06] bg-[#222840]/40 p-4 hover:border-indigo-500/30 hover:bg-[#222840]/70 transition-all duration-200 flex items-start gap-3"
                   >
-                    <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg transition-all duration-200">
+                    <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
                       <FileText className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-200 truncate text-sm">
-                        {doc.filename}
-                      </h3>
+                      <h3 className="font-semibold text-slate-200 truncate text-sm">{doc.filename}</h3>
                       <div className="flex items-center justify-between mt-2">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                            doc.status === "processed"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-amber-500/10 text-amber-400"
-                          }`}
-                        >
+                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          doc.status === "processed"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-amber-500/10 text-amber-400"
+                        }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${doc.status === "processed" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
                           {doc.status === "processed" ? "Sẵn sàng" : "Đang xử lý"}
                         </span>
@@ -341,80 +328,57 @@ export default function ChatMasterPage() {
         </div>
 
         {/* RIGHT: Global Chat Panel */}
-        <div className="w-[400px] flex-shrink-0 flex flex-col bg-[#1a1f2e]/80 backdrop-blur-md border-l border-white/[0.06]">
-          {/* Header */}
-          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/15">
-              <Sparkles className="w-4 h-4" />
+        <div className="w-[400px] flex-shrink-0 flex flex-col glass-panel border-l border-white/[0.06]">
+          {/* Chat Header */}
+          <header className="h-14 flex items-center px-4 border-b border-white/[0.05] bg-[#2a3148]/30">
+            <span className="text-sm font-semibold text-slate-200">Tra Cứu Tổng Hợp</span>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="text-[9px] text-indigo-400 font-bold uppercase">RAG Active</span>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-200">
-                Tra Cứu Tổng Hợp
-              </h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Hỏi đáp chéo trên toàn bộ kho tài liệu
-              </p>
-            </div>
-          </div>
+          </header>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
             {globalMessages.length === 0 && !globalLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
                   <Layers className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-300">
-                  Hỏi đáp ngữ cảnh chéo
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-300">Hỏi đáp ngữ cảnh chéo</h3>
                 <p className="text-xs text-slate-500 mt-1.5 max-w-[220px] leading-relaxed">
-                  Nhập câu hỏi để tìm kiếm thông tin đối chiếu trên tất cả tài liệu của bạn.
+                  Nhập câu hỏi để tìm kiếm thông tin đối chiếu trên tất cả tài liệu.
                 </p>
               </div>
             )}
 
             {globalMessages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div className={`flex gap-2.5 max-w-[90%] ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-md"
-                      : "bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-md"
-                  }`}>
-                    {msg.role === "user" ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+              msg.role === "assistant" ? (
+                <div key={idx} className="flex flex-col items-start gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Bot className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
                   </div>
-                  <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-indigo-500 to-blue-500 text-white rounded-tr-sm shadow-lg shadow-indigo-500/15"
-                        : "bg-gradient-to-br from-[#2a3148] to-[#222840] border border-white/[0.06] text-slate-200 rounded-tl-sm"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-slate-300">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    )}
+                  <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-indigo-500/40">
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-slate-200">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
 
                     {msg.relevantDocs && msg.relevantDocs.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-white/20">
-                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-white/70 mb-2">
-                          <BookOpen className="w-3 h-3" />
-                          <span>Tài liệu tham khảo:</span>
-                        </div>
-                        <div className="flex flex-col gap-1">
+                      <div className="mt-3 pt-2.5 border-t border-white/[0.05]">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[9px] font-medium text-slate-500">Tài liệu tham khảo:</span>
                           {msg.relevantDocs.map((doc) => (
                             <Link
-                                key={doc.doc_id}
-                                href={`/chat/${doc.doc_id}`}
-                                className="text-[11px] rounded-lg px-2.5 py-1.5 transition-all block truncate bg-white/10 hover:bg-white/20 text-white/90"
+                              key={doc.doc_id}
+                              href={`/chat/${doc.doc_id}`}
+                              className="text-[10px] px-2.5 py-1 rounded-full bg-[#1a1f2e] border border-white/[0.06] text-slate-400 hover:text-indigo-400 transition-all block truncate"
                             >
                               {docNameMap.get(doc.doc_id) || doc.filename}
                             </Link>
@@ -424,16 +388,11 @@ export default function ChatMasterPage() {
                     )}
 
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2.5 pt-2 border-t border-white/[0.06]">
-                        <p className="text-[10px] font-medium text-slate-500 mb-1.5">
-                          Nguồn đối chiếu:
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
+                      <div className="mt-2.5 pt-2 border-t border-white/[0.05]">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[9px] font-medium text-slate-500 mr-1">Nguồn:</span>
                           {msg.sources.map((src, sIdx) => (
-                            <span
-                              key={sIdx}
-                              className="inline-block text-[10px] rounded-lg px-2 py-0.5 bg-white/[0.05] text-slate-400 border border-white/[0.06]"
-                            >
+                            <span key={sIdx} className="source-chip">
                               {(() => {
                                 const srcId = src.file.replace(/\.md$/i, "");
                                 const realName = docNameMap.get(srcId);
@@ -446,21 +405,28 @@ export default function ChatMasterPage() {
                     )}
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div key={idx} className="flex flex-col items-end gap-1">
+                  <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-indigo-500/10">
+                    <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              )
             ))}
 
             {globalLoading && (
-              <div className="flex justify-start">
-                  <div className="flex gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 text-white shadow-md flex items-center justify-center flex-shrink-0 mt-1">
+              <div className="flex flex-col items-start gap-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
-                  <div className="bg-gradient-to-br from-[#2a3148] to-[#222840] border border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </div>
+                  <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
+                </div>
+                <div className="ai-bubble rounded-2xl rounded-tl-none px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -469,24 +435,29 @@ export default function ChatMasterPage() {
             <div ref={globalEndRef} />
           </div>
 
-          {/* Input Panel */}
-          <div className="p-4 border-t border-white/[0.06]">
-            <div className="flex items-center gap-2 bg-[#222840] border border-white/[0.06] rounded-xl px-3 py-1.5 focus-within:border-indigo-500/40 transition-all">
-              <input
-                type="text"
-                value={globalQuestion}
-                onChange={(e) => setGlobalQuestion(e.target.value)}
-                onKeyDown={handleGlobalKeyDown}
-                placeholder="Nhập câu hỏi tại đây..."
-                className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none py-1.5"
-                disabled={globalLoading}
-              />
+          {/* Chat Input */}
+          <div className="px-4 py-3 border-t border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <div className="relative group flex-1">
+                <div className="chat-input flex items-center gap-2 px-4 py-1.5">
+                  <MessageSquare className="w-4 h-4 text-indigo-400/60 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={globalQuestion}
+                    onChange={(e) => setGlobalQuestion(e.target.value)}
+                    onKeyDown={handleGlobalKeyDown}
+                    placeholder="Đặt câu hỏi về tài liệu..."
+                    className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none py-1"
+                    disabled={globalLoading}
+                  />
+                </div>
+              </div>
               <button
                 onClick={handleGlobalSend}
                 disabled={globalLoading || !globalQuestion.trim()}
-                className="p-2 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                className="send-btn"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>
