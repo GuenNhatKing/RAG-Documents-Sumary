@@ -4,7 +4,7 @@ import re
 from typing import List, Dict, Any
 from openai import OpenAI
 from app.env import load_backend_env
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential, retry_if_exception_type
 
 load_backend_env()
 
@@ -105,8 +105,8 @@ def _find_node_and_boundary(tree_data: Any, target_id: str) -> Dict[str, Any]:
 
 
 @retry(
-    stop=stop_after_attempt(12),
-    wait=wait_fixed(30),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
     retry=retry_if_exception_type(Exception),
     reraise=True,
 )
@@ -149,6 +149,29 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     return result
 
 
+def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0) -> str:
+    """Chuyển đổi cây đã được chuẩn hóa thành dạng outline thụt lề bằng văn bản gọn nhẹ."""
+    lines = []
+    indent = "  " * indent_level
+    for node in nodes:
+        node_id = node.get("id")
+        title = node.get("title", "")
+        summary = node.get("summary", "")
+        
+        line = f"{indent}- [{node_id}] {title}"
+        if summary:
+            # Rút gọn khoảng trắng thừa trong tóm tắt để giảm kích thước token
+            clean_summary = " ".join(summary.split())
+            line += f": {clean_summary}"
+          
+        lines.append(line)
+        
+        if "children" in node and node["children"]:
+            lines.append(_tree_to_text_outline(node["children"], indent_level + 1))
+            
+    return "\n".join(lines)
+
+
 def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
     """Task 2.1: Duyệt cây bằng Reasoning."""
     if isinstance(tree_data, dict) and "structure" in tree_data:
@@ -163,15 +186,16 @@ def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
         ]
     }
 
-    prompt = f"""You are a document navigation expert. Find nodes likely to contain the answer.
+    prompt = f"""You are a document navigation expert. Find the IDs of the nodes that are most likely to contain the answer to the user's question.
 
 Question: {query}
 
-Tree structure:
-{json.dumps(normalized_tree, indent=2, ensure_ascii=False)}
+Tree structure outline:
+{_tree_to_text_outline(normalized_tree["nodes"])}
 
-Return only JSON:
-{{"thinking": "<reasoning>", "node_list": ["id_1", "id_2"]}}"""
+Return only a JSON object with the "node_list" key containing the list of relevant node IDs.
+Example: {{"node_list": ["id_1", "id_2"]}}
+Do not include any explanations, thinking process, or other keys. Keep the response as short as possible."""
 
     try:
         result = _call_reasoning_llm(prompt)

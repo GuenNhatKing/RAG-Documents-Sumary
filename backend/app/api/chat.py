@@ -311,25 +311,42 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
         # Build context from top docs
         context_parts = []
         from app.models import Document
+        import concurrent.futures
+
+        # Query documents from Database in main thread for thread-safety
+        docs_to_process = []
         for doc_info in relevant_docs[:3]:
             doc_id = doc_info["doc_id"]
             doc = db.query(Document).filter(Document.id == doc_id).first()
-            if not doc or not doc.json_tree_path or not doc.markdown_path:
-                continue
-            json_path = doc.json_tree_path
-            markdown_path = doc.markdown_path
-            if not os.path.exists(json_path) or not os.path.exists(markdown_path):
-                continue
+            if doc and doc.json_tree_path and doc.markdown_path:
+                if os.path.exists(doc.json_tree_path) and os.path.exists(doc.markdown_path):
+                    docs_to_process.append({
+                        "filename": doc_info["filename"],
+                        "json_path": doc.json_tree_path,
+                        "markdown_path": doc.markdown_path,
+                        "question": req.question
+                    })
+
+        def process_doc_thread(doc_item: dict) -> Optional[str]:
             try:
-                with open(json_path, 'r', encoding='utf-8') as f:
+                with open(doc_item["json_path"], 'r', encoding='utf-8') as f:
                     tree_data = json.load(f)
-                node_list = reasoning_search_tree(tree_data, req.question)
+                node_list = reasoning_search_tree(tree_data, doc_item["question"])
                 if node_list:
-                    ctx = build_context_from_markdown(tree_data, node_list, markdown_path)
+                    ctx = build_context_from_markdown(tree_data, node_list, doc_item["markdown_path"])
                     if ctx:
-                        context_parts.append(f"=== Tài liệu: {doc_info['filename']} ===\n{ctx}")
-            except Exception:
-                continue
+                        return f"=== Tài liệu: {doc_item['filename']} ===\n{ctx}"
+            except Exception as e:
+                print(f"Error processing doc {doc_item['filename']} in thread: {e}", flush=True)
+            return None
+
+        if docs_to_process:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(docs_to_process)) as executor:
+                # executor.map preserves the original order of items
+                thread_results = list(executor.map(process_doc_thread, docs_to_process))
+                for res in thread_results:
+                    if res:
+                        context_parts.append(res)
 
         combined_context = "\n\n".join(context_parts)
 
