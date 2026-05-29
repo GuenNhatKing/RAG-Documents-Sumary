@@ -143,14 +143,22 @@ class TextRecognizer:
         #config['weights'] = r"vietocr\weight\vgg_transformer.pth" 
 
         config['cnn']['pretrained'] = False
-        config['device'] = 'cpu'
-        self.detector = Predictor(config)
+        
+        # Check GPU (CUDA) availability and fallback to CPU if not found
+        if torch.cuda.is_available():
+            dev = f"cuda:{device_id}" if device_id is not None else "cuda"
+            config['device'] = dev
+            logging.info(f"TextRecognizer uses GPU: {dev}")
+        else:
+            config['device'] = 'cpu'
+            logging.info("TextRecognizer uses CPU. Optimizing thread settings...")
+            # Optimize CPU threads for PyTorch to match logical processor count
+            import multiprocessing
+            logical_cores = multiprocessing.cpu_count()
+            if torch.get_num_threads() < logical_cores:
+                torch.set_num_threads(logical_cores)
 
-        # Optimize CPU threads for PyTorch to match logical processor count
-        import multiprocessing
-        logical_cores = multiprocessing.cpu_count()
-        if torch.get_num_threads() < logical_cores:
-            torch.set_num_threads(logical_cores)
+        self.detector = Predictor(config)
 
     def __call__(self, img_list):
         if not img_list:
