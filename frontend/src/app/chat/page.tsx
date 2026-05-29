@@ -279,8 +279,8 @@ export default function ChatMasterPage() {
                           Cross-Document
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-700 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-700" />
                           Tài liệu riêng
                         </span>
                       )}
@@ -334,10 +334,10 @@ export default function ChatMasterPage() {
                       <div className="flex items-center justify-between mt-2">
                         <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                           doc.status === "processed"
-                            ? "bg-emerald-500/10 text-emerald-400"
+                            ? "bg-emerald-500/10 text-emerald-700"
                             : "bg-amber-500/10 text-amber-400"
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${doc.status === "processed" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${doc.status === "processed" ? "bg-emerald-700" : "bg-amber-400 animate-pulse"}`} />
                           {doc.status === "processed" ? "Sẵn sàng" : "Đang xử lý"}
                         </span>
                         <span className="text-[10px] text-emerald-400 dark:text-indigo-400 font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -360,12 +360,7 @@ export default function ChatMasterPage() {
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-semibold text-primary">Tra Cứu Tổng Hợp</span>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 dark:bg-indigo-500/10 rounded-full border border-emerald-500/20 dark:border-indigo-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-indigo-400 animate-pulse" />
-                <span className="text-[9px] text-emerald-400 dark:text-indigo-400 font-bold uppercase">RAG Active</span>
-              </div>
-            </div>
+
           </header>
 
           {/* Messages */}

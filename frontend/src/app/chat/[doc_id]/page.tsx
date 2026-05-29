@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SessionList from "@/components/SessionList";
-import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
+import DocumentViewerClient, { ViewMode } from "@/app/documents/[doc_id]/view/viewer-client";
 import {
   Send,
   FileText,
@@ -19,8 +19,7 @@ import {
   Bot,
   User,
   Plus,
-  ZoomIn,
-  Download,
+  Eye,
   Menu
 } from "lucide-react";
 import { ChatMessage, getMessages, askQuestion, summarizeDocument, SummaryLength, SUMMARY_LENGTH_OPTIONS } from "@/lib/chat";
@@ -60,6 +59,7 @@ export default function ChatPage({ params }: PageProps) {
   const [docLoading, setDocLoading] = useState(true);
   const [docFilename, setDocFilename] = useState(doc_id);
   const [showSummaryMenu, setShowSummaryMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("md");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -243,12 +243,28 @@ export default function ChatPage({ params }: PageProps) {
                 <span className="sm:hidden">Tài liệu</span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <button className="p-1.5 rounded-lg text-muted hover:text-secondary hover:bg-tertiary transition-all cursor-pointer">
-                <ZoomIn className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setViewMode("md")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "md"
+                    ? "bg-gradient-to-r from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 text-white shadow-sm shadow-emerald-500/20 dark:shadow-indigo-500/20"
+                    : "border border-theme bg-secondary text-muted hover:text-secondary hover:bg-tertiary hover:border-theme-accent"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Markdown
               </button>
-              <button className="p-1.5 rounded-lg text-muted hover:text-secondary hover:bg-tertiary transition-all cursor-pointer">
-                <Download className="w-4 h-4" />
+              <button
+                onClick={() => setViewMode("raw")}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "raw"
+                    ? "bg-gradient-to-r from-emerald-500 dark:from-indigo-500 to-emerald-600 dark:to-indigo-600 text-white shadow-sm shadow-emerald-500/20 dark:shadow-indigo-500/20"
+                    : "border border-theme bg-secondary text-muted hover:text-secondary hover:bg-tertiary hover:border-theme-accent"
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                File gốc
               </button>
             </div>
           </header>
@@ -259,7 +275,7 @@ export default function ChatPage({ params }: PageProps) {
                 <Loader2 className="animate-spin h-8 w-8 text-emerald-400 dark:text-indigo-400" />
               </div>
             ) : (
-              <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} />
+              <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} viewMode={viewMode} onViewModeChange={setViewMode} />
             )}
           </div>
         </div>
@@ -269,12 +285,7 @@ export default function ChatPage({ params }: PageProps) {
           {/* Chat Header */}
           <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
             <span className="text-sm font-semibold text-primary">Trợ lý Phân tích AI</span>
-            <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 dark:bg-indigo-500/10 rounded-full border border-emerald-500/20 dark:border-indigo-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-indigo-400 animate-pulse" />
-                <span className="text-[9px] text-emerald-400 dark:text-indigo-400 font-bold uppercase tracking-tight">RAG Active</span>
-              </div>
-            </div>
+
           </header>
 
           {/* Messages */}

@@ -104,14 +104,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {!collapsed && (
-        <div className="p-2.5 m-2 rounded-lg bg-sidebar-active border border-emerald-500/15 dark:border-indigo-500/15">
-          <p className="text-[9px] uppercase font-semibold text-center tracking-widest text-emerald-500/50 dark:text-indigo-500/50 dark:text-emerald-400/50 dark:text-indigo-400/50">
-            DocAI System
-          </p>
-        </div>
-      )}
     </aside>
   );
 }
