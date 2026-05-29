@@ -6,6 +6,11 @@ import Sidebar from "@/components/Sidebar";
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
+  const isAuthRoute = pathname === "/login" || pathname === "/register";
+
+  if (isAuthRoute) {
+    return <main className="flex-1 overflow-y-auto">{children}</main>;
+  }
 
   if (isChatRoute) {
     return (
