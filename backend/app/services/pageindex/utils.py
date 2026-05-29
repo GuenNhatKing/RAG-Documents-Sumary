@@ -38,11 +38,18 @@ def llm_completion(model, prompt, chat_history=None, return_finish_reason=False)
     messages = list(chat_history) + [{"role": "user", "content": prompt}] if chat_history else [{"role": "user", "content": prompt}]
     for i in range(max_retries):
         try:
-            response = litellm.completion(
-                model=model,
-                messages=messages,
-                temperature=0,
-            )
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0,
+            }
+            api_base = os.getenv("LLM_BASE_URL")
+            api_key = os.getenv("LLM_API_KEY")
+            if api_base:
+                kwargs["api_base"] = api_base
+            if api_key:
+                kwargs["api_key"] = api_key
+            response = litellm.completion(**kwargs)
             content = response.choices[0].message.content
             if return_finish_reason:
                 finish_reason = "max_output_reached" if response.choices[0].finish_reason == "length" else "finished"
@@ -68,11 +75,18 @@ async def llm_acompletion(model, prompt):
     messages = [{"role": "user", "content": prompt}]
     for i in range(max_retries):
         try:
-            response = await litellm.acompletion(
-                model=model,
-                messages=messages,
-                temperature=0,
-            )
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0,
+            }
+            api_base = os.getenv("LLM_BASE_URL")
+            api_key = os.getenv("LLM_API_KEY")
+            if api_base:
+                kwargs["api_base"] = api_base
+            if api_key:
+                kwargs["api_key"] = api_key
+            response = await litellm.acompletion(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
             print('************* Retrying *************')
@@ -724,6 +738,22 @@ class ConfigLoader:
 
         self._validate_keys(user_dict)
         merged = {**self._default_dict, **user_dict}
+
+        # Override with environment variables dynamically if present
+        env_model = os.getenv("LLM_MODEL")
+        if env_model:
+            model_value = env_model
+            base_url = os.getenv("LLM_BASE_URL", "")
+            api_key = os.getenv("LLM_API_KEY", "")
+            
+            # Auto-prepend provider prefix if needed for LiteLLM routing
+            is_groq = "groq" in base_url.lower() or api_key.startswith("gsk_")
+            if is_groq and not model_value.startswith("groq/"):
+                model_value = f"groq/{model_value}"
+                
+            merged["model"] = model_value
+            merged["retrieve_model"] = model_value
+
         return config(**merged)
 
 def create_node_mapping(tree):
