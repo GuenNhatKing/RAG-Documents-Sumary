@@ -265,6 +265,7 @@ export default function ReviewPage() {
         {status === "ready" && (
           <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[500px]">
             <textarea
+              name="markdown_editor"
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
               className={`${showPdf ? "md:w-1/2" : "w-full"} p-5 border border-theme rounded-2xl bg-tertiary backdrop-blur-sm text-primary placeholder:text-muted shadow-inner font-mono text-sm resize-y focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500/40 transition-all`}

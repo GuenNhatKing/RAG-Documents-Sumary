@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import DocumentViewerClient from "./viewer-client";
+import DocumentViewerClient, { ViewMode } from "./viewer-client";
 import { API, getToken } from "@/lib/auth";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Eye } from "lucide-react";
 
 export default function DocumentViewPage() {
   const params = useParams<{ doc_id: string }>();
@@ -15,6 +15,7 @@ export default function DocumentViewPage() {
 
   const [markdown, setMarkdown] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("md");
 
   useEffect(() => {
     async function load() {
@@ -77,21 +78,47 @@ export default function DocumentViewPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="flex-shrink-0 px-5 py-3.5 bg-tertiary backdrop-blur-md border-b border-theme">
+    <div className="flex flex-col bg-transparent" style={{ height: 'calc(100dvh - 7rem)' }}>
+      <div className="sticky top-0 z-20 flex items-center gap-2 px-5 py-3 bg-tertiary/80 backdrop-blur-md border-b border-theme">
         <button
           onClick={() => router.push("/files")}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme bg-secondary hover:bg-tertiary hover:border-theme-accent text-secondary hover:text-primary transition-all text-xs font-bold cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Quay lại danh sách
+          Quay lại
         </button>
+        <div className="ml-auto flex items-center gap-1.5">
+          <button
+            onClick={() => setViewMode("md")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "md"
+                ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/20"
+                : "border border-theme bg-secondary text-secondary hover:bg-tertiary hover:border-theme-accent"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Xem Markdown
+          </button>
+          <button
+            onClick={() => setViewMode("raw")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "raw"
+                ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/20"
+                : "border border-theme bg-secondary text-secondary hover:bg-tertiary hover:border-theme-accent"
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Xem file gốc
+          </button>
+        </div>
       </div>
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col">
         <DocumentViewerClient
           markdown={markdown}
           highlight={highlight}
           docId={docId}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
       </div>
     </div>

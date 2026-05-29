@@ -187,6 +187,7 @@ export default function FilesPage() {
                         <div className="relative group max-w-sm flex items-center">
                           <input
                             type="text"
+                            name="rename"
                             value={editingName}
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}

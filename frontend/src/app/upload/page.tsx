@@ -287,6 +287,7 @@ export default function UploadPage() {
                     </div>
                   ) : (
                     <textarea
+                      name="markdown_editor"
                       value={markdown}
                       onChange={(e) => setMarkdown(e.target.value)}
                       className="w-full h-[520px] p-4.5 rounded-2xl border border-theme bg-tertiary text-primary font-mono text-xs resize-y shadow-inner transition-all duration-350 outline-none focus:border-indigo-500/40 focus:ring-4 focus:ring-indigo-500/15 leading-relaxed"

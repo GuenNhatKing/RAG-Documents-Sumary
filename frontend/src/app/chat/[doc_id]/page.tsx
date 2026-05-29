@@ -253,7 +253,7 @@ export default function ChatPage({ params }: PageProps) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             {docLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="animate-spin h-8 w-8 text-indigo-400" />
@@ -375,6 +375,7 @@ export default function ChatPage({ params }: PageProps) {
                   <input
                     ref={inputRef}
                     type="text"
+                    name="doc_question"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={handleKeyDown}

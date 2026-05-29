@@ -209,24 +209,36 @@ export default function ChatMasterPage() {
       <div className="flex h-full w-full overflow-hidden">
         {/* LEFT: Documents + Sessions */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-primary tracking-tight">
-              Hỏi đáp tài liệu
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              Lựa chọn tài liệu để bắt đầu phân tích hoặc hỏi đáp thông minh.
-            </p>
+          {/* Header */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 dark:from-indigo-500/8 dark:to-purple-500/5 border border-theme-light p-5 sm:p-6">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+            <div className="relative">
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/15">
+                  <MessageSquare className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-primary tracking-tight">
+                    Hỏi đáp tài liệu
+                  </h1>
+                  <p className="text-xs text-muted mt-0.5">
+                    Lựa chọn tài liệu để bắt đầu phân tích hoặc hỏi đáp thông minh.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <div className="relative group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors duration-200" />
             <input
               type="text"
+              name="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm tài liệu theo tên..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-theme-light bg-secondary text-primary placeholder-slate-500 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 text-sm transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-theme bg-secondary text-primary placeholder-muted outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 text-sm transition-all duration-200"
             />
           </div>
 
@@ -234,13 +246,15 @@ export default function ChatMasterPage() {
           {sessions.length > 0 && (
             <section>
               <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-indigo-400" />
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                </div>
                 <h2 className="text-sm font-semibold text-secondary">Gần đây</h2>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-tertiary text-secondary">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/15">
                   {Math.min(sessions.length, 9)}
                 </span>
               </div>
-              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {sessions.slice(0, 9).map((session) => {
                   const isGlobal = session.doc_id === "__global__";
                   const docName = isGlobal
@@ -251,7 +265,7 @@ export default function ChatMasterPage() {
                       key={session.id}
                       href={isGlobal ? "/chat" : `/chat/${session.doc_id}?session=${session.id}`}
                       onClick={(e) => handleSessionClick(session, e)}
-                      className="group relative rounded-xl border border-theme-light bg-secondary p-4 hover:border-theme-accent hover:bg-secondary transition-all duration-200"
+                      className="group relative rounded-xl border border-theme-light bg-secondary p-4 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-200"
                     >
                       <button
                         onClick={(e) => handleDeleteSession(session.id, e)}
@@ -259,9 +273,17 @@ export default function ChatMasterPage() {
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                      <span className="text-[10px] font-medium text-indigo-400/70 block truncate pr-5 uppercase tracking-wider">
-                        {isGlobal ? "Cross-Document" : "Tài liệu riêng"}
-                      </span>
+                      {isGlobal ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-gradient-to-r from-violet-500/15 to-purple-500/15 text-violet-400 border border-violet-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                          Cross-Document
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-400 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Tài liệu riêng
+                        </span>
+                      )}
                       <h3 className="font-semibold text-primary truncate pr-5 mt-1 text-sm">
                         {session.title || "Cuộc trò chuyện"}
                       </h3>
@@ -279,28 +301,32 @@ export default function ChatMasterPage() {
           {/* Document Library */}
           <section>
             <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-4 h-4 text-indigo-400" />
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
               <h2 className="text-sm font-semibold text-secondary">Thư viện tài liệu</h2>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-tertiary text-secondary">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">
                 {filteredDocs.length}
               </span>
             </div>
             {filteredDocs.length === 0 ? (
               <div className="text-center py-16 rounded-xl border border-dashed border-theme-light bg-secondary">
-                <FileText className="mx-auto h-8 w-8 text-slate-600 mb-3" />
+                <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center mb-3">
+                  <FileText className="w-6 h-6 text-emerald-400/60" />
+                </div>
                 <p className="text-sm text-muted">
                   {searchQuery ? "Không tìm thấy tài liệu nào khớp" : "Chưa có tài liệu nào sẵn sàng"}
                 </p>
               </div>
             ) : (
-              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredDocs.map((doc) => (
                   <Link
                     key={doc.id}
                     href={`/chat/${doc.id}`}
-                    className="group rounded-xl border border-theme-light bg-secondary p-4 hover:border-theme-accent hover:bg-secondary transition-all duration-200 flex items-start gap-3"
+                    className="group rounded-xl border border-theme-light bg-secondary p-4 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-0.5 transition-all duration-200 flex items-start gap-3"
                   >
-                    <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                    <div className="p-2.5 bg-gradient-to-br from-emerald-500/15 to-teal-500/15 text-emerald-400 rounded-lg group-hover:scale-105 transition-transform duration-200">
                       <FileText className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -329,7 +355,10 @@ export default function ChatMasterPage() {
         {/* RIGHT: Global Chat Panel */}
         <div className="w-[400px] flex-shrink-0 flex flex-col glass-panel border-l border-theme-light">
           {/* Chat Header */}
-          <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
+          <header className="h-14 flex items-center px-4 border-b border-theme-light bg-gradient-to-r from-indigo-500/5 to-purple-500/5 dark:from-indigo-500/8 dark:to-purple-500/5">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-2.5 shadow-sm shadow-indigo-500/20">
+              <Sparkles className="w-3 h-3 text-white" />
+            </div>
             <span className="text-sm font-semibold text-primary">Tra Cứu Tổng Hợp</span>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
@@ -343,8 +372,8 @@ export default function ChatMasterPage() {
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
             {globalMessages.length === 0 && !globalLoading && (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
-                  <Layers className="w-5 h-5" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/15 to-purple-500/15 border border-indigo-500/10 flex items-center justify-center mb-4 shadow-inner shadow-indigo-500/5">
+                  <Layers className="w-6 h-6 text-indigo-400/70" />
                 </div>
                 <h3 className="text-sm font-semibold text-secondary">Hỏi đáp ngữ cảnh chéo</h3>
                 <p className="text-xs text-muted mt-1.5 max-w-[220px] leading-relaxed">
@@ -406,7 +435,13 @@ export default function ChatMasterPage() {
                 </div>
               ) : (
                 <div key={idx} className="flex flex-col items-end gap-1">
-                  <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-indigo-500/10">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-medium text-indigo-400">Bạn</span>
+                    <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                      <User className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                  <div className="max-w-[85%] rounded-2xl rounded-tr-none px-4 py-3 bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20">
                     <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 </div>
@@ -442,6 +477,7 @@ export default function ChatMasterPage() {
                   <MessageSquare className="w-4 h-4 text-indigo-400/60 flex-shrink-0" />
                   <input
                     type="text"
+                    name="global_question"
                     value={globalQuestion}
                     onChange={(e) => setGlobalQuestion(e.target.value)}
                     onKeyDown={handleGlobalKeyDown}
@@ -454,9 +490,9 @@ export default function ChatMasterPage() {
               <button
                 onClick={handleGlobalSend}
                 disabled={globalLoading || !globalQuestion.trim()}
-                className="send-btn"
+                className="send-btn group"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </div>
