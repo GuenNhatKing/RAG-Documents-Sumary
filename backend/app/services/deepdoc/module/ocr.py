@@ -146,15 +146,29 @@ class TextRecognizer:
         config['device'] = 'cpu'
         self.detector = Predictor(config)
 
+        # Optimize CPU threads for PyTorch to match logical processor count
+        import multiprocessing
+        logical_cores = multiprocessing.cpu_count()
+        if torch.get_num_threads() < logical_cores:
+            torch.set_num_threads(logical_cores)
+
     def __call__(self, img_list):
-        results = []
+        if not img_list:
+            return [], 0.0
+
+        pil_imgs = []
         for img in img_list:
             # Ensure PIL Image
             if isinstance(img, np.ndarray):
                 img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            text = self.detector.predict(img)
-            results.append((text, 1.0))
-        return results, 0.0
+            pil_imgs.append(img)
+
+        st = time.time()
+        texts = self.detector.predict_batch(pil_imgs)
+        elapse = time.time() - st
+
+        results = [(text, 1.0) for text in texts]
+        return results, elapse
 
 
 class TextDetector:
