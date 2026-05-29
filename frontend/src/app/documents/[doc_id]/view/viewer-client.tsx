@@ -103,11 +103,11 @@ export default function DocumentViewerClient({
   const lines = (markdown ?? "").split("\n");
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#1e1e2d] text-slate-200">
       {/* Content area */}
       <div className="flex-1 overflow-auto">
         {viewMode === "md" ? (
-          <main className="bg-white px-10 py-8 text-slate-800">
+          <main className="bg-[#1e1e2d] px-10 py-8 text-slate-350">
             <article className="mx-auto max-w-4xl text-[15px] leading-7">
               {lines.map((line, index) => {
                 const lineNumber = index + 1;
@@ -122,7 +122,7 @@ export default function DocumentViewerClient({
                     id={`line-${lineNumber}`}
                     className={`rounded-md px-2 ${
                       isHighlighted
-                        ? "bg-yellow-100 border-l-4 border-yellow-500"
+                        ? "bg-yellow-500/10 border-l-4 border-yellow-500 text-yellow-300 font-semibold"
                         : ""
                     }`}
                   >
@@ -133,47 +133,47 @@ export default function DocumentViewerClient({
                         remarkPlugins={[remarkGfm]}
                         components={{
                           h1: ({ children }) => (
-                            <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-950">
+                            <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-100">
                               {children}
                             </h1>
                           ),
                           h2: ({ children }) => (
-                            <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-900">
+                            <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-200">
                               {children}
                             </h2>
                           ),
                           h3: ({ children }) => (
-                            <h3 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+                            <h3 className="mt-8 mb-3 text-xl font-bold text-slate-200">
                               {children}
                             </h3>
                           ),
                           h4: ({ children }) => (
-                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-base font-semibold text-emerald-900">
+                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-indigo-500 bg-indigo-500/10 px-3 py-2 text-base font-semibold text-indigo-200">
                               {children}
                             </h4>
                           ),
                           p: ({ children }) => (
-                            <p className="my-2 text-slate-700">
+                            <p className="my-2 text-slate-300">
                               {children}
                             </p>
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-semibold text-slate-900">
+                            <strong className="font-semibold text-slate-100">
                               {children}
                             </strong>
                           ),
                           table: ({ children }) => (
-                            <table className="my-4 w-full border-collapse text-sm">
+                            <table className="my-4 w-full border-collapse text-sm border border-white/10">
                               {children}
                             </table>
                           ),
                           th: ({ children }) => (
-                            <th className="border bg-slate-100 px-3 py-2 text-left font-semibold">
+                            <th className="border border-white/10 bg-[#27273a] px-3 py-2 text-left font-semibold text-slate-200">
                               {children}
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="border px-3 py-2">
+                            <td className="border border-white/10 px-3 py-2 text-slate-300">
                               {children}
                             </td>
                           ),
@@ -189,11 +189,11 @@ export default function DocumentViewerClient({
           </main>
         ) : pdfLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="animate-spin h-8 w-8 border-4 border-emerald-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
           </div>
         ) : pdfError ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-red-500">{pdfError}</p>
+            <p className="text-rose-500 font-bold text-xs">{pdfError}</p>
           </div>
         ) : pdfUrl ? (
           <object
@@ -202,11 +202,11 @@ export default function DocumentViewerClient({
             className="w-full h-full"
           >
             <div className="flex flex-col items-center justify-center h-full gap-3">
-              <p className="text-gray-500">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
+              <p className="text-slate-400 font-bold text-xs">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
               <a
                 href={pdfUrl}
                 download
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                className="px-4 py-2 bg-indigo-650 text-white rounded-xl hover:bg-indigo-550 text-xs font-bold transition-all"
               >
                 Tải file PDF
               </a>
@@ -217,13 +217,13 @@ export default function DocumentViewerClient({
 
       {/* Toggle buttons */}
       {docId && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 border-t border-gray-200">
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-[#27273a]/60 backdrop-blur-md border-t border-white/10">
           <button
             onClick={() => setViewMode("md")}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "md"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+                ? "bg-gradient-to-r from-[#4f46e5] to-[#a855f7] text-white shadow-md shadow-indigo-500/10"
+                : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,10 +233,10 @@ export default function DocumentViewerClient({
           </button>
           <button
             onClick={handleSwitchToRaw}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "raw"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+                ? "bg-gradient-to-r from-[#4f46e5] to-[#a855f7] text-white shadow-md shadow-indigo-500/10"
+                : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

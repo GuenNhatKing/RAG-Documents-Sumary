@@ -7,6 +7,18 @@ import remarkGfm from "remark-gfm";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SessionList from "@/components/SessionList";
 import DocumentViewerClient from "@/app/documents/[doc_id]/view/viewer-client";
+import {
+  Send,
+  FileText,
+  MessageSquare,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  ArrowLeft,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
 import { ChatMessage, getMessages, askQuestion, summarizeDocument, SummaryLength, SUMMARY_LENGTH_OPTIONS } from "@/lib/chat";
 import { API, getToken } from "@/lib/auth";
 import { getDocumentDetail } from "@/lib/documents";
@@ -193,9 +205,6 @@ export default function ChatPage({ params }: PageProps) {
         sources: data.sources.length > 0 ? data.sources : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      setError("Đã xảy ra lỗi khi tóm tắt văn bản.");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -203,10 +212,10 @@ export default function ChatPage({ params }: PageProps) {
 
   return (
     <ProtectedRoute>
-      <div className="flex h-[calc(100vh-64px)] bg-gray-50 -m-4">
+      <div className="flex h-full w-full bg-transparent overflow-hidden">
         {/* Session List Panel */}
         {showSessions && (
-          <div className="w-64 flex-shrink-0 bg-white border-r border-gray-200">
+          <div className="w-64 flex-shrink-0 bg-[#27273a]/60 backdrop-blur-md border-r border-white/10 h-full overflow-hidden flex flex-col">
             <SessionList
               docId={doc_id}
               currentSessionId={sessionId}
@@ -217,24 +226,31 @@ export default function ChatPage({ params }: PageProps) {
         )}
 
         {/* Document Viewer Panel */}
-        <div className="flex-1 flex flex-col border-r border-gray-200 min-w-0">
-          <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-gray-200">
-            <button
-              onClick={() => setShowSessions(!showSessions)}
-              className="p-1 rounded hover:bg-gray-100 text-gray-500"
-              title={showSessions ? "Ẩn phiên" : "Hiện phiên"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </svg>
-            </button>
-            <span className="text-sm text-gray-500">Tài liệu</span>
+        <div className="flex-1 flex flex-col border-r border-white/10 min-w-0 bg-[#1e1e2d]/20 h-full overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-[#27273a]/60 backdrop-blur-md border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSessions(!showSessions)}
+                className="p-1.5 rounded-xl hover:bg-indigo-500/10 text-slate-350 hover:text-indigo-400 transition-colors cursor-pointer"
+                title={showSessions ? "Ẩn danh sách phiên" : "Hiện danh sách phiên"}
+              >
+                {showSessions ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </button>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#27273a] border border-white/10 text-[10px] uppercase font-black tracking-wider text-slate-400 select-none">
+                <FileText className="w-3.5 h-3.5 text-indigo-455" />
+                <span>Nội dung tài liệu</span>
+              </div>
+            </div>
+            <h1 className="text-xs font-black text-slate-100 truncate max-w-xs md:max-w-md" title={docFilename}>
+              {docFilename}
+            </h1>
             <div className="w-8" />
           </div>
-          <div className="flex-1 overflow-auto">
+
+          <div className="flex-1 overflow-hidden">
             {docLoading ? (
               <div className="flex items-center justify-center h-full">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                <Loader2 className="animate-spin h-8 w-8 text-indigo-500" />
               </div>
             ) : (
               <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} />
@@ -243,23 +259,32 @@ export default function ChatPage({ params }: PageProps) {
         </div>
 
         {/* Chat Panel */}
-        <div className="w-[480px] flex-shrink-0 flex flex-col bg-white">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700">
-              {sessionId ? "Cuộc trò chuyện" : "Trò chuyện mới"}
-            </h2>
+        <div className="w-[450px] flex-shrink-0 flex flex-col bg-[#27273a]/60 backdrop-blur-md h-full overflow-hidden">
+          {/* Header */}
+          <div className="px-5 py-4 border-b border-white/10 bg-[#1e1e2d]/40 flex items-start gap-3 select-none">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <MessageSquare className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-slate-100 leading-tight">
+                {sessionId ? "Cuộc trò chuyện" : "Trò chuyện mới"}
+              </h2>
+              <p className="text-[10px] text-slate-500 mt-0.5 font-bold">
+                Truy vấn AI về nội dung tài liệu hiện tại
+              </p>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+          {/* Messages stream */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin scrollbar-thumb-[#27273a]">
             {messages.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="text-gray-300 mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
+              <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-3">
+                  <Sparkles className="w-4.5 h-4.5" />
                 </div>
-                <p className="text-sm text-gray-400">
-                  Đặt câu hỏi về tài liệu này
+                <h3 className="text-[20px] font-bold text-slate-300">Hỏi đáp tài liệu thông minh</h3>
+                <p className="text-[12px] text-slate-550 mt-1 max-w-[220px] leading-relaxed">
+                  Nhập câu hỏi hoặc chọn chức năng <strong>Tóm tắt văn bản</strong> bên dưới để bắt đầu.
                 </p>
               </div>
             )}
@@ -270,39 +295,38 @@ export default function ChatPage({ params }: PageProps) {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`
-                    max-w-[85%] rounded-lg px-3 py-2
-                    ${msg.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                    }
-                  `}
+                  className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs transition-all duration-300 leading-relaxed ${msg.role === "user"
+                    ? "bg-neon-gradient text-white shadow-md shadow-indigo-500/10 rounded-tr-none font-semibold"
+                    : "bg-[#2d2d42] text-slate-100 border border-white/20 shadow-sm rounded-tl-none"
+                    }`}
                 >
                   {msg.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1">
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed font-medium text-[11.5px] text-slate-200">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="whitespace-pre-wrap font-bold">{msg.content}</p>
                   )}
 
                   {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200/50">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Nguồn:</p>
+                    <div className="mt-3 pt-2.5 border-t border-white/5">
+                      <div className="flex items-center gap-1 text-[10px] font-extrabold text-slate-450 mb-2">
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Nguồn tham chiếu:</span>
+                      </div>
                       <div className="flex flex-wrap gap-1">
                         {msg.sources.map((src, sIdx) => (
                           <button
                             key={sIdx}
                             onClick={() => handleSourceClick(src)}
-                            className={`inline-block text-xs rounded px-1.5 py-0.5 transition-colors cursor-pointer ${
-                              highlight === src.lines
-                                ? "bg-yellow-200 text-yellow-800 font-medium"
-                                : msg.role === "user"
-                                  ? "bg-white/20 hover:bg-white/30 text-white"
-                                  : "bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-600"
-                            }`}
+                            className={`inline-block text-[9px] font-extrabold rounded-lg px-2.5 py-1 transition-all cursor-pointer border ${highlight === src.lines
+                              ? "bg-yellow-500/20 border-yellow-500/40 text-yellow-400 font-semibold"
+                              : msg.role === "user"
+                                ? "bg-white/10 hover:bg-white/20 text-white border-transparent"
+                                : "bg-[#1e1e2d] border-white/5 hover:bg-[#1e1e2d]/60 text-slate-400 hover:text-indigo-400"
+                              }`}
                             title={`Highlight dòng ${src.lines} trong tài liệu`}
                           >
                             {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
@@ -317,68 +341,69 @@ export default function ChatPage({ params }: PageProps) {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg px-3 py-2">
-                  <div className="flex items-center space-x-1.5">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="bg-[#27273a]/80 border border-white/5 rounded-2xl rounded-tl-none px-4 py-2.5">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
-                {error}
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-450 text-[10px] font-bold rounded-2xl px-3.5 py-2.5 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-550" />
+                <span>{error}</span>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-200">
-            <div className="flex items-center space-x-2">
+          {/* Action Input Bar */}
+          <div className="p-4 border-t border-white/10 bg-[#1e1e2d]/40">
+            <div className="flex items-center gap-2">
               <input
                 ref={inputRef}
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Đặt câu hỏi..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Nhập câu hỏi tại đây..."
+                className="flex-1 px-4 py-2.5 rounded-2xl border border-white/10 bg-[#1e1e2d]/60 text-slate-100 placeholder-slate-500 shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-xs"
                 disabled={loading}
               />
+
+              {/* Send Button */}
               <button
                 onClick={sendQuestion}
                 disabled={loading || !question.trim()}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2.5 bg-neon-gradient hover:bg-neon-hover text-white rounded-2xl shadow-md shadow-indigo-500/10 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none flex items-center justify-center flex-shrink-0"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                <Send className="w-4 h-4" />
               </button>
+
               {/* Summarize button */}
               <div className="relative">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
                   disabled={loading}
-                  className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2.5 bg-purple-600 hover:bg-purple-550 text-white rounded-2xl shadow-md shadow-purple-550/10 hover:shadow-purple-550/25 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none flex items-center justify-center flex-shrink-0"
                   title="Tóm tắt văn bản"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <Sparkles className="w-4 h-4" />
                 </button>
                 {showSummaryMenu && (
-                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
-                      Chọn độ dài tóm tắt
+                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-3 w-52 rounded-2xl border border-white/10 bg-[#27273a] shadow-xl py-1.5 z-50 overflow-hidden animate-fade-in">
+                    <div className="px-4 py-1.5 text-[9px] font-black text-slate-500 border-b border-white/5 uppercase tracking-widest">
+                      Độ dài tóm tắt
                     </div>
                     {SUMMARY_LENGTH_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => handleSummarize(opt.value)}
-                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                        className="w-full text-left px-4 py-2 text-xs text-slate-350 hover:bg-purple-500/10 hover:text-purple-400 transition-colors cursor-pointer font-bold"
                       >
                         {opt.label}
                       </button>

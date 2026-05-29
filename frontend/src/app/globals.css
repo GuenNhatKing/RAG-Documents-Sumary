@@ -1,22 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b0d12;
+  --foreground: #e8edf5;
+
+  --card: rgba(20, 23, 33, 0.7);
+  --card-border: rgba(255, 255, 255, 0.06);
+
+  --primary: #818cf8;
+  --primary-foreground: #0f0a2e;
+
+  --secondary: #a78bfa;
+  --secondary-foreground: #1c0a3a;
+
+  --muted: #1a1d2e;
+  --muted-foreground: #7c829a;
+
+  --accent: #6366f1;
+  --accent-foreground: #e0e7ff;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --ring: rgba(129, 140, 248, 0.4);
 }
 
 @theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
 
-  --color-bg-base: #eeeeee;
-  --color-text-main: #1f6f5f;
-  --color-primary: #2fa084;
-  --color-accent: #6fcf97;
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.12);
+
+  --radius-xl: 0.8rem;
+  --radius-2xl: 1.2rem;
+  --radius-3xl: 1.6rem;
+
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body {
-  background: var(--background);
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0.7rem;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.glass-panel {
+  background: rgba(20, 23, 33, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(129, 140, 248, 0.25);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.15);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.3);
+}
+
+.prose.prose-invert,
+.prose.prose-invert p,
+.prose.prose-invert li,
+.prose.prose-invert span {
+  color: #c8d0e0;
+}
+
+.prose.prose-invert h1,
+.prose.prose-invert h2,
+.prose.prose-invert h3,
+.prose.prose-invert h4 {
+  color: #e8edf5;
+  font-weight: 700;
+}
+
+.prose.prose-invert strong {
+  color: #a5b4fc;
+  font-weight: 700;
+}
+
+.prose.prose-invert a {
+  color: #818cf8;
+  text-decoration: none;
+}
+.prose.prose-invert a:hover {
+  text-decoration: underline;
+}
+
+.prose.prose-invert code {
+  color: #c4b5fd;
+  background: rgba(129, 140, 248, 0.1);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.prose.prose-invert pre {
+  background: rgba(11, 13, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+
+.prose.prose-invert pre code {
+  color: #c8d0e0;
+  background: transparent;
+  padding: 0;
+}
+
+.prose.prose-invert blockquote {
+  color: #7c829a;
+  border-left-color: rgba(129, 140, 248, 0.25);
+}
+
+.prose.prose-invert hr {
+  border-color: rgba(255, 255, 255, 0.06);
 }

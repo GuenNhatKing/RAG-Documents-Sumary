@@ -10,6 +10,7 @@ import {
   confirmDocumentMd,
 } from "@/lib/documents";
 import { API, getToken } from "@/lib/auth";
+import { ArrowLeft } from "lucide-react";
 
 type Status = "loading" | "ready" | "saving" | "confirming" | "done" | "error";
 
@@ -140,27 +141,31 @@ export default function ReviewPage() {
 
   return (
     <ProtectedRoute requiredRole={["admin", "can_bo"]}>
-      <div className="min-h-[calc(100vh-64px)] flex flex-col p-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="min-h-[calc(100vh-64px)] flex flex-col py-8 max-w-6xl mx-auto px-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <button
               onClick={() => router.push("/files")}
-              className="text-sm text-[#2fa084] hover:underline mb-1 inline-block"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all text-xs font-bold cursor-pointer"
             >
-              &larr; Quay lại danh sách
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Quay lại danh sách
             </button>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {docStatus === "pending_review" ? "Review" : "Sửa"} Markdown: {filename}
+            <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">
+              Kiểm duyệt nội dung Markdown
             </h1>
+            <p className="text-sm font-bold text-indigo-400 mt-1">
+              Tên file: <span className="text-slate-300">{filename}</span>
+            </p>
           </div>
           {status === "ready" && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2.5">
               <button
                 onClick={handleTogglePdf}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer border ${
                   showPdf
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
+                    ? "bg-indigo-600 text-white shadow-indigo-500/20 hover:bg-indigo-500 border-indigo-500/30"
+                    : "bg-white/5 text-slate-200 border-white/15 hover:bg-white/10 hover:border-white/25"
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,21 +175,21 @@ export default function ReviewPage() {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                className="px-4 py-2.5 bg-white/8 text-slate-200 border border-white/15 rounded-xl text-sm font-bold hover:bg-white/15 hover:border-white/25 transition-all cursor-pointer"
               >
-                Lưu chỉnh sửa
+                Lưu lại
               </button>
               {docStatus === "pending_review" ? (
                 <button
                   onClick={handleConfirm}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                  className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/10 hover:shadow-lg transition-all cursor-pointer"
                 >
                   Xác nhận & Tạo cây
                 </button>
               ) : (
                 <button
                   onClick={handleRebuild}
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-50 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-md shadow-purple-500/10 hover:shadow-lg transition-all cursor-pointer"
                 >
                   Lưu & Tạo lại cây
                 </button>
@@ -194,33 +199,45 @@ export default function ReviewPage() {
         </div>
 
         {status === "loading" && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-gray-500">Đang tải nội dung…</p>
+          <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
+            <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
+            <p className="text-slate-500 dark:text-slate-400 font-medium">Đang tải nội dung…</p>
           </div>
         )}
 
         {(status === "saving" || status === "confirming") && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-primary">
+          <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
+            <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mb-3" />
+            <p className="text-indigo-600 dark:text-indigo-400 font-bold">
               {status === "saving"
-                ? "Đang lưu…"
+                ? "Đang lưu chỉnh sửa..."
                 : docStatus === "pending_review"
-                  ? "Đang tạo cây ngữ nghĩa…"
-                  : "Đang tạo lại cây ngữ nghĩa…"}
+                  ? "Đang tạo cây ngữ nghĩa..."
+                  : "Đang tạo lại cây ngữ nghĩa..."}
             </p>
           </div>
         )}
 
         {status === "done" && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <p className="text-green-600 text-lg font-semibold">
+          <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
+            <div className="p-4 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full mb-4">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-slate-800 dark:text-slate-100 text-xl font-extrabold mb-2">
               {docStatus === "pending_review"
-                ? "Tài liệu đã được xử lý thành công!"
-                : "Đã cập nhật Markdown và tạo lại cây thành công!"}
+                ? "Xác nhận thành công!"
+                : "Cập nhật thành công!"}
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium text-sm max-w-sm mb-6">
+              {docStatus === "pending_review"
+                ? "Tài liệu đã được phân tích và sẵn sàng cho việc hỏi đáp ngữ cảnh chéo."
+                : "Đã cập nhật Markdown và tạo lại cây ngữ nghĩa thành công!"}
             </p>
             <button
               onClick={() => router.push("/files")}
-              className="px-6 py-2 bg-[#2fa084] text-white rounded-lg hover:bg-[#2fa084]/90"
+              className="px-6 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-300 font-bold hover:-translate-y-0.5 active:scale-95 transition-all text-sm cursor-pointer"
             >
               Quay lại danh sách
             </button>
@@ -228,11 +245,17 @@ export default function ReviewPage() {
         )}
 
         {status === "error" && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <p className="text-red-600">{errorMsg}</p>
+          <div className="flex-1 glass-panel p-8 flex flex-col items-center justify-center min-h-[400px] rounded-3xl">
+            <div className="p-4 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-full mb-4">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-slate-800 dark:text-slate-100 text-xl font-extrabold mb-2">Đã có lỗi xảy ra</p>
+            <p className="text-rose-600 dark:text-rose-400 font-semibold mb-6">{errorMsg}</p>
             <button
               onClick={() => router.push("/files")}
-              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              className="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-300 font-bold hover:-translate-y-0.5 active:scale-95 transition-all text-sm cursor-pointer"
             >
               Quay lại
             </button>
@@ -240,22 +263,22 @@ export default function ReviewPage() {
         )}
 
         {status === "ready" && (
-          <div className="flex-1 flex gap-4 min-h-[400px]">
+          <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[500px]">
             <textarea
               value={markdown}
               onChange={(e) => setMarkdown(e.target.value)}
-              className={`${showPdf ? "w-1/2" : "w-full"} p-4 border border-gray-300 rounded-lg font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#2fa084]`}
+              className={`${showPdf ? "md:w-1/2" : "w-full"} p-5 border border-white/15 rounded-2xl bg-[#2a2a3d]/60 backdrop-blur-sm text-slate-100 placeholder-slate-500 shadow-inner font-mono text-sm resize-y focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-500/40 transition-all`}
               spellCheck={false}
             />
             {showPdf && (
-              <div className="w-1/2 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex flex-col">
-                <div className="flex items-center justify-between px-3 py-2 bg-gray-100 border-b border-gray-200">
-                  <span className="text-xs font-medium text-gray-600">PDF gốc</span>
+              <div className="md:w-1/2 rounded-2xl border border-white/15 bg-[#2a2a3d]/40 shadow-inner overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-[#2a2a3d]/60 border-b border-white/10">
+                  <span className="text-xs font-bold text-slate-300">PDF gốc</span>
                   {pdfUrl && (
                     <a
                       href={pdfUrl}
                       download={filename.replace(/\.[^.]+$/, ".pdf")}
-                      className="text-xs text-[#2fa084] hover:underline"
+                      className="text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline"
                     >
                       Tải xuống
                     </a>
@@ -264,11 +287,11 @@ export default function ReviewPage() {
                 <div className="flex-1">
                   {pdfLoading ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin h-6 w-6 border-4 border-emerald-600 border-t-transparent rounded-full" />
+                      <div className="animate-spin h-6 w-6 border-4 border-indigo-600 border-t-transparent rounded-full" />
                     </div>
                   ) : pdfError ? (
                     <div className="flex items-center justify-center h-full">
-                      <p className="text-sm text-red-500">{pdfError}</p>
+                      <p className="text-sm font-semibold text-rose-500">{pdfError}</p>
                     </div>
                   ) : pdfUrl ? (
                     <object
@@ -277,11 +300,11 @@ export default function ReviewPage() {
                       className="w-full h-full"
                     >
                       <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
-                        <p className="text-sm text-gray-500">Trình duyệt không hỗ trợ xem PDF.</p>
+                        <p className="text-sm text-slate-500">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
                         <a
                           href={pdfUrl}
                           download
-                          className="text-sm px-3 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                          className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-500"
                         >
                           Tải file PDF
                         </a>

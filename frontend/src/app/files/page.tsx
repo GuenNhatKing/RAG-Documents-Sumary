@@ -5,13 +5,47 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getDocuments, deleteDocument, renameDocument, type DocumentItem } from "@/lib/documents";
 import Pagination from "@/components/Pagination";
+import { 
+  FileText, 
+  Lock, 
+  Edit2, 
+  Eye, 
+  Edit3, 
+  Trash2, 
+  Plus, 
+  HardDrive, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  Loader2 
+} from "lucide-react";
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: "Chờ xử lý", color: "bg-gray-100 text-gray-600" },
-  processing: { label: "Đang xử lý", color: "bg-yellow-100 text-yellow-700" },
-  pending_review: { label: "Chờ review", color: "bg-blue-100 text-blue-700" },
-  processed: { label: "Hoàn thành", color: "bg-green-100 text-green-700" },
-  error: { label: "Lỗi", color: "bg-red-100 text-red-700" },
+const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
+  pending: { 
+    label: "Chờ xử lý", 
+    color: "bg-white/5 text-slate-300 border border-white/10", 
+    dot: "bg-slate-400" 
+  },
+  processing: { 
+    label: "Đang xử lý", 
+    color: "bg-amber-500/10 text-amber-500 border border-amber-500/20", 
+    dot: "bg-amber-500 animate-pulse" 
+  },
+  pending_review: { 
+    label: "Chờ review", 
+    color: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20", 
+    dot: "bg-indigo-400" 
+  },
+  processed: { 
+    label: "Hoàn thành", 
+    color: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", 
+    dot: "bg-emerald-400" 
+  },
+  error: { 
+    label: "Lỗi", 
+    color: "bg-rose-500/10 text-rose-400 border border-rose-500/20", 
+    dot: "bg-rose-450" 
+  },
 };
 
 export default function FilesPage() {
@@ -25,10 +59,15 @@ export default function FilesPage() {
 
   const loadDocs = useCallback(async (p: number) => {
     setLoading(true);
-    const data = await getDocuments(p, pageSize);
-    setDocs(data.items);
-    setTotal(data.total);
-    setLoading(false);
+    try {
+      const data = await getDocuments(p, pageSize);
+      setDocs(data.items ?? []);
+      setTotal(data.total ?? 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -77,130 +116,213 @@ export default function FilesPage() {
       return new Date(iso).toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+        year: "numeric"
       });
     } catch {
       return iso;
     }
   };
 
+  // Metrics counters
+  const countProcessed = docs.filter(d => d.status === "processed").length;
+  const countPending = docs.filter(d => d.status === "pending" || d.status === "processing").length;
+  const countErrors = docs.filter(d => d.status === "error").length;
+
   return (
     <ProtectedRoute requiredRole={["admin", "can_bo"]}>
-      <div className="min-h-[calc(100vh-64px)] p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Quản lý tài liệu</h1>
+      <div className="flex-1 overflow-y-auto px-8 py-8 w-full max-w-6xl mx-auto select-none font-sans">
+        
+        {/* Header Toolbar */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-outfit font-bold text-neon-gradient tracking-tight">
+              Quản Lý Tài Liệu
+            </h1>
+            <p className="text-xs text-slate-400 font-medium mt-1">
+              Tổng hợp và quản lý tài nguyên trích xuất tri thức của hệ thống.
+            </p>
+          </div>
+          
           <Link
             href="/upload"
-            className="px-4 py-2 bg-[#2fa084] text-white rounded-lg hover:bg-[#2fa084]/90 text-sm font-medium"
+            className="px-5 py-2.5 btn-primary text-xs cursor-pointer flex items-center gap-1.5"
           >
-            + Upload mới
+            <Plus className="w-4 h-4" />
+            Tải lên tài liệu
           </Link>
         </div>
 
+        {/* Content panel */}
         {loading ? (
-          <p className="text-gray-500">Đang tải danh sách tài liệu…</p>
+          <div className="flex items-center justify-center py-24 gap-3">
+            <Loader2 className="animate-spin h-7 w-7 text-indigo-400" />
+            <span className="text-slate-400 text-xs font-bold">Đang tải danh sách tài liệu...</span>
+          </div>
         ) : docs.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-lg">Chưa có tài liệu nào.</p>
+          <div className="text-center py-20 rounded-2xl glass-panel">
+            <FileText className="mx-auto h-12 w-12 text-slate-500 mb-4 animate-pulse" />
+            <p className="text-slate-400 font-bold text-sm">Chưa có tài liệu nào trong thư viện.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600">Tên file</th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 w-32">Trạng thái</th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 w-44">Ngày tạo</th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 w-48">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {docs.map((doc) => {
-                  const cfg = statusConfig[doc.status] ?? statusConfig.pending;
-                  return (
-                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm text-gray-800">
-                        {editingId === doc.id ? (
+          <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col w-full">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-white/5 border-b border-white/10 select-none">
+              <div className="col-span-5 text-[10px] uppercase font-black tracking-widest text-slate-400">Tên file</div>
+              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-slate-400">Trạng thái</div>
+              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-slate-400">Ngày tạo</div>
+              <div className="col-span-3 text-[10px] uppercase font-black tracking-widest text-slate-400 text-right pr-6">Thao tác</div>
+            </div>
+
+            {/* Table Body */}
+            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#27273a]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
+              {docs.map((doc) => {
+                const cfg = statusConfig[doc.status] ?? statusConfig.pending;
+                return (
+                  <div
+                    key={doc.id}
+                    className="grid grid-cols-12 gap-4 px-6 py-4 items-center glass-card hover:z-10 group"
+                  >
+                    <div className="col-span-5 font-bold text-slate-200 text-xs">
+                      {editingId === doc.id ? (
+                        <div className="relative group max-w-sm flex items-center">
                           <input
                             type="text"
                             value={editingName}
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
                             onBlur={() => handleRenameSave(doc.id)}
-                            className="w-full px-2 py-1 border border-blue-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-[#1e1e2d]/60 text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
                             autoFocus
                           />
-                        ) : (
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-4 h-4 text-indigo-400" />
                           <span
-                            className="cursor-pointer hover:text-blue-600 truncate max-w-xs inline-block"
-                            title="Nhấp để đổi tên"
+                            className="cursor-pointer hover:text-indigo-400 transition-colors truncate max-w-xs md:max-w-md"
+                            title="Click để đổi tên"
                             onClick={() => handleRenameStart(doc.id, doc.filename)}
                           >
                             {doc.filename}
                           </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}
-                        >
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {formatDate(doc.created_at)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          {doc.status === "pending_review" && (
-                            <Link
-                              href={`/files/${doc.id}/review`}
-                              className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-xs hover:bg-blue-100"
-                            >
-                              Review
-                            </Link>
-                          )}
-                          {doc.markdown_path && doc.status !== "pending" && doc.status !== "processing" && (
-                            <Link
-                              href={`/files/${doc.id}/review`}
-                              className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded text-xs hover:bg-yellow-100"
-                            >
-                              Sửa
-                            </Link>
-                          )}
-                          {doc.status === "processed" && (
-                            <Link
-                              href={`/documents/${doc.id}/view`}
-                              className="px-3 py-1 bg-green-50 text-green-700 rounded text-xs hover:bg-green-100"
-                            >
-                              Xem
-                            </Link>
-                          )}
-                          <button
-                            onClick={() => handleRenameStart(doc.id, doc.filename)}
-                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200"
-                          >
-                            Đổi tên
-                          </button>
-                          <button
-                            onClick={() => handleDelete(doc.id, doc.filename)}
-                            className="px-3 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"
-                          >
-                            Xóa
-                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cfg.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                        {cfg.label}
+                      </span>
+                    </div>
+                    
+                    <div className="col-span-2 text-[10px] text-slate-400 font-bold">
+                      {formatDate(doc.created_at)}
+                    </div>
+                    
+                    <div className="col-span-3 flex justify-end gap-1.5 pr-6">
+                      {doc.status === "pending_review" && (
+                        <Link
+                          href={`/files/${doc.id}/review`}
+                          className="p-1.5 hover:bg-indigo-500/10 text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all"
+                          title="Review"
+                        >
+                          <Lock className="w-4 h-4" />
+                        </Link>
+                      )}
+                      {doc.markdown_path && doc.status !== "pending" && doc.status !== "processing" && (
+                        <Link
+                          href={`/files/${doc.id}/review`}
+                          className="p-1.5 hover:bg-amber-500/10 text-amber-500 rounded-xl hover:scale-105 active:scale-95 transition-all"
+                          title="Chỉnh sửa Markdown"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Link>
+                      )}
+                      {doc.status === "processed" && (
+                        <Link
+                          href={`/documents/${doc.id}/view`}
+                          className="p-1.5 hover:bg-emerald-500/10 text-emerald-400 rounded-xl hover:scale-105 active:scale-95 transition-all"
+                          title="Xem tài liệu"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => handleRenameStart(doc.id, doc.filename)}
+                        className="p-1.5 hover:bg-indigo-500/10 text-indigo-400 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-none outline-none"
+                        title="Đổi tên"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc.id, doc.filename)}
+                        className="p-1.5 hover:bg-rose-500/10 text-rose-500 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-none outline-none"
+                        title="Xóa"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="px-5 py-3.5 bg-white/5 border-t border-white/10 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-bold">
+                Hiển thị {docs.length} của {total} tài liệu
+              </span>
+              <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+            </div>
           </div>
         )}
 
-        <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+        {/* Quick stats bottom area */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          
+          <div className="rounded-2xl glass-card p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <HardDrive className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Dung lượng sử dụng</p>
+              <h4 className="text-xs font-black text-slate-200 mt-0.5">1.2 GB / 5.0 GB</h4>
+            </div>
+          </div>
+
+          <div className="rounded-2xl glass-card p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-550/10 text-emerald-400 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Đã hoàn thành</p>
+              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countProcessed} tệp tin</h4>
+            </div>
+          </div>
+
+          <div className="rounded-2xl glass-card p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-550/10 text-amber-400 flex items-center justify-center">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Đang chờ xử lý</p>
+              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countPending} tệp tin</h4>
+            </div>
+          </div>
+
+          <div className="rounded-2xl glass-card p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-rose-550/10 text-rose-450 flex items-center justify-center">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Lỗi trích xuất</p>
+              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countErrors} tệp tin</h4>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </ProtectedRoute>
   );

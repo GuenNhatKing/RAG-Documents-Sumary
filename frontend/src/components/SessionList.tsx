@@ -1,15 +1,15 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import { ChatSession, createSession, getSessions, deleteSession } from "@/lib/chat";
-
+ 
 interface SessionListProps {
   docId: string;
   currentSessionId?: string;
   onSelect: (sessionId: string) => void;
   onNewSession: () => void;
 }
-
+ 
 export default function SessionList({
   docId,
   currentSessionId,
@@ -18,11 +18,11 @@ export default function SessionList({
 }: SessionListProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     loadSessions();
   }, [docId]);
-
+ 
   const loadSessions = async () => {
     setLoading(true);
     try {
@@ -34,7 +34,7 @@ export default function SessionList({
       setLoading(false);
     }
   };
-
+ 
   const handleCreate = async () => {
     try {
       const session = await createSession(docId);
@@ -44,7 +44,7 @@ export default function SessionList({
       console.error("Failed to create session:", err);
     }
   };
-
+ 
   const handleDelete = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -54,7 +54,7 @@ export default function SessionList({
       console.error("Failed to delete session:", err);
     }
   };
-
+ 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -62,27 +62,27 @@ export default function SessionList({
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
+ 
     if (diffMins < 1) return "Vừa xong";
     if (diffMins < 60) return `${diffMins} phút`;
     if (diffHours < 24) return `${diffHours} giờ`;
-    if (diffDays < 7) return `${diffDays} ngày`;
-    return d.toLocaleDateString("vi-VN");
   };
-
+ 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#27273a]/10">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700">Phiên trò chuyện</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#1e1e2d]/40">
+        <h3 className="text-xs uppercase tracking-wider font-extrabold text-slate-400 select-none">
+          Phiên trò chuyện
+        </h3>
         <button
           onClick={handleCreate}
-          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          className="p-1.5 rounded-xl hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
           title="Tạo phiên mới"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
+            className="h-4.5 w-4.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -90,52 +90,56 @@ export default function SessionList({
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={2.5}
               d="M12 4v16m8-8H4"
             />
           </svg>
         </button>
       </div>
-
+ 
       {/* Session list */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400" />
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500" />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="px-3 py-8 text-center">
-            <p className="text-sm text-gray-400">Chưa có phiên trò chuyện</p>
+          <div className="px-4 py-12 text-center">
+            <p className="text-xs font-bold text-slate-500">Chưa có phiên trò chuyện</p>
             <button
               onClick={handleCreate}
-              className="mt-2 text-xs text-blue-500 hover:text-blue-700"
+              className="mt-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
             >
               Tạo phiên mới
             </button>
           </div>
         ) : (
-          <div className="py-1">
+          <div className="py-2">
             {sessions.map((session) => (
               <div
                 key={session.id}
                 onClick={() => onSelect(session.id)}
                 className={`
-                  group flex items-center justify-between px-3 py-2 cursor-pointer
-                  hover:bg-gray-50 transition-colors
-                  ${currentSessionId === session.id ? "bg-blue-50 border-l-2 border-blue-500" : ""}
+                  group flex items-center justify-between px-4 py-3 cursor-pointer
+                  transition-all duration-200 border-l-4
+                  ${
+                    currentSessionId === session.id
+                      ? "bg-indigo-500/10 border-indigo-500 text-indigo-400 font-extrabold"
+                      : "border-transparent hover:bg-[#1e1e2d]/40 text-slate-350"
+                  }
                 `}
               >
                 <div className="flex-1 min-w-0 mr-2">
-                  <p className="text-sm text-gray-800 truncate">
+                  <p className="text-xs truncate font-bold leading-normal">
                     {session.title || "Cuộc trò chuyện mới"}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-[10px] text-slate-500 mt-1 font-bold">
                     {formatDate(session.updated_at)}
                   </p>
                 </div>
                 <button
                   onClick={(e) => handleDelete(session.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-xl hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all duration-200 cursor-pointer"
                   title="Xóa phiên"
                 >
                   <svg
