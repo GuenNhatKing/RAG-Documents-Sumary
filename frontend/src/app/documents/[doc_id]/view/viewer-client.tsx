@@ -103,11 +103,11 @@ export default function DocumentViewerClient({
   const lines = (markdown ?? "").split("\n");
 
   return (
-    <div className="flex flex-col h-full bg-[#222840] text-slate-200">
+    <div className="flex flex-col h-full bg-primary text-primary">
       {/* Content area */}
       <div className="flex-1 overflow-auto">
         {viewMode === "md" ? (
-          <main className="bg-[#222840] px-10 py-8 text-slate-350">
+          <main className="bg-primary px-10 py-8 text-slate-350">
             <article className="mx-auto max-w-4xl text-[15px] leading-7">
               {lines.map((line, index) => {
                 const lineNumber = index + 1;
@@ -133,17 +133,17 @@ export default function DocumentViewerClient({
                         remarkPlugins={[remarkGfm]}
                         components={{
                           h1: ({ children }) => (
-                            <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-100">
+                            <h1 className="mt-8 mb-5 text-3xl font-bold text-primary">
                               {children}
                             </h1>
                           ),
                           h2: ({ children }) => (
-                            <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-200">
+                            <h2 className="mt-7 mb-4 text-2xl font-bold text-primary">
                               {children}
                             </h2>
                           ),
                           h3: ({ children }) => (
-                            <h3 className="mt-8 mb-3 text-xl font-bold text-slate-200">
+                            <h3 className="mt-8 mb-3 text-xl font-bold text-primary">
                               {children}
                             </h3>
                           ),
@@ -153,27 +153,27 @@ export default function DocumentViewerClient({
                             </h4>
                           ),
                           p: ({ children }) => (
-                            <p className="my-2 text-slate-300">
+                            <p className="my-2 text-secondary">
                               {children}
                             </p>
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-semibold text-slate-100">
+                            <strong className="font-semibold text-primary">
                               {children}
                             </strong>
                           ),
                           table: ({ children }) => (
-                            <table className="my-4 w-full border-collapse text-sm border border-white/10">
+                            <table className="my-4 w-full border-collapse text-sm border border-theme">
                               {children}
                             </table>
                           ),
                           th: ({ children }) => (
-                            <th className="border border-white/10 bg-[#2a3148] px-3 py-2 text-left font-semibold text-slate-200">
+                            <th className="border border-theme bg-tertiary px-3 py-2 text-left font-semibold text-primary">
                               {children}
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="border border-white/10 px-3 py-2 text-slate-300">
+                            <td className="border border-theme px-3 py-2 text-secondary">
                               {children}
                             </td>
                           ),
@@ -202,7 +202,7 @@ export default function DocumentViewerClient({
             className="w-full h-full"
           >
             <div className="flex flex-col items-center justify-center h-full gap-3">
-              <p className="text-slate-400 font-bold text-xs">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
+              <p className="text-muted font-bold text-xs">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
               <a
                 href={pdfUrl}
                 download
@@ -217,13 +217,13 @@ export default function DocumentViewerClient({
 
       {/* Toggle buttons */}
       {docId && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-[#2a3148]/60 backdrop-blur-md border-t border-white/10">
+        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-tertiary backdrop-blur-md border-t border-theme">
           <button
             onClick={() => setViewMode("md")}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "md"
                 ? "bg-gradient-to-r from-[#4f46e5] to-[#a855f7] text-white shadow-md shadow-indigo-500/10"
-                : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                : "bg-secondary text-secondary border-theme hover:bg-tertiary"
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@ export default function DocumentViewerClient({
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewMode === "raw"
                 ? "bg-gradient-to-r from-[#4f46e5] to-[#a855f7] text-white shadow-md shadow-indigo-500/10"
-                : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                : "bg-secondary text-secondary border-theme hover:bg-tertiary"
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

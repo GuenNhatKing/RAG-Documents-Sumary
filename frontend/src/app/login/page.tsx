@@ -53,7 +53,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-black text-neon-gradient tracking-tight">
               RAG Summary
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold">
+            <p className="text-xs text-muted mt-1 font-bold">
               Chào mừng trở lại. Đăng nhập để tiếp tục.
             </p>
           </div>
@@ -63,16 +63,16 @@ export default function LoginPage() {
         <form onSubmit={handle} className="space-y-5">
           {/* Username/Email Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-550 dark:text-slate-400 ml-1" htmlFor="username">
+            <label className="text-xs font-bold text-muted ml-1" htmlFor="username">
               Tên đăng nhập
             </label>
             <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors" />
               <input
                 id="username"
                 required
                 placeholder="Nhập tên người dùng"
-                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-secondary/60 border border-theme rounded-2xl py-2.5 pl-11 pr-4 text-primary placeholder-muted text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={user.username}
                 onChange={e => setUser({ ...user, username: e.target.value })}
                 disabled={loading}
@@ -82,17 +82,17 @@ export default function LoginPage() {
 
           {/* Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-550 dark:text-slate-400 ml-1" htmlFor="password">
+            <label className="text-xs font-bold text-muted ml-1" htmlFor="password">
               Mật khẩu
             </label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors" />
               <input
                 id="password"
                 required
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-secondary/60 border border-theme rounded-2xl py-2.5 pl-11 pr-11 text-primary placeholder-muted text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={user.password}
                 onChange={e => setUser({ ...user, password: e.target.value })}
                 disabled={loading}
@@ -100,7 +100,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -117,11 +117,11 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="peer sr-only"
                 />
-                <div className="w-4.5 h-4.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-950/40 peer-checked:bg-indigo-550 peer-checked:border-indigo-550 transition-all flex items-center justify-center">
+                <div className="w-4.5 h-4.5 rounded-lg border border-theme bg-secondary/40 peer-checked:bg-indigo-550 peer-checked:border-indigo-550 transition-all flex items-center justify-center">
                   <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
               </div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-455 font-bold group-hover:text-slate-700 dark:group-hover:text-slate-350 transition-colors">
+              <span className="text-[11px] text-muted font-bold group-hover:text-primary transition-colors">
                 Ghi nhớ đăng nhập
               </span>
             </label>
@@ -148,8 +148,8 @@ export default function LoginPage() {
         </form>
 
         {/* Footer */}
-        <div className="flex flex-col items-center gap-4 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/60 w-full text-center">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <div className="flex flex-col items-center gap-4 mt-6 pt-5 border-t border-theme w-full text-center">
+          <p className="text-xs text-muted font-medium">
             Chưa có tài khoản?{" "}
             <a href="/register" className="text-indigo-500 dark:text-indigo-400 font-extrabold hover:underline">
               Đăng ký ngay

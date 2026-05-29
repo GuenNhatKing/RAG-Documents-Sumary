@@ -52,8 +52,8 @@ export default function RegisterPage() {
     <section className="flex min-h-[calc(100vh-64px)] items-center justify-center py-12 px-4 relative overflow-hidden select-none">
       {/* Ambient Decorative Blurs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/8 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/10 dark:bg-purple-650/8 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 bg-indigo-600/8 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/10 bg-purple-650/8 blur-[120px] rounded-full" />
       </div>
 
       <div className="w-full max-w-md glass-panel p-8 rounded-3xl shadow-2xl z-10">
@@ -66,7 +66,7 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-black text-neon-gradient tracking-tight">
               RAG Summary
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold">
+            <p className="text-xs text-muted mt-1 font-bold">
               Đăng ký tài khoản để bắt đầu phân tích dữ liệu.
             </p>
           </div>
@@ -76,16 +76,16 @@ export default function RegisterPage() {
         <form onSubmit={handle} className="space-y-5">
           {/* Username Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-550 dark:text-slate-400 ml-1" htmlFor="username">
+            <label className="text-xs font-bold text-muted ml-1" htmlFor="username">
               Tên đăng nhập
             </label>
             <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors" />
               <input
                 id="username"
                 required
                 placeholder="Tên người dùng viết liền không dấu"
-                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-secondary/60 border border-theme rounded-2xl py-2.5 pl-11 pr-4 text-primary placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={form.username}
                 onChange={e => setForm({ ...form, username: e.target.value })}
                 disabled={loading}
@@ -95,17 +95,17 @@ export default function RegisterPage() {
 
           {/* Password Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-550 dark:text-slate-400 ml-1" htmlFor="password">
+            <label className="text-xs font-bold text-muted ml-1" htmlFor="password">
               Mật khẩu
             </label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-indigo-500 transition-colors" />
               <input
                 id="password"
                 required
                 type={showPassword ? "text" : "password"}
                 placeholder="Nhập mật khẩu an toàn"
-                className="w-full bg-[#222840]/60 border border-white/10 rounded-2xl py-2.5 pl-11 pr-11 text-slate-100 placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                className="w-full bg-secondary/60 border border-theme rounded-2xl py-2.5 pl-11 pr-11 text-primary placeholder-slate-500 text-xs shadow-soft transition-all duration-300 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
                 disabled={loading}
@@ -113,7 +113,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -138,8 +138,8 @@ export default function RegisterPage() {
         </form>
 
         {/* Footer */}
-        <div className="flex flex-col items-center gap-4 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/60 w-full text-center">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <div className="flex flex-col items-center gap-4 mt-6 pt-5 border-t border-theme w-full text-center">
+          <p className="text-xs text-muted font-medium">
             Đã có tài khoản?{" "}
             <a href="/login" className="text-indigo-500 dark:text-indigo-400 font-extrabold hover:underline">
               Đăng nhập ngay

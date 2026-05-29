@@ -55,14 +55,14 @@ function RoleDropdown({ value, disabled, onChange }: { value: string; disabled: 
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-white/10 bg-[#222840]/60 text-slate-100 text-xs font-bold transition-all outline-none hover:border-white/20 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-theme bg-secondary text-primary text-xs font-bold transition-all outline-none hover:border-theme-accent focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:opacity-50 cursor-pointer"
       >
         <span>{ROLE_LABELS[value] ?? value}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div style={dropdownStyle} className="rounded-xl border border-white/10 bg-[#1a1f2e] shadow-2xl overflow-hidden">
+        <div style={dropdownStyle} className="rounded-xl border border-theme bg-primary shadow-2xl overflow-hidden">
           {ROLE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -71,7 +71,7 @@ function RoleDropdown({ value, disabled, onChange }: { value: string; disabled: 
               className={`w-full text-left px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                 opt.value === value
                   ? "bg-indigo-500/15 text-indigo-400"
-                  : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
+                  : "text-muted hover:bg-tertiary hover:text-secondary"
               }`}
             >
               {opt.label}
@@ -132,7 +132,7 @@ export default function UsersPage() {
           <h1 className="text-3xl font-outfit font-bold text-neon-gradient tracking-tight">
             Quản Lý Người Dùng
           </h1>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-muted font-medium">
             Quản lý quyền hạn truy cập của cán bộ và thành viên trong hệ thống.
           </p>
         </div>
@@ -149,25 +149,25 @@ export default function UsersPage() {
         {loading ? (
           <div className="flex items-center justify-center py-24 gap-3">
             <Loader2 className="animate-spin h-7 w-7 text-indigo-400" />
-            <span className="text-slate-400 text-xs font-bold">Đang tải danh sách thành viên...</span>
+            <span className="text-muted text-xs font-bold">Đang tải danh sách thành viên...</span>
           </div>
         ) : (
           <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col w-full">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-white/5 border-b border-white/10 select-none">
-              <div className="col-span-5 text-[10px] uppercase font-black tracking-widest text-slate-400">Tên đăng nhập</div>
-              <div className="col-span-3 text-[10px] uppercase font-black tracking-widest text-slate-400">Vai trò hiện tại</div>
-              <div className="col-span-4 text-[10px] uppercase font-black tracking-widest text-slate-400 text-right pr-6">Cập nhật vai trò</div>
+            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-secondary border-b border-theme select-none">
+              <div className="col-span-5 text-[10px] uppercase font-black tracking-widest text-muted">Tên đăng nhập</div>
+              <div className="col-span-3 text-[10px] uppercase font-black tracking-widest text-muted">Vai trò hiện tại</div>
+              <div className="col-span-4 text-[10px] uppercase font-black tracking-widest text-muted text-right pr-6">Cập nhật vai trò</div>
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#2a3148]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
+            <div className="flex-1 overflow-y-auto divide-y divide-theme-light bg-tertiary max-h-[calc(100vh-320px)] scrollbar-thin">
               {users.map((user) => (
                 <div
                   key={user.id}
                   className="grid grid-cols-12 gap-4 px-6 py-4 items-center glass-card hover:z-10 group"
                 >
-                  <div className="col-span-5 font-bold text-slate-200 text-xs flex items-center gap-2">
+                  <div className="col-span-5 font-bold text-primary text-xs flex items-center gap-2">
                     <Users className="w-4 h-4 text-indigo-400" />
                     <span>{user.username}</span>
                   </div>
@@ -189,7 +189,7 @@ export default function UsersPage() {
 
                   <div className="col-span-4 flex justify-end pr-6">
                     {user.role === "admin" ? (
-                      <span className="text-[10px] text-slate-400 font-bold bg-[#222840]/60 px-2.5 py-1 rounded-lg select-none">
+                      <span className="text-[10px] text-muted font-bold bg-secondary px-2.5 py-1 rounded-lg select-none">
                         Quản trị viên tối cao
                       </span>
                     ) : (
@@ -205,8 +205,8 @@ export default function UsersPage() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-5 py-3.5 bg-white/5 border-t border-white/10 flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-bold">
+            <div className="px-5 py-3.5 bg-secondary border-t border-theme flex items-center justify-between">
+              <span className="text-[10px] text-muted font-bold">
                 Hiển thị {users.length} của {total} người dùng
               </span>
               <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />

@@ -217,7 +217,7 @@ export default function ChatPage({ params }: PageProps) {
       <div className="flex h-full w-full overflow-hidden">
         {/* Session List Sidebar */}
         {showSessions && (
-          <div className="w-64 flex-shrink-0 glass-panel border-r border-white/[0.06] h-full overflow-hidden flex flex-col z-20">
+          <div className="w-64 flex-shrink-0 glass-panel border-r border-theme-light h-full overflow-hidden flex flex-col z-20">
             <SessionList
               docId={doc_id}
               currentSessionId={sessionId}
@@ -228,26 +228,26 @@ export default function ChatPage({ params }: PageProps) {
         )}
 
         {/* Document Viewer */}
-        <div className="flex-1 flex flex-col border-r border-white/[0.06] min-w-0 bg-[#2a3148]/20 h-full overflow-hidden">
-          <header className="h-14 flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#2a3148]/30">
+        <div className="flex-1 flex flex-col border-r border-theme-light min-w-0 bg-tertiary h-full overflow-hidden">
+          <header className="h-14 flex items-center justify-between px-4 border-b border-theme-light bg-tertiary">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSessions(!showSessions)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-white/[0.05] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-muted hover:text-indigo-400 hover:bg-tertiary transition-colors cursor-pointer"
               >
                 {showSessions ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted">
                 <FileText className="w-4 h-4 text-indigo-400" />
                 <span className="hidden sm:inline">{docFilename}</span>
                 <span className="sm:hidden">Tài liệu</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-300 hover:bg-white/[0.05] transition-all cursor-pointer">
+              <button className="p-1.5 rounded-lg text-muted hover:text-secondary hover:bg-tertiary transition-all cursor-pointer">
                 <ZoomIn className="w-4 h-4" />
               </button>
-              <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-300 hover:bg-white/[0.05] transition-all cursor-pointer">
+              <button className="p-1.5 rounded-lg text-muted hover:text-secondary hover:bg-tertiary transition-all cursor-pointer">
                 <Download className="w-4 h-4" />
               </button>
             </div>
@@ -267,8 +267,8 @@ export default function ChatPage({ params }: PageProps) {
         {/* Chat Panel */}
         <div className="w-[420px] flex-shrink-0 flex flex-col glass-panel h-full overflow-hidden">
           {/* Chat Header */}
-          <header className="h-14 flex items-center px-4 border-b border-white/[0.05] bg-[#2a3148]/30">
-            <span className="text-sm font-semibold text-slate-200">Trợ lý Phân tích AI</span>
+          <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
+            <span className="text-sm font-semibold text-primary">Trợ lý Phân tích AI</span>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
@@ -284,8 +284,8 @@ export default function ChatPage({ params }: PageProps) {
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
                   <Sparkles className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-300">Trợ lý Phân tích AI</h3>
-                <p className="text-xs text-slate-500 mt-1.5 max-w-[240px] leading-relaxed">
+                <h3 className="text-sm font-semibold text-secondary">Trợ lý Phân tích AI</h3>
+                <p className="text-xs text-muted mt-1.5 max-w-[240px] leading-relaxed">
                   Đã sẵn sàng phân tích tài liệu. Nhập câu hỏi hoặc chọn <span className="text-indigo-400 font-medium">Tóm tắt AI</span> để bắt đầu.
                 </p>
               </div>
@@ -302,23 +302,23 @@ export default function ChatPage({ params }: PageProps) {
                     <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
                   </div>
                   <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-indigo-500/40">
-                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-slate-200">
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-primary">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
                     </div>
 
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-white/[0.05]">
+                      <div className="mt-3 pt-2.5 border-t border-theme-light">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[9px] font-medium text-slate-500 mr-1">Tham chiếu:</span>
+                          <span className="text-[9px] font-medium text-muted mr-1">Tham chiếu:</span>
                           {msg.sources.map((src, sIdx) => (
                             <button
                               key={sIdx}
                               onClick={() => handleSourceClick(src)}
                               className={`text-[9px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${highlight === src.lines
                                 ? "bg-yellow-500/15 border-yellow-500/30 text-yellow-400"
-                                : "bg-[#1a1f2e] border-white/[0.06] text-slate-400 hover:text-slate-300"
+                                : "bg-primary border-theme-light text-muted hover:text-secondary"
                                 }`}
                             >
                               {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
@@ -367,7 +367,7 @@ export default function ChatPage({ params }: PageProps) {
           </div>
 
           {/* Chat Input */}
-          <div className="px-4 py-3 border-t border-white/[0.05] space-y-2.5">
+          <div className="px-4 py-3 border-t border-theme-light space-y-2.5">
             <div className="flex items-center gap-2">
               <div className="relative group flex-1">
                 <div className="chat-input flex items-center gap-2 px-4 py-1.5">
@@ -379,7 +379,7 @@ export default function ChatPage({ params }: PageProps) {
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Đặt câu hỏi về tài liệu..."
-                    className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none py-1"
+                    className="flex-1 bg-transparent text-sm text-primary placeholder-slate-500 outline-none py-1"
                     disabled={loading}
                   />
                 </div>
@@ -389,18 +389,18 @@ export default function ChatPage({ params }: PageProps) {
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
                   disabled={loading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/15 text-violet-400 hover:bg-violet-500/25 rounded-full border border-violet-500/20 transition-all text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-1.5 btn-accent-violet rounded-full text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   Tóm tắt AI
                 </button>
                 {showSummaryMenu && (
-                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-44 glass-panel border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl z-30">
+                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-44 glass-panel border border-theme-light rounded-xl overflow-hidden shadow-2xl z-30">
                     {SUMMARY_LENGTH_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => handleSummarize(opt.value)}
-                        className="w-full text-left px-4 py-2.5 text-xs text-slate-400 hover:bg-white/[0.05] hover:text-slate-200 transition-all cursor-pointer"
+                        className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-tertiary hover:text-primary transition-all cursor-pointer"
                       >
                         {opt.label}
                       </button>

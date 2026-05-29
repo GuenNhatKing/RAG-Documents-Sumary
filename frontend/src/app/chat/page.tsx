@@ -18,8 +18,7 @@ import {
   ChevronRight,
   Clock,
   Bot,
-  User,
-  SmartToy
+  User
 } from "lucide-react";
 import {
   getSessions,
@@ -105,7 +104,7 @@ export default function ChatMasterPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -198,7 +197,7 @@ export default function ChatMasterPage() {
         <div className="flex items-center justify-center h-full">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin h-10 w-10 border-[3px] border-indigo-500/30 border-t-indigo-500 rounded-full" />
-            <p className="text-sm text-slate-400">Đang tải dữ liệu...</p>
+            <p className="text-sm text-muted">Đang tải dữ liệu...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -211,23 +210,23 @@ export default function ChatMasterPage() {
         {/* LEFT: Documents + Sessions */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-primary tracking-tight">
               Hỏi đáp tài liệu
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-muted mt-1">
               Lựa chọn tài liệu để bắt đầu phân tích hoặc hỏi đáp thông minh.
             </p>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm tài liệu theo tên..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/[0.06] bg-[#222840]/60 text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 text-sm transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-theme-light bg-secondary text-primary placeholder-slate-500 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 text-sm transition-all"
             />
           </div>
 
@@ -236,8 +235,8 @@ export default function ChatMasterPage() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-4 h-4 text-indigo-400" />
-                <h2 className="text-sm font-semibold text-slate-300">Gần đây</h2>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.04] text-slate-500">
+                <h2 className="text-sm font-semibold text-secondary">Gần đây</h2>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-tertiary text-secondary">
                   {Math.min(sessions.length, 9)}
                 </span>
               </div>
@@ -252,21 +251,21 @@ export default function ChatMasterPage() {
                       key={session.id}
                       href={isGlobal ? "/chat" : `/chat/${session.doc_id}?session=${session.id}`}
                       onClick={(e) => handleSessionClick(session, e)}
-                      className="group relative rounded-xl border border-white/[0.06] bg-[#222840]/40 p-4 hover:border-indigo-500/30 hover:bg-[#222840]/70 transition-all duration-200"
+                      className="group relative rounded-xl border border-theme-light bg-secondary p-4 hover:border-theme-accent hover:bg-secondary transition-all duration-200"
                     >
                       <button
                         onClick={(e) => handleDeleteSession(session.id, e)}
-                        className="absolute top-2.5 right-2.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all cursor-pointer"
+                        className="absolute top-2.5 right-2.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-muted hover:text-red-400 transition-all cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       <span className="text-[10px] font-medium text-indigo-400/70 block truncate pr-5 uppercase tracking-wider">
                         {isGlobal ? "Cross-Document" : "Tài liệu riêng"}
                       </span>
-                      <h3 className="font-semibold text-slate-200 truncate pr-5 mt-1 text-sm">
+                      <h3 className="font-semibold text-primary truncate pr-5 mt-1 text-sm">
                         {session.title || "Cuộc trò chuyện"}
                       </h3>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-2.5 pt-2.5 border-t border-white/[0.04]">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted mt-2.5 pt-2.5 border-t border-theme-light">
                         <Calendar className="w-3 h-3" />
                         <span>{formatDate(session.updated_at)}</span>
                       </div>
@@ -281,15 +280,15 @@ export default function ChatMasterPage() {
           <section>
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-sm font-semibold text-slate-300">Thư viện tài liệu</h2>
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.04] text-slate-500">
+              <h2 className="text-sm font-semibold text-secondary">Thư viện tài liệu</h2>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-tertiary text-secondary">
                 {filteredDocs.length}
               </span>
             </div>
             {filteredDocs.length === 0 ? (
-              <div className="text-center py-16 rounded-xl border border-dashed border-white/[0.06] bg-[#222840]/20">
+              <div className="text-center py-16 rounded-xl border border-dashed border-theme-light bg-secondary">
                 <FileText className="mx-auto h-8 w-8 text-slate-600 mb-3" />
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted">
                   {searchQuery ? "Không tìm thấy tài liệu nào khớp" : "Chưa có tài liệu nào sẵn sàng"}
                 </p>
               </div>
@@ -299,13 +298,13 @@ export default function ChatMasterPage() {
                   <Link
                     key={doc.id}
                     href={`/chat/${doc.id}`}
-                    className="group rounded-xl border border-white/[0.06] bg-[#222840]/40 p-4 hover:border-indigo-500/30 hover:bg-[#222840]/70 transition-all duration-200 flex items-start gap-3"
+                    className="group rounded-xl border border-theme-light bg-secondary p-4 hover:border-theme-accent hover:bg-secondary transition-all duration-200 flex items-start gap-3"
                   >
                     <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
                       <FileText className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-200 truncate text-sm">{doc.filename}</h3>
+                      <h3 className="font-semibold text-primary truncate text-sm">{doc.filename}</h3>
                       <div className="flex items-center justify-between mt-2">
                         <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                           doc.status === "processed"
@@ -328,10 +327,10 @@ export default function ChatMasterPage() {
         </div>
 
         {/* RIGHT: Global Chat Panel */}
-        <div className="w-[400px] flex-shrink-0 flex flex-col glass-panel border-l border-white/[0.06]">
+        <div className="w-[400px] flex-shrink-0 flex flex-col glass-panel border-l border-theme-light">
           {/* Chat Header */}
-          <header className="h-14 flex items-center px-4 border-b border-white/[0.05] bg-[#2a3148]/30">
-            <span className="text-sm font-semibold text-slate-200">Tra Cứu Tổng Hợp</span>
+          <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
+            <span className="text-sm font-semibold text-primary">Tra Cứu Tổng Hợp</span>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
@@ -347,8 +346,8 @@ export default function ChatMasterPage() {
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
                   <Layers className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-300">Hỏi đáp ngữ cảnh chéo</h3>
-                <p className="text-xs text-slate-500 mt-1.5 max-w-[220px] leading-relaxed">
+                <h3 className="text-sm font-semibold text-secondary">Hỏi đáp ngữ cảnh chéo</h3>
+                <p className="text-xs text-muted mt-1.5 max-w-[220px] leading-relaxed">
                   Nhập câu hỏi để tìm kiếm thông tin đối chiếu trên tất cả tài liệu.
                 </p>
               </div>
@@ -364,21 +363,21 @@ export default function ChatMasterPage() {
                     <span className="text-xs font-medium text-indigo-400">AI Assistant</span>
                   </div>
                   <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-indigo-500/40">
-                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-slate-200">
+                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-primary">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
                     </div>
 
                     {msg.relevantDocs && msg.relevantDocs.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-white/[0.05]">
+                      <div className="mt-3 pt-2.5 border-t border-theme-light">
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[9px] font-medium text-slate-500">Tài liệu tham khảo:</span>
+                          <span className="text-[9px] font-medium text-muted">Tài liệu tham khảo:</span>
                           {msg.relevantDocs.map((doc) => (
                             <Link
                               key={doc.doc_id}
                               href={`/chat/${doc.doc_id}`}
-                              className="text-[10px] px-2.5 py-1 rounded-full bg-[#1a1f2e] border border-white/[0.06] text-slate-400 hover:text-indigo-400 transition-all block truncate"
+                              className="text-[10px] px-2.5 py-1 rounded-full bg-primary border border-theme-light text-muted hover:text-indigo-400 transition-all block truncate"
                             >
                               {docNameMap.get(doc.doc_id) || doc.filename}
                             </Link>
@@ -388,9 +387,9 @@ export default function ChatMasterPage() {
                     )}
 
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-2.5 pt-2 border-t border-white/[0.05]">
+                      <div className="mt-2.5 pt-2 border-t border-theme-light">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[9px] font-medium text-slate-500 mr-1">Nguồn:</span>
+                          <span className="text-[9px] font-medium text-muted mr-1">Nguồn:</span>
                           {msg.sources.map((src, sIdx) => (
                             <span key={sIdx} className="source-chip">
                               {(() => {
@@ -436,7 +435,7 @@ export default function ChatMasterPage() {
           </div>
 
           {/* Chat Input */}
-          <div className="px-4 py-3 border-t border-white/[0.05]">
+          <div className="px-4 py-3 border-t border-theme-light">
             <div className="flex items-center gap-2">
               <div className="relative group flex-1">
                 <div className="chat-input flex items-center gap-2 px-4 py-1.5">
@@ -447,7 +446,7 @@ export default function ChatMasterPage() {
                     onChange={(e) => setGlobalQuestion(e.target.value)}
                     onKeyDown={handleGlobalKeyDown}
                     placeholder="Đặt câu hỏi về tài liệu..."
-                    className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none py-1"
+                    className="flex-1 bg-transparent text-sm text-primary placeholder-slate-500 outline-none py-1"
                     disabled={globalLoading}
                   />
                 </div>

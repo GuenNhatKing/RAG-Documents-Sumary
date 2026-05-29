@@ -113,7 +113,7 @@ export default function FilesPage() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString("vi-VN", {
+      return new Date(iso.endsWith("Z") ? iso : iso + "Z").toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric"
@@ -138,7 +138,7 @@ export default function FilesPage() {
             <h1 className="text-3xl font-outfit font-bold text-neon-gradient tracking-tight">
               Quản Lý Tài Liệu
             </h1>
-            <p className="text-xs text-slate-400 font-medium mt-1">
+            <p className="text-xs text-muted font-medium mt-1">
               Tổng hợp và quản lý tài nguyên trích xuất tri thức của hệ thống.
             </p>
           </div>
@@ -156,25 +156,25 @@ export default function FilesPage() {
         {loading ? (
           <div className="flex items-center justify-center py-24 gap-3">
             <Loader2 className="animate-spin h-7 w-7 text-indigo-400" />
-            <span className="text-slate-400 text-xs font-bold">Đang tải danh sách tài liệu...</span>
+            <span className="text-muted text-xs font-bold">Đang tải danh sách tài liệu...</span>
           </div>
         ) : docs.length === 0 ? (
           <div className="text-center py-20 rounded-2xl glass-panel">
             <FileText className="mx-auto h-12 w-12 text-slate-500 mb-4 animate-pulse" />
-            <p className="text-slate-400 font-bold text-sm">Chưa có tài liệu nào trong thư viện.</p>
+            <p className="text-muted font-bold text-sm">Chưa có tài liệu nào trong thư viện.</p>
           </div>
         ) : (
           <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl flex flex-col w-full">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-white/5 border-b border-white/10 select-none">
-              <div className="col-span-5 text-[10px] uppercase font-black tracking-widest text-slate-400">Tên file</div>
-              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-slate-400">Trạng thái</div>
-              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-slate-400">Ngày tạo</div>
-              <div className="col-span-3 text-[10px] uppercase font-black tracking-widest text-slate-400 text-right pr-6">Thao tác</div>
+            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-secondary border-b border-theme select-none">
+              <div className="col-span-5 text-[10px] uppercase font-black tracking-widest text-muted">Tên file</div>
+              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-muted">Trạng thái</div>
+              <div className="col-span-2 text-[10px] uppercase font-black tracking-widest text-muted">Ngày tạo</div>
+              <div className="col-span-3 text-[10px] uppercase font-black tracking-widest text-muted text-right pr-6">Thao tác</div>
             </div>
 
             {/* Table Body */}
-            <div className="flex-1 overflow-y-auto divide-y divide-white/5 bg-[#2a3148]/10 max-h-[calc(100vh-320px)] scrollbar-thin">
+            <div className="flex-1 overflow-y-auto divide-y divide-theme-light bg-tertiary max-h-[calc(100vh-320px)] scrollbar-thin">
               {docs.map((doc) => {
                 const cfg = statusConfig[doc.status] ?? statusConfig.pending;
                 return (
@@ -182,7 +182,7 @@ export default function FilesPage() {
                     key={doc.id}
                     className="grid grid-cols-12 gap-4 px-6 py-4 items-center glass-card hover:z-10 group"
                   >
-                    <div className="col-span-5 font-bold text-slate-200 text-xs">
+                    <div className="col-span-5 font-bold text-primary text-xs">
                       {editingId === doc.id ? (
                         <div className="relative group max-w-sm flex items-center">
                           <input
@@ -191,7 +191,7 @@ export default function FilesPage() {
                             onChange={(e) => setEditingName(e.target.value)}
                             onKeyDown={(e) => handleRenameKeyDown(e, doc.id)}
                             onBlur={() => handleRenameSave(doc.id)}
-                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-[#222840]/60 text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
+                            className="w-full px-3 py-1.5 rounded-xl border border-indigo-500 bg-secondary text-slate-100 text-xs outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold"
                             autoFocus
                           />
                         </div>
@@ -216,7 +216,7 @@ export default function FilesPage() {
                       </span>
                     </div>
                     
-                    <div className="col-span-2 text-[10px] text-slate-400 font-bold">
+                    <div className="col-span-2 text-[10px] text-muted font-bold">
                       {formatDate(doc.created_at)}
                     </div>
                     
@@ -269,8 +269,8 @@ export default function FilesPage() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-5 py-3.5 bg-white/5 border-t border-white/10 flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-bold">
+            <div className="px-5 py-3.5 bg-secondary border-t border-theme flex items-center justify-between">
+              <span className="text-[10px] text-muted font-bold">
                 Hiển thị {docs.length} của {total} tài liệu
               </span>
               <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
@@ -286,8 +286,8 @@ export default function FilesPage() {
               <HardDrive className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Dung lượng sử dụng</p>
-              <h4 className="text-xs font-black text-slate-200 mt-0.5">1.2 GB / 5.0 GB</h4>
+              <p className="text-[9px] uppercase font-black tracking-wider text-muted">Dung lượng sử dụng</p>
+              <h4 className="text-xs font-black text-primary mt-0.5">1.2 GB / 5.0 GB</h4>
             </div>
           </div>
 
@@ -296,8 +296,8 @@ export default function FilesPage() {
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Đã hoàn thành</p>
-              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countProcessed} tệp tin</h4>
+              <p className="text-[9px] uppercase font-black tracking-wider text-muted">Đã hoàn thành</p>
+              <h4 className="text-xs font-black text-primary mt-0.5">{countProcessed} tệp tin</h4>
             </div>
           </div>
 
@@ -306,8 +306,8 @@ export default function FilesPage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Đang chờ xử lý</p>
-              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countPending} tệp tin</h4>
+              <p className="text-[9px] uppercase font-black tracking-wider text-muted">Đang chờ xử lý</p>
+              <h4 className="text-xs font-black text-primary mt-0.5">{countPending} tệp tin</h4>
             </div>
           </div>
 
@@ -316,8 +316,8 @@ export default function FilesPage() {
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[9px] uppercase font-black tracking-wider text-slate-400">Lỗi trích xuất</p>
-              <h4 className="text-xs font-black text-slate-200 mt-0.5">{countErrors} tệp tin</h4>
+              <p className="text-[9px] uppercase font-black tracking-wider text-muted">Lỗi trích xuất</p>
+              <h4 className="text-xs font-black text-primary mt-0.5">{countErrors} tệp tin</h4>
             </div>
           </div>
 

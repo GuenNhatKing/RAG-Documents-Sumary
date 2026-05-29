@@ -105,14 +105,14 @@ export default function StatsPage() {
           <h1 className="text-3xl font-black text-neon-gradient tracking-tight">
             Thống Kê Hệ Thống
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+          <p className="text-xs text-muted font-bold">
             Phân tích số liệu tài nguyên, lưu lượng truy cập và hoạt động hỏi đáp.
           </p>
         </div>
 
         {/* Access denied */}
         {!allowed && (
-          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-2xl px-4 py-3 flex items-center gap-2">
+          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-rose-500 text-xs font-bold rounded-2xl px-4 py-3 flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-500" />
             <span>Bạn không có quyền quản trị tối cao để xem báo cáo phân tích này.</span>
           </div>
@@ -122,7 +122,7 @@ export default function StatsPage() {
         {allowed && (
           <>
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-2xl px-4 py-3 mb-5 flex items-center gap-2 animate-fade-in">
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-rose-500 text-xs font-bold rounded-2xl px-4 py-3 mb-5 flex items-center gap-2 animate-fade-in">
                 <ShieldAlert className="w-4 h-4 text-rose-500" />
                 <span>{error}</span>
               </div>
@@ -130,8 +130,8 @@ export default function StatsPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-24 gap-3">
-                <Loader2 className="animate-spin h-7 w-7 text-indigo-550" />
-                <span className="text-slate-500 text-xs font-bold">Đang tải dữ liệu phân tích...</span>
+                <Loader2 className="animate-spin h-7 w-7 text-indigo-500" />
+                <span className="text-muted text-xs font-bold">Đang tải dữ liệu phân tích...</span>
               </div>
             ) : stats && (
               <div className="space-y-8 animate-fade-in">
@@ -140,22 +140,22 @@ export default function StatsPage() {
                 <div className="grid grid-cols-2 gap-6">
                   
                   <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-550 dark:text-indigo-400 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                       <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-450">Tổng tài liệu</p>
-                      <h4 className="text-2xl font-black text-slate-850 dark:text-white mt-1 leading-none">{stats.total_docs}</h4>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-muted">Tổng tài liệu</p>
+                      <h4 className="text-2xl font-black text-primary mt-1 leading-none">{stats.total_docs}</h4>
                     </div>
                   </div>
 
                   <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-550 dark:text-purple-400 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
                       <UsersIcon className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-450">Tổng người dùng</p>
-                      <h4 className="text-2xl font-black text-slate-850 dark:text-white mt-1 leading-none">{stats.total_users}</h4>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-muted">Tổng người dùng</p>
+                      <h4 className="text-2xl font-black text-primary mt-1 leading-none">{stats.total_users}</h4>
                     </div>
                   </div>
 
@@ -166,7 +166,7 @@ export default function StatsPage() {
                   
                   {/* Documents Status Donut */}
                   <div className="glass-card rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 select-none">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
                       Tài liệu theo trạng thái
                     </h3>
                     {docPieData.length > 0 ? (
@@ -187,7 +187,7 @@ export default function StatsPage() {
                                 const x = cx + radius * Math.cos(-midAngle * RADIAN);
                                 const y = cy + radius * Math.sin(-midAngle * RADIAN);
                                 return (
-                                  <text x={x} y={y} fill="#cbd5e1" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                  <text x={x} y={y} fill="var(--text-muted)" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
                                     {`${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                   </text>
                                 );
@@ -197,13 +197,13 @@ export default function StatsPage() {
                                 <Cell key={idx} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip contentStyle={{ background: "rgba(31, 31, 40, 0.95)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#fff", fontSize: "11px" }} />
-                            <Legend formatter={(value) => <span className="text-slate-300 font-bold ml-1 text-[11px]">{value}</span>} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Legend formatter={(value) => <span className="text-primary font-bold ml-1 text-[11px]">{value}</span>} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 text-xs font-bold py-12">
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
                         Chưa có dữ liệu thống kê.
                       </div>
                     )}
@@ -211,7 +211,7 @@ export default function StatsPage() {
 
                   {/* Feature Usage Donut */}
                   <div className="glass-card rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 select-none">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
                       Chức năng được sử dụng
                     </h3>
                     {featurePieData.length > 0 ? (
@@ -232,7 +232,7 @@ export default function StatsPage() {
                                 const x = cx + radius * Math.cos(-midAngle * RADIAN);
                                 const y = cy + radius * Math.sin(-midAngle * RADIAN);
                                 return (
-                                  <text x={x} y={y} fill="#cbd5e1" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                  <text x={x} y={y} fill="var(--text-muted)" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
                                     {`${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                   </text>
                                 );
@@ -242,13 +242,13 @@ export default function StatsPage() {
                                 <Cell key={idx} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip contentStyle={{ background: "rgba(31, 31, 40, 0.95)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#fff", fontSize: "11px" }} />
-                            <Legend formatter={(value) => <span className="text-slate-300 font-bold ml-1 text-[11px]">{value}</span>} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Legend formatter={(value) => <span className="text-primary font-bold ml-1 text-[11px]">{value}</span>} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 text-xs font-bold py-12">
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
                         Chưa có dữ liệu thống kê.
                       </div>
                     )}
@@ -261,7 +261,7 @@ export default function StatsPage() {
                   
                   {/* Sessions by Role */}
                   <div className="glass-card rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 select-none">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
                       Phiên trò chuyện theo vai trò
                     </h3>
                     {sessionsByRoleData.length > 0 ? (
@@ -269,9 +269,9 @@ export default function StatsPage() {
                         <ResponsiveContainer width="100%" height={280}>
                           <BarChart data={sessionsByRoleData} barSize={32}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "#cbd5e1", fontSize: 10, fontWeight: "600" }} />
-                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "#cbd5e1", fontSize: 10, fontWeight: "600" }} />
-                            <Tooltip contentStyle={{ background: "rgba(31, 31, 40, 0.95)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#fff", fontSize: "11px" }} />
+                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
                             <Bar dataKey="Số phiên" radius={[8, 8, 0, 0]}>
                               {sessionsByRoleData.map((entry, idx) => (
                                 <Cell key={idx} fill={entry.fill} />
@@ -281,7 +281,7 @@ export default function StatsPage() {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 text-xs font-bold py-12">
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
                         Chưa có dữ liệu thống kê.
                       </div>
                     )}
@@ -289,7 +289,7 @@ export default function StatsPage() {
 
                   {/* Questions by Role */}
                   <div className="glass-card rounded-2xl p-6 flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 select-none">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
                       Số câu hỏi theo vai trò
                     </h3>
                     {questionsByRoleData.length > 0 ? (
@@ -297,9 +297,9 @@ export default function StatsPage() {
                         <ResponsiveContainer width="100%" height={280}>
                           <BarChart data={questionsByRoleData} barSize={32}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "#cbd5e1", fontSize: 10, fontWeight: "600" }} />
-                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "#cbd5e1", fontSize: 10, fontWeight: "600" }} />
-                            <Tooltip contentStyle={{ background: "rgba(31, 31, 40, 0.95)", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "12px", color: "#fff", fontSize: "11px" }} />
+                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
                             <Bar dataKey="Câu hỏi" radius={[8, 8, 0, 0]}>
                               {questionsByRoleData.map((entry, idx) => (
                                 <Cell key={idx} fill={entry.fill} />
@@ -309,7 +309,7 @@ export default function StatsPage() {
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-slate-400 text-xs font-bold py-12">
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
                         Chưa có dữ liệu thống kê.
                       </div>
                     )}

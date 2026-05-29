@@ -58,13 +58,13 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`relative transition-all duration-300 ease-in-out flex flex-col bg-[#1a1f2e]/70 backdrop-blur-md border border-white/[0.06] rounded-xl m-3 ${
+      className={`relative transition-all duration-300 ease-in-out flex flex-col bg-sidebar backdrop-blur-md border border-theme rounded-xl m-3 shadow-card ${
         collapsed ? "w-[60px]" : "w-56"
       }`}
     >
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-2.5 top-5 p-1 rounded-full bg-[#2a3148] border border-white/[0.08] text-slate-400 hover:text-indigo-400 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
+          className="absolute -right-2.5 top-5 p-1 rounded-full bg-secondary border border-theme text-muted hover:text-indigo-500 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
         aria-label={collapsed ? "Mở rộng" : "Thu gọn"}
       >
         {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
@@ -86,12 +86,12 @@ export default function Sidebar() {
                 ${collapsed ? "justify-center" : "justify-start gap-3"}
                 ${
                   isActive
-                    ? "bg-gradient-to-r from-indigo-500/15 to-violet-500/15 text-indigo-300 font-medium border border-indigo-500/15"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] font-medium"
+                    ? "bg-sidebar-active text-indigo-600 dark:text-indigo-300 font-semibold border border-indigo-500/20 dark:border-indigo-500/15"
+                    : "text-muted hover:text-primary hover:bg-sidebar-hover font-medium"
                 }
               `}
             >
-              <div className={`${isActive ? "text-indigo-400" : "text-slate-400 group-hover:text-slate-200"} transition-colors duration-200`}>
+              <div className={`${isActive ? "text-indigo-500 dark:text-indigo-400" : "text-muted group-hover:text-primary"} transition-colors duration-200`}>
                 {item.icon}
               </div>
 
@@ -106,8 +106,8 @@ export default function Sidebar() {
       </nav>
 
       {!collapsed && (
-        <div className="p-2.5 m-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-          <p className="text-[9px] uppercase font-semibold text-center tracking-widest text-indigo-500/40">
+        <div className="p-2.5 m-2 rounded-lg bg-sidebar-active border border-indigo-500/15">
+          <p className="text-[9px] uppercase font-semibold text-center tracking-widest text-indigo-500/50 dark:text-indigo-400/50">
             DocAI System
           </p>
         </div>
