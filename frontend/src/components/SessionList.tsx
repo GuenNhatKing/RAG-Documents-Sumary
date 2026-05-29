@@ -1,40 +1,52 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import { ChatSession, createSession, getSessions, deleteSession } from "@/lib/chat";
-
+import { Plus, Trash2, MessageSquare, History } from "lucide-react";
+ 
 interface SessionListProps {
   docId: string;
   currentSessionId?: string;
   onSelect: (sessionId: string) => void;
   onNewSession: () => void;
+  refreshTrigger?: number;
 }
-
+ 
 export default function SessionList({
   docId,
   currentSessionId,
   onSelect,
   onNewSession,
+  refreshTrigger,
 }: SessionListProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     loadSessions();
-  }, [docId]);
-
+  }, [docId, refreshTrigger]);
+ 
   const loadSessions = async () => {
     setLoading(true);
     try {
       const data = await getSessions(docId);
-      setSessions(data);
+      if (data.length === 0) {
+        const session = await createSession(docId);
+        setSessions([session]);
+        onSelect(session.id);
+      } else {
+        setSessions(data);
+        if (!currentSessionId && data.length > 0) {
+          onSelect(data[0].id);
+        }
+      }
     } catch (err) {
       console.error("Failed to load sessions:", err);
     } finally {
       setLoading(false);
     }
   };
-
+ 
   const handleCreate = async () => {
     try {
       const session = await createSession(docId);
@@ -44,7 +56,7 @@ export default function SessionList({
       console.error("Failed to create session:", err);
     }
   };
-
+ 
   const handleDelete = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -54,104 +66,90 @@ export default function SessionList({
       console.error("Failed to delete session:", err);
     }
   };
-
+ 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
+    const d = new Date(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
+ 
     if (diffMins < 1) return "Vừa xong";
     if (diffMins < 60) return `${diffMins} phút`;
     if (diffHours < 24) return `${diffHours} giờ`;
-    if (diffDays < 7) return `${diffDays} ngày`;
-    return d.toLocaleDateString("vi-VN");
+    return `${diffDays} ngày`;
   };
-
+ 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700">Phiên trò chuyện</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-theme-light bg-tertiary/30">
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-emerald-400 dark:text-indigo-400" />
+          <h3 className="text-xs font-semibold text-muted uppercase tracking-widest">
+            Lịch sử
+          </h3>
+        </div>
         <button
           onClick={handleCreate}
-          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          className="p-1.5 rounded-lg hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 text-muted hover:text-emerald-400 dark:hover:text-indigo-400 transition-colors cursor-pointer"
           title="Tạo phiên mới"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
+          <Plus className="w-4 h-4" />
         </button>
       </div>
-
+ 
       {/* Session list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto py-2 px-2">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400" />
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-400/30 dark:border-indigo-400/30 border-t-emerald-400 dark:border-t-indigo-400" />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="px-3 py-8 text-center">
-            <p className="text-sm text-gray-400">Chưa có phiên trò chuyện</p>
+          <div className="px-4 py-12 text-center">
+            <MessageSquare className="w-6 h-6 text-muted mx-auto mb-2" />
+            <p className="text-xs text-muted">Chưa có phiên trò chuyện</p>
             <button
-              onClick={handleCreate}
-              className="mt-2 text-xs text-blue-500 hover:text-blue-700"
+              onClick={() => { handleCreate(); onNewSession(); }}
+              className="mt-2 text-xs text-emerald-400 dark:text-indigo-400 hover:text-emerald-300 dark:hover:text-indigo-300 transition-colors cursor-pointer"
             >
               Tạo phiên mới
             </button>
           </div>
         ) : (
-          <div className="py-1">
+          <div className="space-y-0.5">
             {sessions.map((session) => (
               <div
                 key={session.id}
                 onClick={() => onSelect(session.id)}
                 className={`
-                  group flex items-center justify-between px-3 py-2 cursor-pointer
-                  hover:bg-gray-50 transition-colors
-                  ${currentSessionId === session.id ? "bg-blue-50 border-l-2 border-blue-500" : ""}
+                  group relative cursor-pointer
+                  ${currentSessionId === session.id
+                    ? "bg-emerald-500/10 dark:bg-indigo-500/10 border-l-4 border-emerald-500 dark:border-indigo-500"
+                    : "hover:bg-emerald-500/5 dark:hover:bg-indigo-500/5 border-l-4 border-transparent hover:border-l-emerald-300 dark:hover:border-l-indigo-300"
+                  }
+                  px-3 py-2.5 rounded-r-lg transition-all hover:scale-[1.01]
                 `}
               >
-                <div className="flex-1 min-w-0 mr-2">
-                  <p className="text-sm text-gray-800 truncate">
+                <div className="pr-6">
+                  <p className={`text-xs truncate font-medium leading-normal ${
+                    currentSessionId === session.id ? "text-emerald-400 dark:text-indigo-400" : "text-muted group-hover:text-secondary"
+                  }`}>
                     {session.title || "Cuộc trò chuyện mới"}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className={`text-[10px] mt-0.5 ${
+                    currentSessionId === session.id ? "text-emerald-400/60 dark:text-indigo-400/60" : "text-muted"
+                  }`}>
                     {formatDate(session.updated_at)}
                   </p>
                 </div>
                 <button
                   onClick={(e) => handleDelete(session.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 transition-opacity"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-400 transition-all cursor-pointer"
                   title="Xóa phiên"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}

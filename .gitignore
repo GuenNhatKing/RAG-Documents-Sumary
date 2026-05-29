@@ -10,6 +10,11 @@ data/
 
 /.*/
 
+# Virtual environments
+.venv/
+venv/
+env/
+backend/.venv/
 
 AGENTS.md
 CLAUDE.md

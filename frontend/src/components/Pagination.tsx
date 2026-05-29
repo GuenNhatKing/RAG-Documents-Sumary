@@ -25,21 +25,21 @@ export default function Pagination({ page, total, pageSize, onPageChange }: Pagi
       <button
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
-        className="px-2 py-1 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
+        className="px-2 py-1 text-sm rounded border border-theme bg-secondary hover:bg-tertiary disabled:opacity-40 text-secondary"
       >
         &lt;
       </button>
       {pages.map((p, i) =>
         p === "..." ? (
-          <span key={`dots-${i}`} className="px-2 text-gray-400 text-sm">…</span>
+          <span key={`dots-${i}`} className="px-2 text-muted text-sm">…</span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p)}
             className={`px-2.5 py-1 text-sm rounded border ${
               p === page
-                ? "bg-[#1f6f5f] text-white border-[#1f6f5f]"
-                : "border-gray-300 bg-white hover:bg-gray-50"
+                ? "bg-emerald-500 dark:bg-indigo-500 text-white border-emerald-500 dark:border-indigo-500"
+                : "border-theme bg-secondary hover:bg-tertiary text-secondary"
             }`}
           >
             {p}
@@ -49,11 +49,11 @@ export default function Pagination({ page, total, pageSize, onPageChange }: Pagi
       <button
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
-        className="px-2 py-1 text-sm rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
+        className="px-2 py-1 text-sm rounded border border-theme bg-secondary hover:bg-tertiary disabled:opacity-40 text-secondary"
       >
         &gt;
       </button>
-      <span className="ml-3 text-xs text-gray-500">{total} kết quả</span>
+      <span className="ml-3 text-xs text-muted">{total} kết quả</span>
     </div>
   );
 }

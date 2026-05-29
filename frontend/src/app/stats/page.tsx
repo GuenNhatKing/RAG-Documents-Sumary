@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { getPayload } from "@/lib/auth";
 import { getStats, StatsData } from "@/lib/stats";
+import { FileText, Users as UsersIcon, ShieldAlert, Loader2 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -24,22 +25,22 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "#94a3b8",
-  processing: "#60a5fa",
-  pending_review: "#fbbf24",
-  processed: "#34d399",
-  error: "#f87171",
+  pending: "#38bdf8",          // vibrant sky blue
+  processing: "#fbbf24",       // vibrant amber
+  pending_review: "#c084fc",   // vibrant purple
+  processed: "#34d399",        // vibrant emerald
+  error: "#f87171",            // vibrant red
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "#8b5cf6",
-  can_bo: "#3b82f6",
-  nguoi_dung: "#6b7280",
+  admin: "#a855f7",            // purple
+  can_bo: "#818cf8",           // indigo
+  nguoi_dung: "#c3c0ff",       // soft lavender (Stitch primary)
 };
 
 const FEATURE_COLORS: Record<string, string> = {
-  "Hỏi đáp": "#3b82f6",
-  "Hỏi tài liệu": "#10b981",
+  "Hỏi đáp": "#c3c0ff",
+  "Hỏi tài liệu": "#34d399",
 };
 
 export default function StatsPage() {
@@ -47,6 +48,7 @@ export default function StatsPage() {
   const [checked, setChecked] = useState(false);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const payload = getPayload();
@@ -54,9 +56,13 @@ export default function StatsPage() {
     setAllowed(ok);
     setChecked(true);
     if (ok) {
+      setLoading(true);
       getStats()
         .then(setStats)
-        .catch(() => setError("Không thể tải dữ liệu thống kê."));
+        .catch(() => setError("Không thể tải dữ liệu thống kê."))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -91,152 +97,232 @@ export default function StatsPage() {
     : [];
 
   return (
-    <ProtectedRoute>
-      <section className="p-8">
-        {!allowed ? (
-          <p className="text-center text-red-600">Bạn không có quyền truy cập trang này.</p>
-        ) : (
+    <ProtectedRoute requiredRole="admin">
+      <div className="flex-1 overflow-y-auto px-8 py-8 w-full max-w-6xl mx-auto select-none">
+        
+        {/* Header */}
+        <div className="flex flex-col gap-1 mb-8">
+          <h1 className="text-3xl font-black text-neon-gradient tracking-tight">
+            Thống Kê Hệ Thống
+          </h1>
+          <p className="text-xs text-muted font-bold">
+            Phân tích số liệu tài nguyên, lưu lượng truy cập và hoạt động hỏi đáp.
+          </p>
+        </div>
+
+        {/* Access denied */}
+        {!allowed && (
+          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-rose-500 text-xs font-bold rounded-2xl px-4 py-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-500" />
+            <span>Bạn không có quyền quản trị tối cao để xem báo cáo phân tích này.</span>
+          </div>
+        )}
+
+        {/* System statistics */}
+        {allowed && (
           <>
-            <h1 className="text-2xl font-bold mb-6">Thống kê hệ thống</h1>
+            {error && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-600 text-rose-500 text-xs font-bold rounded-2xl px-4 py-3 mb-5 flex items-center gap-2 animate-fade-in">
+                <ShieldAlert className="w-4 h-4 text-rose-500" />
+                <span>{error}</span>
+              </div>
+            )}
 
-            {error && <p className="text-red-600 mb-4">{error}</p>}
-
-            {stats && (
-              <div className="space-y-8">
+            {loading ? (
+              <div className="flex items-center justify-center py-24 gap-3">
+                <Loader2 className="animate-spin h-7 w-7 text-emerald-500 dark:text-indigo-500" />
+                <span className="text-muted text-xs font-bold">Đang tải dữ liệu phân tích...</span>
+              </div>
+            ) : stats && (
+              <div className="space-y-8 animate-fade-in">
+                
                 {/* Overview cards */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Card label="Tổng tài liệu" value={stats.total_docs} icon="📄" />
-                  <Card label="Tổng người dùng" value={stats.total_users} icon="👥" />
+                <div className="grid grid-cols-2 gap-6">
+                  
+                  <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-500 dark:text-indigo-500 flex items-center justify-center">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-muted">Tổng tài liệu</p>
+                      <h4 className="text-2xl font-black text-primary mt-1 leading-none">{stats.total_docs}</h4>
+                    </div>
+                  </div>
+
+                  <div className="glass-card rounded-2xl p-6 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-500 dark:text-indigo-500 flex items-center justify-center">
+                      <UsersIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-muted">Tổng người dùng</p>
+                      <h4 className="text-2xl font-black text-primary mt-1 leading-none">{stats.total_users}</h4>
+                    </div>
+                  </div>
+
                 </div>
 
-                {/* Row 1: Pie charts */}
+                {/* Pie Charts block */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Pie chart — Documents by status */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-5">
-                    <h2 className="text-lg font-semibold mb-4">Tài liệu theo trạng thái</h2>
+                  
+                  {/* Documents Status Donut */}
+                  <div className="glass-card rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
+                      Tài liệu theo trạng thái
+                    </h3>
                     {docPieData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <PieChart>
-                          <Pie
-                            data={docPieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={55}
-                            outerRadius={95}
-                            paddingAngle={3}
-                            dataKey="value"
-                            label={({ name, percent }: { name?: string; percent?: number }) =>
-                              `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`
-                            }
-                          >
-                            {docPieData.map((entry, i) => (
-                              <Cell key={i} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-[280px]">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={docPieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={4}
+                              dataKey="value"
+                              label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+                                const RADIAN = Math.PI / 180;
+                                const radius = outerRadius + 22;
+                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                return (
+                                  <text x={x} y={y} fill="var(--text-muted)" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                    {`${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                  </text>
+                                );
+                              }}
+                            >
+                              {docPieData.map((entry, idx) => (
+                                <Cell key={idx} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Legend formatter={(value) => <span className="text-primary font-bold ml-1 text-[11px]">{value}</span>} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
                     ) : (
-                      <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
+                        Chưa có dữ liệu thống kê.
+                      </div>
                     )}
                   </div>
 
-                  {/* Pie chart — Feature usage */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-5">
-                    <h2 className="text-lg font-semibold mb-4">Chức năng sử dụng</h2>
+                  {/* Feature Usage Donut */}
+                  <div className="glass-card rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
+                      Chức năng được sử dụng
+                    </h3>
                     {featurePieData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <PieChart>
-                          <Pie
-                            data={featurePieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={55}
-                            outerRadius={95}
-                            paddingAngle={3}
-                            dataKey="value"
-                            label={({ name, percent }: { name?: string; percent?: number }) =>
-                              `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`
-                            }
-                          >
-                            {featurePieData.map((entry, i) => (
-                              <Cell key={i} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-[280px]">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={featurePieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={4}
+                              dataKey="value"
+                              label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+                                const RADIAN = Math.PI / 180;
+                                const radius = outerRadius + 22;
+                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                return (
+                                  <text x={x} y={y} fill="var(--text-muted)" fontSize={10} fontWeight="bold" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                    {`${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                  </text>
+                                );
+                              }}
+                            >
+                              {featurePieData.map((entry, idx) => (
+                                <Cell key={idx} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Legend formatter={(value) => <span className="text-primary font-bold ml-1 text-[11px]">{value}</span>} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
                     ) : (
-                      <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
+                        Chưa có dữ liệu thống kê.
+                      </div>
                     )}
                   </div>
+
                 </div>
 
-                {/* Row 2: Bar charts by role */}
+                {/* Bar Charts block */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bar chart — Sessions by role */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-5">
-                    <h2 className="text-lg font-semibold mb-4">Phiên trao đổi theo vai trò</h2>
+                  
+                  {/* Sessions by Role */}
+                  <div className="glass-card rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
+                      Phiên trò chuyện theo vai trò
+                    </h3>
                     {sessionsByRoleData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={sessionsByRoleData} barSize={40}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="name" />
-                          <YAxis allowDecimals={false} />
-                          <Tooltip />
-                          <Bar dataKey="Số phiên" radius={[6, 6, 0, 0]}>
-                            {sessionsByRoleData.map((entry, i) => (
-                              <Cell key={i} fill={entry.fill} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-[280px]">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={sessionsByRoleData} barSize={32}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Bar dataKey="Số phiên" radius={[8, 8, 0, 0]}>
+                              {sessionsByRoleData.map((entry, idx) => (
+                                <Cell key={idx} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     ) : (
-                      <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
+                        Chưa có dữ liệu thống kê.
+                      </div>
                     )}
                   </div>
 
-                  {/* Bar chart — Questions by role */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-5">
-                    <h2 className="text-lg font-semibold mb-4">Câu hỏi theo vai trò</h2>
+                  {/* Questions by Role */}
+                  <div className="glass-card rounded-2xl p-6 flex flex-col">
+                    <h3 className="text-sm font-bold text-primary mb-5 select-none">
+                      Số câu hỏi theo vai trò
+                    </h3>
                     {questionsByRoleData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={questionsByRoleData} barSize={40}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="name" />
-                          <YAxis allowDecimals={false} />
-                          <Tooltip />
-                          <Bar dataKey="Câu hỏi" radius={[6, 6, 0, 0]}>
-                            {questionsByRoleData.map((entry, i) => (
-                              <Cell key={i} fill={entry.fill} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-[280px]">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={questionsByRoleData} barSize={32}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                            <XAxis dataKey="name" stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <YAxis allowDecimals={false} stroke="rgba(255, 255, 255, 0.15)" tick={{ fill: "var(--text-muted)", fontSize: 10, fontWeight: "600" }} />
+                            <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "11px" }} />
+                            <Bar dataKey="Câu hỏi" radius={[8, 8, 0, 0]}>
+                              {questionsByRoleData.map((entry, idx) => (
+                                <Cell key={idx} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     ) : (
-                      <p className="text-gray-400 text-center py-12">Chưa có dữ liệu</p>
+                      <div className="flex-1 flex items-center justify-center text-muted text-xs font-bold py-12">
+                        Chưa có dữ liệu thống kê.
+                      </div>
                     )}
                   </div>
+
                 </div>
+
               </div>
             )}
           </>
         )}
-      </section>
-    </ProtectedRoute>
-  );
-}
 
-function Card({ label, value, icon }: { label: string; value: number; icon: string }) {
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center gap-3">
-      <span className="text-2xl">{icon}</span>
-      <div>
-        <p className="text-2xl font-bold text-[#1f6f5f]">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

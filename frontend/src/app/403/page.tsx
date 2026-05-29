@@ -2,11 +2,14 @@
 
 export default function AccessDeniedPage() {
   return (
-    <section className="flex min-h-screen items-center justify-center bg-bg-base">
-      <div className="rounded bg-white p-8 shadow-md text-center">
-        <h1 className="mb-4 text-2xl font-bold text-red-600">403 – Truy cập bị từ chối</h1>
-        <p className="mb-4">Bạn không có quyền xem trang này.</p>
-        <a href="/" className="text-primary underline">
+    <section className="flex min-h-screen items-center justify-center bg-transparent">
+      <div className="glass-panel p-8 rounded-3xl text-center max-w-sm w-full">
+        <h1 className="mb-4 text-xl font-bold text-rose-500">403 – Truy cập bị từ chối</h1>
+        <p className="mb-6 text-xs text-muted font-medium">Bạn không có quyền xem trang này.</p>
+        <a 
+          href="/" 
+          className="inline-block w-full px-5 py-2.5 rounded-xl border border-theme bg-secondary hover:bg-card hover:border-theme-accent text-secondary font-bold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-xs text-center"
+        >
           Quay lại trang chủ
         </a>
       </div>

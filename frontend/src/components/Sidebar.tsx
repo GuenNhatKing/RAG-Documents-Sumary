@@ -4,26 +4,39 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getPayload } from "@/lib/auth";
+import { MessageSquare, UploadCloud, FileText, Users, BarChart3, ChevronLeft, ChevronRight } from "lucide-react";
 
 type MenuItem = {
   label: string;
   href: string;
+  icon: React.ReactNode;
 };
 
-const roleMenus: Record<string, MenuItem[]> = {
+const getIconForHref = (href: string, size = 18) => {
+  switch (href) {
+    case "/chat": return <MessageSquare size={size} />;
+    case "/upload": return <UploadCloud size={size} />;
+    case "/files": return <FileText size={size} />;
+    case "/users": return <Users size={size} />;
+    case "/stats": return <BarChart3 size={size} />;
+    default: return <FileText size={size} />;
+  }
+};
+
+const roleMenus: Record<string, Omit<MenuItem, 'icon'>[]> = {
   nguoi_dung: [
     { label: "Hỏi đáp", href: "/chat" },
   ],
   can_bo: [
     { label: "Hỏi đáp", href: "/chat" },
-    { label: "Upload tài liệu", href: "/upload" },
-    { label: "Quản lý tài liệu", href: "/files" },
+    { label: "Upload", href: "/upload" },
+    { label: "Tài liệu", href: "/files" },
   ],
   admin: [
     { label: "Hỏi đáp", href: "/chat" },
-    { label: "Upload tài liệu", href: "/upload" },
-    { label: "Quản lý tài liệu", href: "/files" },
-    { label: "Quản lý người dùng", href: "/users" },
+    { label: "Upload", href: "/upload" },
+    { label: "Tài liệu", href: "/files" },
+    { label: "Người dùng", href: "/users" },
     { label: "Thống kê", href: "/stats" },
   ],
 };
@@ -38,44 +51,28 @@ export default function Sidebar() {
     setRole(payload?.role ?? "nguoi_dung");
   }, [pathname]);
 
-  const menus = roleMenus[role] ?? [];
+  const menus: MenuItem[] = (roleMenus[role] ?? []).map(m => ({
+    ...m,
+    icon: getIconForHref(m.href)
+  }));
 
   return (
     <aside
-      className={`h-full transition-all duration-300 ease-in-out flex flex-col shadow-sm border-r border-[#6fcf97]/40 bg-white ${
-        collapsed ? "w-20" : "w-64"
+      className={`relative transition-all duration-300 ease-in-out flex flex-col bg-sidebar backdrop-blur-md border border-theme rounded-xl m-3 shadow-card ${
+        collapsed ? "w-[60px]" : "w-56"
       }`}
     >
-      {/* Header & Toggle Button */}
-      <div className="flex items-center justify-between p-4 border-b border-[#6fcf97]/20">
-        {!collapsed && (
-          <span className="font-bold text-[#1f6f5f] text-lg tracking-wide truncate">
-            Hệ Thống
-          </span>
-        )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className={`p-1.5 rounded-md text-[#2fa084] hover:bg-[#2fa084]/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#6fcf97]/50 ${
-            collapsed ? "mx-auto" : ""
-          }`}
-          aria-label={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
-        >
-          {collapsed ? (
-            // Icon Menu / Expand
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          ) : (
-            // Icon Close / Collapse
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-          )}
-        </button>
-      </div>
+          className="absolute -right-2.5 top-5 p-1 rounded-full bg-secondary border border-theme text-muted hover:text-emerald-500 dark:hover:text-indigo-500 hover:scale-105 transition-all focus:outline-none z-10 cursor-pointer"
+        aria-label={collapsed ? "Mở rộng" : "Thu gọn"}
+      >
+        {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+      </button>
 
-      {/* Menu items */}
-      <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-2">
+      <div className="h-3" />
+
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 scrollbar-none">
         {menus.map((item) => {
           const isActive = pathname === item.href;
 
@@ -85,21 +82,21 @@ export default function Sidebar() {
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={`
-                flex items-center rounded-lg px-3 py-2.5 transition-all duration-200
-                ${collapsed ? "justify-center" : "justify-start"}
+                group flex items-center rounded-lg px-3 py-2.5 transition-all duration-200 cursor-pointer
+                ${collapsed ? "justify-center" : "justify-start gap-3"}
                 ${
                   isActive
-                    ? "bg-[#2fa084] text-white shadow-md shadow-[#2fa084]/30"
-                    : "text-[#1f6f5f] hover:bg-[#6fcf97]/15 hover:text-[#1f6f5f]"
+                    ? "bg-sidebar-active text-emerald-600 dark:text-indigo-600 dark:text-emerald-300 dark:text-indigo-300 font-semibold border border-emerald-500/20 dark:border-indigo-500/20 dark:border-emerald-500/15 dark:border-indigo-500/15"
+                    : "text-muted hover:text-primary hover:bg-sidebar-hover font-medium"
                 }
               `}
             >
-              {collapsed ? (
-                <span className="font-bold text-lg leading-none">
-                  {item.label.charAt(0)}
-                </span>
-              ) : (
-                <span className="font-medium whitespace-nowrap">
+              <div className={`${isActive ? "text-emerald-500 dark:text-indigo-500 dark:text-emerald-400 dark:text-indigo-400" : "text-muted group-hover:text-primary"} transition-colors duration-200`}>
+                {item.icon}
+              </div>
+
+              {!collapsed && (
+                <span className="whitespace-nowrap text-sm tracking-tight">
                   {item.label}
                 </span>
               )}

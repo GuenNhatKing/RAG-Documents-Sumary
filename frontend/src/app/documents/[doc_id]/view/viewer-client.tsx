@@ -5,13 +5,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API, getToken } from "@/lib/auth";
 
+export type ViewMode = "md" | "raw";
+
 type Props = {
   markdown: string;
   highlight: string;
   docId?: string;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
 };
-
-type ViewMode = "md" | "raw";
 
 function parseLineRange(range: string): Set<number> {
   const result = new Set<number>();
@@ -47,12 +49,23 @@ export default function DocumentViewerClient({
   markdown,
   highlight,
   docId,
+  viewMode: externalViewMode,
+  onViewModeChange,
 }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>("md");
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("md");
+  const viewMode = externalViewMode ?? internalViewMode;
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [pdfLoadedOnce, setPdfLoadedOnce] = useState(false);
   const highlightedLines = parseLineRange(highlight);
+
+  // Auto-load PDF when switching to raw view
+  useEffect(() => {
+    if (viewMode === "raw" && !pdfLoadedOnce) {
+      loadPdf();
+    }
+  }, [viewMode]);
 
   // Revoke object URL on unmount
   useEffect(() => {
@@ -87,6 +100,7 @@ export default function DocumentViewerClient({
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
+      setPdfLoadedOnce(true);
     } catch (err) {
       console.error("Failed to load PDF:", err);
       setPdfError("Không thể tải file PDF.");
@@ -95,19 +109,13 @@ export default function DocumentViewerClient({
     }
   };
 
-  const handleSwitchToRaw = () => {
-    setViewMode("raw");
-    loadPdf();
-  };
-
   const lines = (markdown ?? "").split("\n");
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Content area */}
-      <div className="flex-1 overflow-auto">
-        {viewMode === "md" ? (
-          <main className="bg-white px-10 py-8 text-slate-800">
+    <div className="flex-1 min-h-0 bg-primary text-primary">
+      {viewMode === "md" ? (
+        <div className="h-full overflow-auto">
+          <main className="bg-primary px-10 py-8 text-secondary">
             <article className="mx-auto max-w-4xl text-[15px] leading-7">
               {lines.map((line, index) => {
                 const lineNumber = index + 1;
@@ -122,7 +130,7 @@ export default function DocumentViewerClient({
                     id={`line-${lineNumber}`}
                     className={`rounded-md px-2 ${
                       isHighlighted
-                        ? "bg-yellow-100 border-l-4 border-yellow-500"
+                        ? "bg-yellow-500/10 border-l-4 border-yellow-500 text-yellow-300 font-semibold"
                         : ""
                     }`}
                   >
@@ -133,47 +141,47 @@ export default function DocumentViewerClient({
                         remarkPlugins={[remarkGfm]}
                         components={{
                           h1: ({ children }) => (
-                            <h1 className="mt-8 mb-5 text-3xl font-bold text-slate-950">
+                            <h1 className="mt-8 mb-5 text-3xl font-bold text-primary">
                               {children}
                             </h1>
                           ),
                           h2: ({ children }) => (
-                            <h2 className="mt-7 mb-4 text-2xl font-bold text-slate-900">
+                            <h2 className="mt-7 mb-4 text-2xl font-bold text-primary">
                               {children}
                             </h2>
                           ),
                           h3: ({ children }) => (
-                            <h3 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+                            <h3 className="mt-8 mb-3 text-xl font-bold text-primary">
                               {children}
                             </h3>
                           ),
                           h4: ({ children }) => (
-                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-base font-semibold text-emerald-900">
+                            <h4 className="mt-4 mb-2 rounded-md border-l-4 border-emerald-500 dark:border-indigo-500 bg-emerald-500/10 dark:bg-indigo-500/10 px-3 py-2 text-base font-semibold text-emerald-700 dark:text-indigo-300">
                               {children}
                             </h4>
                           ),
                           p: ({ children }) => (
-                            <p className="my-2 text-slate-700">
+                            <p className="my-2 text-secondary">
                               {children}
                             </p>
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-semibold text-slate-900">
+                            <strong className="font-semibold text-primary">
                               {children}
                             </strong>
                           ),
                           table: ({ children }) => (
-                            <table className="my-4 w-full border-collapse text-sm">
+                            <table className="my-4 w-full border-collapse text-sm border border-theme">
                               {children}
                             </table>
                           ),
                           th: ({ children }) => (
-                            <th className="border bg-slate-100 px-3 py-2 text-left font-semibold">
+                            <th className="border border-theme bg-tertiary px-3 py-2 text-left font-semibold text-primary">
                               {children}
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="border px-3 py-2">
+                            <td className="border border-theme px-3 py-2 text-secondary">
                               {children}
                             </td>
                           ),
@@ -187,63 +195,35 @@ export default function DocumentViewerClient({
               })}
             </article>
           </main>
-        ) : pdfLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin h-8 w-8 border-4 border-emerald-600 border-t-transparent rounded-full" />
+        </div>
+      ) : pdfLoading ? (
+        <div className="h-full flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-4 border-emerald-500 dark:border-indigo-500 border-t-transparent rounded-full" />
+        </div>
+      ) : pdfError ? (
+        <div className="h-full flex items-center justify-center">
+          <p className="text-rose-500 font-bold text-xs">{pdfError}</p>
+        </div>
+      ) : pdfUrl ? (
+        <object
+          data={pdfUrl}
+          type="application/pdf"
+          className="w-full h-full block"
+        >
+          <div className="h-full flex flex-col items-center justify-center gap-3">
+            <p className="text-muted font-bold text-xs">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
+            <a
+              href={pdfUrl}
+              download
+              className="px-4 py-2 bg-emerald-600 dark:bg-indigo-600 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-indigo-700 text-xs font-bold transition-all"
+            >
+              Tải file PDF
+            </a>
           </div>
-        ) : pdfError ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-red-500">{pdfError}</p>
-          </div>
-        ) : pdfUrl ? (
-          <object
-            data={pdfUrl}
-            type="application/pdf"
-            className="w-full h-full"
-          >
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <p className="text-gray-500">Trình duyệt không hỗ trợ xem PDF trực tiếp.</p>
-              <a
-                href={pdfUrl}
-                download
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-              >
-                Tải file PDF
-              </a>
-            </div>
-          </object>
-        ) : null}
-      </div>
-
-      {/* Toggle buttons */}
-      {docId && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 border-t border-gray-200">
-          <button
-            onClick={() => setViewMode("md")}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "md"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Xem Markdown
-          </button>
-          <button
-            onClick={handleSwitchToRaw}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "raw"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            Xem file gốc
-          </button>
+        </object>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <p className="text-muted text-xs">Chọn chế độ xem</p>
         </div>
       )}
     </div>
