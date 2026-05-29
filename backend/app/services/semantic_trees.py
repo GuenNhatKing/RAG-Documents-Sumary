@@ -87,10 +87,10 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
 
         semantic_tree = await md_to_tree(
             md_path=str(md_path),
-            if_thinning=False,
-            min_token_threshold=5000,
+            if_thinning=True,
+            min_token_threshold=1500,
             if_add_node_summary=opt.if_add_node_summary,
-            summary_token_threshold=200,
+            summary_token_threshold=800,
             model=opt.model,
             if_add_doc_description=opt.if_add_doc_description,
             if_add_node_text=opt.if_add_node_text,
