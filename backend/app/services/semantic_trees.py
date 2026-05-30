@@ -7,6 +7,7 @@ then calls PageIndex md_to_tree and saves data/semantic_trees/{document_id}.json
 import argparse
 import asyncio
 import json
+import os
 import time
 from pathlib import Path
 
@@ -83,6 +84,9 @@ async def generate_semantic_tree(document_id: str, md_path: str | Path | None = 
 
         config_loader = ConfigLoader()
         opt = config_loader.load({})
+        # Env var override: ADD_NOTE_TO_SUMMARY=true → if_add_node_summary=yes
+        if os.getenv("ADD_NOTE_TO_SUMMARY", "").lower() in ("true", "1", "yes"):
+            opt.if_add_node_summary = "yes"
         _update_progress(document_id, status="building", message="Đang xây dựng cây ngữ nghĩa...", model=opt.model)
 
         semantic_tree = await md_to_tree(

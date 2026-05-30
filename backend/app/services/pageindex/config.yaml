@@ -1,8 +1,8 @@
 # model: "openrouter/openrouter/free"
 # retrieve_model: "openrouter/openrouter/free"
 
-model: "groq/openai/gpt-oss-120b"
-retrieve_model: "groq/openai/gpt-oss-120b"
+model: "openai/qwen3-4b"
+retrieve_model: "openai/qwen3-4b"
 
 toc_check_page_num: 20
 max_page_num_each_node: 10
