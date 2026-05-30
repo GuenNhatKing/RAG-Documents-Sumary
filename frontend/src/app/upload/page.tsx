@@ -95,7 +95,7 @@ export default function UploadPage() {
   }, [pdfUrl]);
 
   useEffect(() => {
-    if ((status !== "extracting" && status !== "building_tree") || !docId) return;
+    if (status !== "extracting" || !docId) return;
     const interval = setInterval(async () => {
       try {
         const res = await axios.get(`${API}/documents/${docId}/extract-progress`, {
@@ -103,11 +103,8 @@ export default function UploadPage() {
         });
         const data = res.data;
         console.log("[Poll]", status, data);
-        if (status === "extracting" && data.current_page && data.total_pages) {
+        if (data.current_page && data.total_pages) {
           setOcrProgress({ current_page: data.current_page, total_pages: data.total_pages });
-        }
-        if (status === "building_tree" && data.message) {
-          setTreeProgress({ message: data.message });
         }
       } catch (e) {
         console.warn("[Poll error]", e);
