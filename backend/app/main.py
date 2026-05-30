@@ -16,7 +16,7 @@ from .env import load_backend_env
 load_backend_env()
 
 from sqlalchemy import func
-from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User
+from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User, DocumentChunk
 from .database import SessionLocal, engine
 from celery import Celery
 
@@ -324,10 +324,10 @@ def edit_document_markdown(doc_id: str, body: dict, current_user: TokenData = De
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
             )
 
         new_markdown = body.get("markdown")
@@ -540,6 +540,9 @@ def delete_document(doc_id: str, current_user: TokenData = Depends(get_current_u
             remove_doc_from_master_tree(doc_id)
         except Exception:
             pass
+
+        # Delete all document chunks for this document
+        db.query(DocumentChunk).filter(DocumentChunk.doc_id == doc_id).delete()
 
         # Delete document DB record
         db.delete(doc)
