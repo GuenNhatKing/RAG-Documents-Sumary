@@ -1,0 +1,2335 @@
+{
+  "doc_name": "8c02200c-6e8a-4c7c-a2e0-79ab21c42222",
+  "line_count": 871,
+  "structure": [
+    {
+      "title": "CHƯƠNG I NHỮNG QUY ĐỊNH CHUNG",
+      "node_id": "0000",
+      "line_num": 1,
+      "nodes": [
+        {
+          "title": "Điều 1. Phạm vi điều chinh Luật này quy định về hoạt động an toàn thông, quyền, trách nhiệm của cơ quan, tổ chức, cá nhân trong việc bảo đảm an toàn thông tin mạng; mật mã dân sự, tiêu chuân, quy chuân kỹ thuật về an toàn thông tin mạng, kinh doanh trong lĩnh vực an toàn thông tin mạng, phát triển nguồn nhân lực an toàn thông tin mạng, quản lý nhà nước về an toàn thông tin mạng",
+          "node_id": "0001",
+          "line_num": 3
+        },
+        {
+          "title": "Điều 2. Đối tượng áp dụng Luật này áp dụng đối với cơ quan, tổ chức, cá nhân Việt Nam, tố chức, cá nhân nước ngoài trực tiếp tham gia hoặc có liên quan đến hoạt động an toàn thông tin mạng tại Việt Nam",
+          "node_id": "0002",
+          "line_num": 5
+        },
+        {
+          "title": "Điều 3. Giải thích từ ngữ Trong Luật này, các từ ngữ dưới đây được hiểu như sau:",
+          "node_id": "0003",
+          "line_num": 7,
+          "nodes": [
+            {
+              "title": "1 An toàn thông tin mạng là sự bảo vệ thông tin, hệ thống thông tin trên mạng tránh bị truy nhập, sử dụng, tiết lô, gián đoạn, sửa đồi hoặc phá hoại trái phép nhằm bảo đảm tính nguyên vẹn, tính bảo mật và tính khá dụng của thông tin",
+              "node_id": "0004",
+              "line_num": 9
+            },
+            {
+              "title": "2. Mang là môi trường trong đó thông tin được cung cấp, truyên đưa, thu thập, xử lý, lưu trữ và trao đổi thông qua mạng viễn thông và mạng máy tính",
+              "node_id": "0005",
+              "line_num": 11
+            },
+            {
+              "title": "3. Hệ thống thông tin là tập hợp phần mềm và cơ sở dữ liệu được thiết lập phục vụ mục đích tạo lập, cung cấp, truyên đưa, thu thập, xử lý, lưu trữ và trao đổi thông tin trên mạng",
+              "node_id": "0006",
+              "line_num": 13
+            },
+            {
+              "title": "4. Hệ thông thông tin quan trong quốc gia là hệ thống thông tin mà khi bị phá hoại sẽ làm tổn hại đặc biệt nghiêm trong tới quốc phòng, an ninh quốc gia",
+              "node_id": "0007",
+              "line_num": 15
+            },
+            {
+              "title": "5 Chủ quân hệ thống thông tin là cơ quan, tổ chức, cá nhân có thẩm quyền quản lý trực tiếp đối với hệ thống thông tin",
+              "node_id": "0008",
+              "line_num": 17
+            },
+            {
+              "title": "6. Xâm phạm an toàn thông tin mạng là hành vi truy nhập, sử dụng, tiết lộ, làm gián đoạn, sửa đôi, phá hoại trái phép thông tin, hê thông thông tin",
+              "node_id": "0009",
+              "line_num": 19
+            },
+            {
+              "title": "7. Sự có an toàn thông tin mạng là việc thông tin, hệ thông thông tin bị gây nguy hại, ảnh hưởng tới tính nguyên vẹn, tính bảo mật hoặc tỉnh khả dụng",
+              "node_id": "0010",
+              "line_num": 21
+            },
+            {
+              "title": "8. Rủi ro an toàn thông tin mạng là những nhân tố chủ quan hoặc khách quan có khả năng ảnh hưởng tới trạng thái an toàn thông tin mạng",
+              "node_id": "0011",
+              "line_num": 23
+            },
+            {
+              "title": "9. Đánh giá rúi ro an toàn thông tin mạng là việc phát hiện, phân tích, ước lượng mức độ tôn hai, mối đe dọa đối với thông tin, hệ thông thông tin",
+              "node_id": "0012",
+              "line_num": 25
+            },
+            {
+              "title": "10. Quản lý rúi ro an toàn thông tin mạng là việc đưa ra các biện pháp nhằm giảm thiều rúi ro an toàn thông tin mạng",
+              "node_id": "0013",
+              "line_num": 27
+            },
+            {
+              "title": "11. Phần mêm độc hại là phân mêm có khả năng gây ra hoạt động không bình thường cho một phần hay toàn bộ hệ thống thông tin hoặc thực hiên sao chép, sửa đồi, xóa bỏ trái phép thông tin lưu trữ trong hệ thông thông tin",
+              "node_id": "0014",
+              "line_num": 29
+            },
+            {
+              "title": "12. Hệ thông lọc phân mêm độc hại là tập hợp phân cứng, phần mêm được kết nối vào mạng để phát hiện, ngăn chặn, lọc và thống kê phần mềm độc hại",
+              "node_id": "0015",
+              "line_num": 31
+            },
+            {
+              "title": "13. Địa chỉ điện tử là địa chỉ được sử dụng để gửi, nhận thông tin trên mạng bao gồm địa chi thư điện tử, số điện thoại, địa chí Internet và hình thức tương tự khác",
+              "node_id": "0016",
+              "line_num": 33
+            },
+            {
+              "title": "14 Xung đột thông tin là việc hai hoặc nhiều tô chức trong nước và nước ngoài sử dụng biện pháp công nghệ, kỹ thuật thông tin gây tôn hại đến thông tin, hệ thống thông tin trên mạng",
+              "node_id": "0017",
+              "line_num": 35
+            },
+            {
+              "title": "15 Thông tin cá nhân là thông tin găn với việc xác định danh tính của một người cụ thể",
+              "node_id": "0018",
+              "line_num": 37
+            },
+            {
+              "title": "16. Chủ thể thông tin cả nhân là người được xác định từ thông tin cá nhân đó",
+              "node_id": "0019",
+              "line_num": 39
+            },
+            {
+              "title": "17. Xữ lý thông tin cá nhân là việc thực hiện một hoặc một số thao tác thu thập, biên tập, sử dụng, lưu trữ, cung cấp, chia sê, phát tán thông tin cá nhân trên mạng nhăm mục đích thương mại",
+              "node_id": "0020",
+              "line_num": 41
+            },
+            {
+              "title": "18. Mật mã dân sự là kỹ thuật mật mã và sản phẩm mật mã được sử dụng để bảo mật hoặc xác thực đối với thông tin không thuộc phạm vi bi mật nhà nước",
+              "node_id": "0021",
+              "line_num": 43
+            },
+            {
+              "title": "19. San phẩm an toàn thông tin mạng là phần cứng, phần mềm có chức năng bảo vệ thông tin, hệ thống tin",
+              "node_id": "0022",
+              "line_num": 45
+            },
+            {
+              "title": "20. Dịch vụ an toàn thông tin mang là dịch vụ bảo vệ thông tin, hệ thông thông tin",
+              "node_id": "0023",
+              "line_num": 47
+            }
+          ]
+        },
+        {
+          "title": "Điều 4.Nguyên tắc bảo đảm an toàn thông tin mạng",
+          "node_id": "0024",
+          "line_num": 49,
+          "nodes": [
+            {
+              "title": "1.Cơ quan, tô chức, cá nhân có trách nhiệm bảo đảm an toàn thông tin mạng .Hoạt động an toàn thông tin mạng của cơ quan, tổ chức, cá nhân phải đúng quy định của pháp luật, bảo đảm quốc phòng, an ninh quốc gia, bí mật nha nước, giữ vững ổn định chính trị, trật tự, an toàn xã hội và thúc đầy phát triển kinh tế - xã hội",
+              "node_id": "0025",
+              "line_num": 51
+            },
+            {
+              "title": "2 Tổ chức, cá nhân không được xâm phạm an toàn thông tin mạng của tổ chức, cá nhân khác",
+              "node_id": "0026",
+              "line_num": 53
+            },
+            {
+              "title": "3. Việc xử lý sự cố an toàn thông tin mạng phải bảo đảm quyền và lợi ích hợp pháp của tổ chức, cá nhân, không xâm phạm đến đời sống riêng tư, bí mật cá nhân, bí mật gia đình của cá nhân, thông tin riêng của tổ chức",
+              "node_id": "0027",
+              "line_num": 55
+            },
+            {
+              "title": "4 Hoạt động an toàn thông tin mạng phải được thực hiện thường xuyên, liên tục, kịp thời và hiệu quả",
+              "node_id": "0028",
+              "line_num": 57
+            }
+          ]
+        },
+        {
+          "title": "Điều 5. Chính sách của Nhà nước về an toàn thông tin mạng",
+          "node_id": "0029",
+          "line_num": 59,
+          "nodes": [
+            {
+              "title": "1 Đẩy mạnh đào tạo, phát triển nguồn nhân lực và xây dựng cơ sở hạ tầng kỹ thuật an toàn thông tin mạng đáp ứng yêu cầu ôn định chính trị, phát triển kinh tế - xã hội, bảo đảm quốc phòng, an ninh quốc gia, trật tự, an toàn xã hội",
+              "node_id": "0030",
+              "line_num": 61
+            },
+            {
+              "title": "2. Khuyến khích nghiên cứu, phát triên, áp dụng bỹ thuật, công nghệ, hỗ trợ xuất khẩu, mở rộng thị trường cho sản phẩm, dịch vụ an toàn thông tin mạng do tổ chức, cá nhân trong nước sản xuất, cung cấp, tạo điều kiện nhập khẩu sản phẩm, công nghệ hiện đại mà tổ chức, cá nhân trong nước chưa có năng lực sản xuất, cung cấp",
+              "node_id": "0031",
+              "line_num": 63
+            },
+            {
+              "title": "3. Bảo đảm môi trường cạnh tranh trong hoạt động kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng, khuyến khích, tạo điều kiện cho tổ chức, ca nhân tham gia đầu tư, nghiên cứu, phát triển và cung cấp sản phẩm dịch vụ an toàn thông tin mạng",
+              "node_id": "0032",
+              "line_num": 65
+            },
+            {
+              "title": "4. Nhà nước bố trí kinh phi để bảo đảm an toàn thông tin mạng của cơ quan nhà nước và an toàn thông tin mạng cho hệ thông thông tin quan trọng quốc gia.",
+              "node_id": "0033",
+              "line_num": 67
+            }
+          ]
+        },
+        {
+          "title": "Điều 6. Hợp tác quốc tế về an toàn thông tin mạng",
+          "node_id": "0034",
+          "line_num": 69,
+          "nodes": [
+            {
+              "title": "1.Hợp tác quốc tế về an toàn thông tin mạng phải tuân thủ các nguyên tắc sau đây",
+              "node_id": "0035",
+              "line_num": 71,
+              "nodes": [
+                {
+                  "title": "a) Tôn trọng độc lập, chủ quyền và toàn vẹn lãnh thô quốc gia, không can thiệp vào công việc nội bộ của nhau, bình đảng và các bên cùng có lợi;",
+                  "node_id": "0036",
+                  "line_num": 73
+                },
+                {
+                  "title": "b) Phù hợp với quy định của pháp luật Việt Nam, điều ước quốc tế mà Cộng hòa xã hội chủ nghĩa Việt Nam là thành viên",
+                  "node_id": "0037",
+                  "line_num": 75
+                }
+              ]
+            },
+            {
+              "title": "2 Nội dung hợp tác quốc tế về an toàn thông gồm Và 1 a la la lo pha là tho tho tho nghiên chuy nhay hà nhang tho nhiều tho nhiều thuy nhay hà nhang tho nhiều thuy nhay hà nhang YA thuật, công nghệ về an toàn thông tin mạng;",
+              "node_id": "0038",
+              "line_num": 77,
+              "nodes": [
+                {
+                  "title": "b) Hợp tác quốc tế trong phòng, chống hành vi vi phạm pháp luật về an toàn thông tin mạng, điều tra, xử lý sự cố an toàn thông tin mạng, ngăn chăn hoạt động lợi dụng mạng để khủng bố;",
+                  "node_id": "0039",
+                  "line_num": 79
+                },
+                {
+                  "title": "c) Hoạt động hợp tác quốc tế khác về an toàn thông tin mạng",
+                  "node_id": "0040",
+                  "line_num": 81
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 7. Các hành vi bị nghiêm cấm Ngăn chặn việc truyền tải thông tin trên mạng, can thiệp, truy nhập, gây nguy hại, xóa, thay đổi, sao chép và làm sai lệch thông tin trên mạng trái pháp luật",
+          "node_id": "0041",
+          "line_num": 83,
+          "nodes": [
+            {
+              "title": "2. Gây ảnh hưởng, cản trở trái pháp luật tới hoạt động bình thường của hệ thống thông tin hoặc tới khả năng truy nhập hệ thống thông tín của người sử dung",
+              "node_id": "0042",
+              "line_num": 85
+            },
+            {
+              "title": "3. Tấn công, vô hiệu hóa trái pháp luật làm mất tác dụng của biện pháp bảo về an toàn thông tin mạng của hệ thống thông tin; tấn công, chiếm quyền điều khiên, phá hoại hệ thông thông tin",
+              "node_id": "0043",
+              "line_num": 87
+            },
+            {
+              "title": "4. Phát tán thư rác, phần mềm độc hại, thông thông tin giả mạo lừa đảo.",
+              "node_id": "0044",
+              "line_num": 89
+            },
+            {
+              "title": "5. Thu thập, sử dụng, phát tán, kinh doanh trái pháp luật thông tin cá nhân của người khác, lợi dụng sơ hỏ, điểm yếu của hệ thống thông tin đề thu thập, khai thác thông tin cá nhân",
+              "node_id": "0045",
+              "line_num": 91
+            },
+            {
+              "title": "6. Xâm nhập trái pháp luật bi mật mật mã và thông tin đã mã hóa hợp pháp của cơ quan, tổ chức, cá nhân; tiết lộ thông tin về sản phẩm mật mã dân sự, thông tin về khách hàng sử dụng hợp pháp sản phâm mật mã dân sự, sử dụng, kinh doanh các sản phẩm mật mã dân sự không rõ nguồn gốc",
+              "node_id": "0046",
+              "line_num": 93
+            }
+          ]
+        },
+        {
+          "title": "Điều 8. Xử lý vi phạm pháp luật về an toàn thông tin mạng Người nào có hành vi vị phạm quy định của Luật này thì tùy theo tính chất mức độ vị phạm mà bị xử lý kỳ luật, xử phạt vị phạm hoặc bị truy cứu trách nhiệm hình sự, nêu gây thiệt hại thì phải bôi thường theo quy định của pháp luật",
+          "node_id": "0047",
+          "line_num": 95
+        },
+        {
+          "title": "Mục 1 BẢO VỆ THÔNG TIN MẠNG",
+          "node_id": "0048",
+          "line_num": 99
+        },
+        {
+          "title": "Điều 9. Phân loại thông tin",
+          "node_id": "0049",
+          "line_num": 101,
+          "nodes": [
+            {
+              "title": "1. Cơ quan, tổ chức sở hữu thông tin phân loại thông tin theo thuộc tính bi mật để có biện pháp bảo vệ phù hợp s",
+              "node_id": "0050",
+              "line_num": 103
+            },
+            {
+              "title": "2 Thông tin thuộc phạm vi bí mật nhà nước được phân loại và bảo vệ theo quy định của pháp luật về bảo vệ bí mật nhà nước Cơ quan, tổ chức sử dung thông tin đã phân loại và chưa phân loại trong hoạt động thuộc lĩnh vực của mình phải có trách nhiệm xây dựng quy định, thủ tục để xứ lý thông tin, xác định nội dung và phương pháp ghi truy nhập được phép vào thông tin đã được phân loại",
+              "node_id": "0051",
+              "line_num": 105
+            }
+          ]
+        },
+        {
+          "title": "Điều 10. Quân lý gửi thông tin",
+          "node_id": "0052",
+          "line_num": 107,
+          "nodes": [
+            {
+              "title": "1. Việc gửi thông tin trên mạng phải bảo đảm các yêu câu sau đây:",
+              "node_id": "0053",
+              "line_num": 109,
+              "nodes": [
+                {
+                  "title": "a) Không giả mạo nguồn gốc gửi thông tin,",
+                  "node_id": "0054",
+                  "line_num": 111
+                },
+                {
+                  "title": "b) Tuân thủ quy định của Luật này và quy định khác của pháp luật có liên quan",
+                  "node_id": "0055",
+                  "line_num": 113
+                }
+              ]
+            },
+            {
+              "title": "2. Tổ chức, cá nhân không được gửi thông tinh thương mại vào địa chỉ điện tử của người tiếp nhận khi chưa được người tiếp nhận đông ý hoặc khi người tiếp nhận đã từ chối, trừ trường hợp người tiếp nhận có nghĩa vụ phải tiếp nhận thông tin theo quy định của pháp luật",
+              "node_id": "0056",
+              "line_num": 115
+            },
+            {
+              "title": "3. Doanh nghiệp viễn thông, doanh nghiệp cung cấp dịch vụ ứng dụng viễn thông và doanh nghiệp cung cấp dịch vụ công nghệ thông tin gửi thông tin có trách nhiệm sau đây",
+              "node_id": "0057",
+              "line_num": 117,
+              "nodes": [
+                {
+                  "title": "a) Tuân thủ quy định của pháp luật về lưu trữ thông tin, bảo vệ thông tin cá nhân, thông tin riêng của tổ chức, cá nhân",
+                  "node_id": "0058",
+                  "line_num": 119
+                },
+                {
+                  "title": "b) Áp dụng biện pháp ngăn chặn, xử lý khi nhận được thông báo của tổ chức, cá nhân về việc gửi thông tin vi phạm quy định của pháp luật;",
+                  "node_id": "0059",
+                  "line_num": 121
+                },
+                {
+                  "title": "c) Có phương thức để người tiếp nhận thông tin có kha năng từ chối việc tiếp nhận thông tin;",
+                  "node_id": "0060",
+                  "line_num": 123
+                },
+                {
+                  "title": "d) Cung cấp điều kiện kỹ thuật và nghiệp vụ cần thiết để cơ quan nhà nước có thẩm quyền thực hiện nhiệm vụ quản lý, bảo đảm an toàn thông tin mạng khi có yêu cầu",
+                  "node_id": "0061",
+                  "line_num": 125
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 11. Phòng ngừa, phát hiện, ngăn chặn và xử lý phần mềm độc hại",
+          "node_id": "0062",
+          "line_num": 127,
+          "nodes": [
+            {
+              "title": "1 Cơ quan, tô chức, cá nhân có trách nhiệm thực hiện phòng ngừa, ngăn chặn phân mêm độc hại theo hướng dẫn, yêu cầu của cơ quan nhà nước có thâm quyền",
+              "node_id": "0063",
+              "line_num": 129
+            },
+            {
+              "title": "2 Chủ quản hệ thống thông tin quan trọng quốc gia triển khai hệ thống kỹ thuật nghiệp vu nhăm phòng ngừa, phát hiên, ngăn chặn và xử lý kịp thời phân mềm độc hại",
+              "node_id": "0064",
+              "line_num": 131
+            },
+            {
+              "title": "3 Doanh nghiệp cung cấp dịch vụ thư điện từ, truyền dưa, lưu trữ thông tin phải có hê thông lọc phần mêm độc hại trong quá trình gửi, nhận, lưu trữ thông tin trên hệ thông của mình và báo cáo cơ quan nhà nước có thâm quyền theo quy định của pháp luật",
+              "node_id": "0065",
+              "line_num": 133
+            },
+            {
+              "title": "4. Doanh nghiệp cung cấp dịch vu Internet có biện pháp quản lý, phòng ngừa, phát hiện, ngăn chặn phát tán phần mềm độc hại và xử lý theo yêu cầu của cơ quan nhà nước có thẩm quyền",
+              "node_id": "0066",
+              "line_num": 135
+            },
+            {
+              "title": "5. Bộ Thông tin và Truyền thông chủ trì, phối hợp với Bộ Quốc phòng, Bộ Công an và bộ, ngành có liên quan tổ chức phòng ngừa, phát hiện, ngăn chặn và xử lý phần mềm độc hại gây ảnh hưởng đến quốc phòng, an ninh quốc gia.",
+              "node_id": "0067",
+              "line_num": 137
+            }
+          ]
+        },
+        {
+          "title": "Điều 12. Bảo đảm an toàn tài nguyên viễn thông",
+          "node_id": "0068",
+          "line_num": 139,
+          "nodes": [
+            {
+              "title": "1 Cơ quan, tổ chức, cá nhân sử dung tài nguyên viễn thông có trách nhiệm sau dây",
+              "node_id": "0069",
+              "line_num": 141,
+              "nodes": [
+                {
+                  "title": "a) Ấp dụng biện pháp quản lý và kỹ thuật để ngăn chặn mất an toàn thông tin mạng xuất phát từ tần số, kho số, tên miền và địa chỉ Internet của mình;",
+                  "node_id": "0070",
+                  "line_num": 143
+                },
+                {
+                  "title": "b) Phối hợp, cung cấp thông tin liên quan đến an toàn tải nguyên viễn thông theo yêu cầu của cơ quan nhà nước có thẩm quyền",
+                  "node_id": "0071",
+                  "line_num": 145
+                }
+              ]
+            },
+            {
+              "title": "2. Doanh nghiệp cung cấp dịch vụ trên Internet có trách nhiệm quản lý, phôi hợp ngăn chặn mất an toàn thông tin mạng xuất phát từ tài nguyên Internet, từ khách hàng của minh, cung cấp đầy đủ thông tin theo yêu câu của cơ quan nhà nước có thẩm quyền, phối hợp két nôi, định tuyên đề bảo đảm hệ thông máy chủ tên miền quốc gia Việt Nam hoạt động an toàn, ốn định",
+              "node_id": "0072",
+              "line_num": 147
+            },
+            {
+              "title": "3 Bộ Thông tin và Truyên thông có trách nhiệm thực hiện bảo đảm an toàn thông tin mạng cho hệ thống máy chủ tên miền quốc gia Việt Nam",
+              "node_id": "0073",
+              "line_num": 149
+            }
+          ]
+        },
+        {
+          "title": "Điều 13. Ứng cứu sự cố an toàn thông tin mạng",
+          "node_id": "0074",
+          "line_num": 151,
+          "nodes": [
+            {
+              "title": "1 Ứng cứu sự cố an toàn thông tin mạng là hoạt động nhăm xử lý, khắc phục sự cổ gây mất an toàn thông tin mạng",
+              "node_id": "0075",
+              "line_num": 153
+            },
+            {
+              "title": "2.Ung cứu sự cô an toàn thông tin mạng phải tuân thủ các nguyên tắc sau đây:",
+              "node_id": "0076",
+              "line_num": 155,
+              "nodes": [
+                {
+                  "title": "a) Kịp thời, nhanh chóng, chính xác, đồng bộ và hiệu quả;",
+                  "node_id": "0077",
+                  "line_num": 157
+                },
+                {
+                  "title": "b) Tuân thủ quy định của pháp luật về điều phối ứng cứu sự cố an toàn thông tin mạng;",
+                  "node_id": "0078",
+                  "line_num": 159
+                },
+                {
+                  "title": "c) Có sự phôi hợp giữa cơ quan, tổ chức, doanh nghiệp trong nước và nước ngoài",
+                  "node_id": "0079",
+                  "line_num": 161
+                }
+              ]
+            },
+            {
+              "title": "3. Bộ, cơ quan ngang bộ, cơ quan thuộc Chính phú, Uy ban nhân dân cấp tỉnh, doanh nghiệp viễn thông, chủ quản hệ thông thông tin quan trọng quốc gia phải thành lập hoặc chỉ định bộ phận chuyên trách ưng cứu sự cô an toàn thông tin mạng",
+              "node_id": "0080",
+              "line_num": 163
+            },
+            {
+              "title": "4 Bộ Thông tin và Truyền thông có trách nhiệm điều phối ứng cứu sự cổ an toàn thông tin mạng trên toàn quốc, quy định chi tiết về điều phối ứng cứu sự cố an toàn thông tin mạng",
+              "node_id": "0081",
+              "line_num": 165
+            }
+          ]
+        },
+        {
+          "title": "Điều 14. Ưng cứu khẩn cấp bảo đảm an toàn thông tin mạng quốc gia",
+          "node_id": "0082",
+          "line_num": 169,
+          "nodes": [
+            {
+              "title": "1 Ưng cứu khẩn cấp bào đảm an toàn thông tin mạng quốc gia là hoạt động ứng cứu sự cô trong tình huống thảm họa hoặc theo yêu câu của cơ quan nhà nước có thầm quyền nhằm bảo đảm an toàn thông tin mạng quốc gia",
+              "node_id": "0083",
+              "line_num": 171
+            },
+            {
+              "title": "2. nn cáu khẩn cấp bảo đảm an toàn thông tin mạng quốc gia phải tuân thủ các nguyên tắc sau đây",
+              "node_id": "0084",
+              "line_num": 173,
+              "nodes": [
+                {
+                  "title": "a) Tổ chức thực hiện theo phân cấp",
+                  "node_id": "0085",
+                  "line_num": 175
+                },
+                {
+                  "title": "b) Thực hiện tại chỗ, nhanh chóng, nghiêm ngặt, phối hợp chặt chế; các đpn thuật bảo đảm hiệu quả, khả thi",
+                  "node_id": "0086",
+                  "line_num": 177
+                }
+              ]
+            },
+            {
+              "title": "3. Hệ thông phương án ứng cứu khẩn cấp bảo đảm an toàn thông tin mạng quốc gia gôm:",
+              "node_id": "0087",
+              "line_num": 179,
+              "nodes": [
+                {
+                  "title": "a) Phương án ứng cứu khân cấp bảo đảm an toàn thông tin mạng quốc gia;",
+                  "node_id": "0088",
+                  "line_num": 181
+                },
+                {
+                  "title": "b) Phương án ưng cứu khẩn cấp bảo đảm an toàn thông tin mạng của cơ quan nhà nước, tổ chức chính trị tổ chức chính trị xã hội; các phương an ưng cứu khân cấp bảo đảm an toàn thông tin mạng của địa phương",
+                  "node_id": "0089",
+                  "line_num": 183
+                },
+                {
+                  "title": "d) Phương án ứng cứu khân cấp bảo đảm an toàn thông tin mạng của doanh nghiệp viễn thông",
+                  "node_id": "0090",
+                  "line_num": 185
+                }
+              ]
+            },
+            {
+              "title": "4 Trách nhiệm bảo đảm an toàn thông tin mạng quốc gia được quy định như sau:",
+              "node_id": "0091",
+              "line_num": 187,
+              "nodes": [
+                {
+                  "title": "a) Thủ tướng Chính phủ quyết định hệ thống phương an ứng cứu khẩn cấp bảo đảm an toàn thông tin mạng quốc gia;",
+                  "node_id": "0092",
+                  "line_num": 189
+                },
+                {
+                  "title": "b) Bộ Thông tin và Truyền thông có trách nhiệm chủ trì điều phối công tác ứng cứu khần cấp bảo đảm an toàn thông tin mạng quốc gia;",
+                  "node_id": "0093",
+                  "line_num": 191
+                },
+                {
+                  "title": "c) Bộ, ngành, Ủy ban nhân dân các cấp và cơ quan, tổ chức có liên quan trong phạm vì nhiệm vụ, quyền hạn của mình có trách nhiệm phôi hợp, chỉ đạo ứng cứu khẩn cấp bảo đảm an toàn thông tin mạng quốc gia,",
+                  "node_id": "0094",
+                  "line_num": 193
+                },
+                {
+                  "title": "d) Doanh nghiệp viễn thông có trách nhiệm thực hiện biên pháp ứng cứu khân cấp, phối hợp với Bộ Thông tin và Truyền thông, bô, ngành, Uy ban nhân dân các cấp có liên quan đề bảo đảm an toàn thông tin mạng quốc gia",
+                  "node_id": "0095",
+                  "line_num": 195
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 15. Trách nhiệm của cơ quan, tố chức, cá nhân trong bảo đảm an toàn thông tin mạng",
+          "node_id": "0096",
+          "line_num": 197,
+          "nodes": [
+            {
+              "title": "1. Cơ quan, tổ chức, cá nhân tham gia hoạt động an toàn thông tin mạng co trách nhiệm phối hợp với cơ quan nhà nước có thấm quyền và tổ chức, cá nhân khác trong việc bảo đảm an toàn thông c",
+              "node_id": "0097",
+              "line_num": 199
+            },
+            {
+              "title": "2. Cơ quan, tô chức, cá nhân sử dụng dịch vụ trên mạng có trách nhiệm thông báo kịp thời cho doanh nghiệp cung cấp dịch vụ hoặc bộ phận chuyên trách ưng cứu sự có khi phát hiện các hành vi phá hoại hoặc sự cô an toàn thông tin mạng",
+              "node_id": "0098",
+              "line_num": 201
+            }
+          ]
+        },
+        {
+          "title": "Mục 2 BẢO VỆ THÔNG TIN CÁ NHÂN",
+          "node_id": "0099",
+          "line_num": 203
+        },
+        {
+          "title": "Điều 16. Nguyên tắc bảo vệ thông tin cá nhân trên mạng",
+          "node_id": "0100",
+          "line_num": 205,
+          "nodes": [
+            {
+              "title": "1 Cá nhân tự bảo vệ thông tin cá nhân của mình và tuân thủ quy định của pháp luật về cung cấp thông tin cá nhân khi sử dụng dịch vụ trên mạng",
+              "node_id": "0101",
+              "line_num": 207
+            },
+            {
+              "title": "2. Cơ quan, tổ chức, cá nhân xử lý thông tin cá nhân có trách nhiệm bảo đảm an toàn thông tin mạng đối với thông tin do mình xử lý",
+              "node_id": "0102",
+              "line_num": 209
+            },
+            {
+              "title": "3. Tổ chức, cá nhân xử lý thông tin cá nhân phải xây dựng và công bố công khai biện pháp xử lý, bảo vệ thông tin cá nhân của tô chức, cá nhân minh",
+              "node_id": "0103",
+              "line_num": 211
+            },
+            {
+              "title": "4. Việc bào về thông tin cá nhân thực hiện theo quy định của Luật này và quy định khác của pháp luật có liên quan.",
+              "node_id": "0104",
+              "line_num": 213
+            },
+            {
+              "title": "5. Việc xử lý thông tin cá nhân phục vụ mục đích bảo đảm quốc phòng, an ninh quốc gia, trật tự, an toàn xã hội hoặc không nhăm mục đích thương mại được thực hiện theo quy định khác của pháp luật có liên quan",
+              "node_id": "0105",
+              "line_num": 215
+            }
+          ]
+        },
+        {
+          "title": "Điều 17. Thu thập và sử dụng thông tin cá nhân",
+          "node_id": "0106",
+          "line_num": 217,
+          "nodes": [
+            {
+              "title": "1. Tô chức, cá nhân xử lý thông tin cá nhân có trách nhiêm sau đây:",
+              "node_id": "0107",
+              "line_num": 219,
+              "nodes": [
+                {
+                  "title": "a) Tiên hành thu thập thông tin cá nhân sau khi có sự đồng ý của chủ thể thông tin cá nhân về phạm vi, mục đích của việc thu thập và sử dụng thông tin đó;",
+                  "node_id": "0108",
+                  "line_num": 221
+                },
+                {
+                  "title": "b) Chi sử dụng thông tin cá nhân đã thu thập vào mục đích khác mục đích ban đầu sau khi có sự đồng ý của chủ thể thông tin cá nhân; Các) Không được cung cấp, chia sẻ, phát tán thông tin cá nhân mà mình đã thu thập, tiếp cận, kiểm soát cho bên thứ ba, trừ trường hợp có sự đông ý của chủ thể thông tin cá nhân đó hoặc theo yêu cầu của cơ quan nhà nước có thấm quyền",
+                  "node_id": "0109",
+                  "line_num": 223
+                }
+              ]
+            },
+            {
+              "title": "2. Cơ quan nhà nước chịu trách nhiêm bảo mật, lưu trữ thông tin cá nhân do mình thu thập.",
+              "node_id": "0110",
+              "line_num": 225
+            },
+            {
+              "title": "3. Chủ thể thông tin cá nhân có quyên yêu cầu tổ chức, cá nhân xử lý thông tin cá nhân cung cấp thông tin cá nhân của minh mà tổ chức, cá nhân đó đã thu thập, lưu trữ",
+              "node_id": "0111",
+              "line_num": 227
+            }
+          ]
+        },
+        {
+          "title": "Điều 18. Cập nhật, sửa đổi và hủy bỏ thông tin cá nhân",
+          "node_id": "0112",
+          "line_num": 229,
+          "nodes": [
+            {
+              "title": "1. Chủ thể thông tin cá nhân có quyên yêu cầu tổ chức, cá nhân xử lý thông tin cá nhân cập nhật, sửa đồi, hủy bỏ thông tin cá nhân của mình mà tổ chức, cá nhân đó đã thu thập, lưu trữ hoặc ngừng cung cấp thông tin cá nhân của mình",
+              "node_id": "0113",
+              "line_num": 231
+            },
+            {
+              "title": "2. Ngay khi nhận được yêu cầu của chủ thể thông tin cá nhân về việc cập nhật, sửa đối, hủy bỏ thông tin cá nhân hoặc đề nghị ngừng cung cấp thông tinh cá nhân cho bên thứ ba, tổ chức, cá nhân xứ lý thông tin cá nhân có trách nhiêm sau đây:",
+              "node_id": "0114",
+              "line_num": 235,
+              "nodes": [
+                {
+                  "title": "a) Thực hiện yêu cầu và thông báo cho chủ thể thông tin cá nhân hoặc cung cấp cho chủ thể thông tin cá nhân quyên tiếp cập nhật, sửa đồi, hủy bỏ thông tin cá nhân của minh;",
+                  "node_id": "0115",
+                  "line_num": 237
+                },
+                {
+                  "title": "b) Áp dụng biện pháp phù hợp để bảo vệ thông tin cá nhân; thông báo cho chú thể thông tin cá nhân đó trong trường hợp chưa thực hiện được yêu câu do yếu tố kỹ thuật hoặc yếu tố khác.",
+                  "node_id": "0116",
+                  "line_num": 239
+                }
+              ]
+            },
+            {
+              "title": "3. Tổ chức, cá nhân xử lý thông tin cá nhân phải hủy bỏ thông tin cá nhân đã được lưu trữ khi đã hoàn thành mục đích sử dụng hoặc hết thời hạn lưu trữ và thông báo cho chủ thể thông tin cá nhân biết, trừ trường hợp pháp luật có quy đinh khác",
+              "node_id": "0117",
+              "line_num": 241
+            }
+          ]
+        },
+        {
+          "title": "Điều 19. Bảo đảm an toàn thông tin cá nhân trên mạng",
+          "node_id": "0118",
+          "line_num": 243,
+          "nodes": [
+            {
+              "title": "1 Tổ chức, cá nhân xứ lý thông tin cá nhân phải áp dụng biện pháp quản lý, kỹ thuật phù hợp để bảo vệ thông tin cá nhân do mình thu thập, lưu trữ, tuân thủ các tiêu chuẩn, quy chuẩn kỹ thuật về bảo đảm an toàn thông tin mạng",
+              "node_id": "0119",
+              "line_num": 245
+            },
+            {
+              "title": "2 Khi xảy ra hoặc có nguy cơ xảy ra sự cổ an toàn thông tin mang, tổ chức, cá nhân xử lý thông tin cá nhân cân áp dụng biện pháp khắc phục, ngăn chặn trong thời gian sớm nhất",
+              "node_id": "0120",
+              "line_num": 247
+            }
+          ]
+        },
+        {
+          "title": "Điều 20. Trách nhiệm của cơ quan quản lý nhà nước trong bảo vệ thông tin cá nhân trên mạng",
+          "node_id": "0121",
+          "line_num": 249,
+          "nodes": [
+            {
+              "title": "1 Thiết lập kênh thông tin trực tuyến để tiến nghị, phản ánh của tổ chức, cá nhân liên quan đên bảo đảm an toàn thông tin cá nhân trên mạng",
+              "node_id": "0122",
+              "line_num": 251
+            },
+            {
+              "title": "2. Định kỳ hăng năm tổ chức thanh tra, kiểm tra đối với tổ chức, cá nhân xử lý thông tin cá nhân; tổ chức thanh tra, kiêm tra đột xuất trong trường hợp cân thiết",
+              "node_id": "0123",
+              "line_num": 253
+            }
+          ]
+        },
+        {
+          "title": "Mục 3 BẢO VỆ HỆ THỐNG THÔNG TINH",
+          "node_id": "0124",
+          "line_num": 255
+        },
+        {
+          "title": "Điều 21. Phân loại cấp độ an toàn hệ thống thông tin",
+          "node_id": "0125",
+          "line_num": 257,
+          "nodes": [
+            {
+              "title": "1. Phân loại cấp độ an toàn hệ thông thông tin là việc xác định cấp độ an toàn thông tin của hệ thống thông tin theo cấp độ tăng dần từ",
+              "node_id": "0126",
+              "line_num": 259
+            },
+            {
+              "title": "1 đến",
+              "node_id": "0127",
+              "line_num": 261
+            },
+            {
+              "title": "5 để áp dung biện pháp quản lý và kỹ thuật nhăm bảo vệ hệ thông thông tin phù hợp theo cấp đô",
+              "node_id": "0128",
+              "line_num": 263
+            },
+            {
+              "title": "2. Hệ thông thông tin được phân loại theo cấp độ an toàn như sau ID",
+              "node_id": "0129",
+              "line_num": 265,
+              "nodes": [
+                {
+                  "title": "a) Cấp độ 1 là cấp độ mà khi bị phá hoại sẽ làm tôn hại tới quyền và lợi ích hợp pháp của tổ chức, cá nhân nhưng không làm tốn hại tới lợi ích công công trật tự, an toàn xã hội, quốc phòng, an ninh quốc gia,",
+                  "node_id": "0130",
+                  "line_num": 267
+                },
+                {
+                  "title": "b) Cấp độ 2 là cấp độ mà khi bị phá hoại sẽ làm tồn hại nghiêm trọng tới quyền và lợi ích hợp pháp của tổ chức, cá nhân hoặc làm tồn hại tới lợi ích công cộng nhưng không làm tổn hại tới trật tự, an toàn xã hội, quốc phòng, an ninh quốc gia;",
+                  "node_id": "0131",
+                  "line_num": 269
+                },
+                {
+                  "title": "c) Cấp độ 3 là cấp độ mà khi bị phá hoại sẽ làm tổn hại nghiêm trọng tới sản xuất, lợi ích công cộng và trật tự, an toàn xã hội hoặc lam tôn hại tới quốc phòng, an ninh quốc gia;",
+                  "node_id": "0132",
+                  "line_num": 271
+                },
+                {
+                  "title": "d) Cấp độ 4 là cấp độ mà khi bị phá hoại sẽ làm tồn hại đặc biệt nghiêm trọng tới lợi ích công cộng và trật tự, an toàn xã hội hoặc làm tổn hại nghiêm trọng tới quốc phòng, an ninh quốc gia;",
+                  "node_id": "0133",
+                  "line_num": 273
+                },
+                {
+                  "title": "d) Cấp độ 5 là cấp độ mà khi bị phá hoại sẽ làm tổn hại đặc biết nghiêm trọng tới quốc phòng, an ninh quốc gia.",
+                  "node_id": "0134",
+                  "line_num": 275
+                }
+              ]
+            },
+            {
+              "title": "3. Chính phủ quy định chi tiết về tiêu chí, thẩm quyền, trình tự, thủ tục xác định cấp độ an toàn hệ thống thông tin và trách nhiệm bào đảm an toàn hê thống thông tin theo từng cấp độ.",
+              "node_id": "0135",
+              "line_num": 277
+            }
+          ]
+        },
+        {
+          "title": "Điều 22. Nhiệm vụ bảo vệ hệ thống thông tin",
+          "node_id": "0136",
+          "line_num": 279,
+          "nodes": [
+            {
+              "title": "1. Xác định cấp độ an toàn thông tin của hệ thống thông tin",
+              "node_id": "0137",
+              "line_num": 281
+            },
+            {
+              "title": "2. Đánh giá và quản lý rủi ro an toàn hệ thống thông tin",
+              "node_id": "0138",
+              "line_num": 283
+            },
+            {
+              "title": "3. Đôn đốc, giám sát, kiêm tra công tác bảo vệ hệ thống thông tin",
+              "node_id": "0139",
+              "line_num": 285
+            },
+            {
+              "title": "4. Tổ chức triển khai các biện pháp bảo vệ hệ thông thông tin",
+              "node_id": "0140",
+              "line_num": 287
+            },
+            {
+              "title": "5. Thực hiên chế độ báo cáo theo quy định",
+              "node_id": "0141",
+              "line_num": 289
+            },
+            {
+              "title": "6. Tổ chức tuyên truyền, nân thức về an toàn thông tin mạng",
+              "node_id": "0142",
+              "line_num": 291
+            }
+          ]
+        },
+        {
+          "title": "Điều 23. Biện pháp bảo vệ hệ thống tin Ban hành quy định về bảo đảm an toàn thông tin mạng trong thiết kê, xây dựng, quản lý, vận hành, sử dụng, nâng cấp, hủy bỏ hệ thống thông tin",
+          "node_id": "0143",
+          "line_num": 293,
+          "nodes": [
+            {
+              "title": "2. Ap dụng biện pháp quản lý, kỹ thuật theo tiêu chuẩn, quy chuẩn kỹ thuật an toàn thông tin mạng để phòng, chống nguy cơ, khắc phục sự cố an toàn thông tin mang",
+              "node_id": "0144",
+              "line_num": 295
+            },
+            {
+              "title": "3. Kiểm tra, giám sát việc tuân thủ quy định và đánh giá hiệu quả của các biện pháp quản lý và kỹ thuật được áp dụng",
+              "node_id": "0145",
+              "line_num": 297
+            },
+            {
+              "title": "4. Giám sát an toàn hệ thống thông tin M",
+              "node_id": "0146",
+              "line_num": 299
+            }
+          ]
+        },
+        {
+          "title": "Điều 24. Giám sát an toàn hệ thông thông tin",
+          "node_id": "0147",
+          "line_num": 301,
+          "nodes": [
+            {
+              "title": "1 Giám sát an toàn hệ thống thông tin là hoạt động lựa chọn đối tượng giám sát, thu thập, phân tích trạng thái thông tin của đôi tượng giám sát nhắm xác định những nhân tô ảnh hưởng đến an toàn hệ thống thông tin; báo cáo, cảnh báo hành vi xâm phạm an toàn thông tin mạng hoặc hành vi có khả năng gây ra sự có an toàn thông tin mạng đối với hệ thông thông tin; tiên hành phân tích yếu tố then chốt ảnh hưởng tới trạng thái an toàn thông tin mạng; đề xuất thay đổi biện pháp kỹ thuật",
+              "node_id": "0148",
+              "line_num": 303
+            },
+            {
+              "title": "2. Đối tượng giám sát an toàn hệ thông thông tin gồm tường lửa, kiểm soát truy nhập, tuyên thông tin chủ yêu, máy chủ quan trong, thiết bị quan trọng hoặc thiết bị đầu cuối quan trọng",
+              "node_id": "0149",
+              "line_num": 305
+            },
+            {
+              "title": "3. Doanh nghiệp viễn thông, doanh nghiệp dịch vụ công nghệ thông tin, doanh nghiệp cung cấp dịch vụ an toàn thông tin mạng có trách nhiệm phối hợp với chủ quản hệ thống thông tin trong việc giám sát an toàn hệ thống thông tin theo yêu cầu của cơ quan nhà nước có thâm quyền",
+              "node_id": "0150",
+              "line_num": 307
+            }
+          ]
+        },
+        {
+          "title": "Điều 25. Trách nhiệm của chủ quản hệ thống thông tin",
+          "node_id": "0151",
+          "line_num": 309,
+          "nodes": [
+            {
+              "title": "1. Chủ quản hệ thông thông tin có trách nhiện bảo vệ hệ thông thông tin theo quy định tại các điều 22, 23 và 24 của Luật này",
+              "node_id": "0152",
+              "line_num": 311
+            },
+            {
+              "title": "2 Chủ quản hệ thông thông tin sử dụng ngân sách nhà nước thực hiện trách nhiệm quy định tại khoản 1 Điều này và có trách nhiệm sau đây:",
+              "node_id": "0153",
+              "line_num": 313,
+              "nodes": [
+                {
+                  "title": "a) Có phương án bảo đảm an toàn thông tin mang được cơ quan nhà nước có thầm quyền thẩm định khi thiết lập, mở rộng hoặc nâng cấp hệ thống thông tin;",
+                  "node_id": "0154",
+                  "line_num": 315
+                },
+                {
+                  "title": "b) Chỉ định cá nhân, bộ phận phụ trách về an toàn thông tin mạng",
+                  "node_id": "0155",
+                  "line_num": 317
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 26. Hệ thống thông tin quan trọng quốc gia",
+          "node_id": "0156",
+          "line_num": 319,
+          "nodes": [
+            {
+              "title": "1. Khi thiết lập, mở rộng và nâng cấp hệ thống thông tin quốn trọng quốc gia phải thực hiện kiêm định an toàn thông tin trước khi đưa vào vận hành, khai thác",
+              "node_id": "0157",
+              "line_num": 321
+            },
+            {
+              "title": "22 Bộ Thông tin và Truyên thông chủ tri, phôi hợp với Bộ Quốc phòng, Bộ Công an và bộ, ngành có liên quan xây dựng Danh mục hệ thông thông tin quan trọng quốc gia trình Thủ tướng Chính hành",
+              "node_id": "0158",
+              "line_num": 323
+            }
+          ]
+        },
+        {
+          "title": "Điều 27, Trách nhiệm bảo đảm an toàn thông tin mạng cho hệ thống thông tin quan trọng quốc gia",
+          "node_id": "0159",
+          "line_num": 325,
+          "nodes": [
+            {
+              "title": "1. Chủ quản hệ thống thông tin quan trọng quốc gia có trách nhiệm sau đây",
+              "node_id": "0160",
+              "line_num": 327,
+              "nodes": [
+                {
+                  "title": "a) Thực hiên quy định tại khoan",
+                  "node_id": "0161",
+                  "line_num": 329
+                }
+              ]
+            },
+            {
+              "title": "2 Điều 25 của Luật này;",
+              "node_id": "0162",
+              "line_num": 331,
+              "nodes": [
+                {
+                  "title": "b) Định kỳ đánh giá rùi ro an toàn thông tin mạng Việc đánh giá rúi ro an toàn thông tin mạng phải do tô chức chuyên môn được cơ quan nhà nước có thẩm quyền chi định thực hiện;",
+                  "node_id": "0163",
+                  "line_num": 333
+                },
+                {
+                  "title": "c) Triển khai biện pháp dự phòng cho hệ thống thông tin;",
+                  "node_id": "0164",
+                  "line_num": 335
+                },
+                {
+                  "title": "d) Lập kế hoạch bao vệ, lập phương án và diễn tập phương án bảo vệ hệ thống thông tin quan trọng quốc gia",
+                  "node_id": "0165",
+                  "line_num": 337
+                }
+              ]
+            },
+            {
+              "title": "2.Bộ Thông tin và Truyền thông có trách nhiệm sau đây:",
+              "node_id": "0166",
+              "line_num": 339,
+              "nodes": [
+                {
+                  "title": "a) Chù trì, phôi hợp với chủ quản hệ thống thông tin quan trọng quốc gia, Bộ Công an và bộ, ngành có liên quan hướng dẫn, đôn đốc, thanh tra, kiểm tra công tác bảo vệ an toàn thông tin mạng đôi với hệ thông thông tin quan trọng quốc gia, trừ hệ thống thông tin quy định tại khoản 3 và khoản 4 Điều này;",
+                  "node_id": "0167",
+                  "line_num": 341
+                },
+                {
+                  "title": "b) Yêu cầu doanh nghiệp viễn thông, doanh nghiệp cung cấp dịch vụ công nghệ thông tin, doanh nghiệp cung cấp dịch vụ an toàn thông tin mạng tham gia tư vấn, hỗ trợ kỹ thuật, ứng cứu sự cố an toàn thông tin mạng cho hệ thông thông tin quan trọng quốc gia",
+                  "node_id": "0168",
+                  "line_num": 343
+                }
+              ]
+            },
+            {
+              "title": "3. Bộ Công an chủ trì hướng dẫn, đôn đốc, thanh tra, kiểm tra công tác bảo vệ an toàn thông tin mạng đối với hệ thông thông tin quan trọng quốc gia do Bô Công an quản lý, phối hợp với Bộ Thông tin và Truyên thông, chủ quản hệ thống thông tin quan trọng quốc gia, bộ, ngành, Ủy ban nhân dân các cấp có liên quan trong việc bảo vệ hê thống thông tin quan trọng quốc gia khác khi có yêu cầu của cơ quan nhà nước có thấm quyền.",
+              "node_id": "0169",
+              "line_num": 345
+            },
+            {
+              "title": "4 Bộ Quốc phòng chủ trì hướng dẫn, đôn đốc, thanh tra công tác bảo vệ an toàn thông tin mạng đối với hệ thống thông tin quan trọng quốc gia do Bộ Quốc phòng quản lý",
+              "node_id": "0170",
+              "line_num": 347
+            },
+            {
+              "title": "5. Ban Cơ yếu Chính phủ chủ trì tổ chức triển khai giải pháp dùng mật mã để bảo vệ thông tin trong hệ thông thông tin quan trọng quốc gia của cơ quan nhà nước, tổ chức chính trị, tổ chức chính trị - xã hội, phối hợp với chủ quản hệ thống thông tin quan trọng quốc gia trong việc giám sát an toàn thông tin mạng theo quy định của pháp luật",
+              "node_id": "0171",
+              "line_num": 349
+            }
+          ]
+        },
+        {
+          "title": "Mục 4 NGĂN CHẶN XUNG ĐỘT THÔNG TIN TRÊN MẠNG",
+          "node_id": "0172",
+          "line_num": 351
+        },
+        {
+          "title": "Điều 28. Trách nhiệm của tổ chức, cá nhân trong việc ngăn chặn xung đột thông tin trên mạng",
+          "node_id": "0173",
+          "line_num": 353,
+          "nodes": [
+            {
+              "title": "1 Tổ chức, cá nhân trong phạm vi nhiệm vụ, quyền hạn của mình có trách nhiệm sau đây",
+              "node_id": "0174",
+              "line_num": 355,
+              "nodes": [
+                {
+                  "title": "a) Ngăn chặn thông tin phá hoại xuất phát từ hệ thống thông tin của mình; hợp tác xác định nguôn, đây lúi, khắc phục hậu quả tân công mạng được thực hiện thông qua hệ thông thông tin của tổ chức, cá nhân trong nước và nước ngoài;",
+                  "node_id": "0175",
+                  "line_num": 357
+                },
+                {
+                  "title": "b) Ngăn chặn hành động của tổ chức, cá nhân trong nước và nước ngoài có mục đích phá hoại tính nguyên vẹn của mạng;",
+                  "node_id": "0176",
+                  "line_num": 359
+                },
+                {
+                  "title": "c) Loại trừ việc tổ chức thực hiện hoạt động trái pháp luật trên mạng có ảnh hưởng nghiêm trọng đến quốc phòng, an ninh quốc gia, trật tự, an toàn xã hội của tô chức, cá nhân trong nước vg in",
+                  "node_id": "0177",
+                  "line_num": 361
+                }
+              ]
+            },
+            {
+              "title": "2.Chính phủ quy định chi tiết về ngăn chặn xung đột thông tin trên mạng",
+              "node_id": "0178",
+              "line_num": 363
+            }
+          ]
+        },
+        {
+          "title": "Điều 29. Ngăn chặn hoạt động sử dụng mạng để khủng bố",
+          "node_id": "0179",
+          "line_num": 365,
+          "nodes": [
+            {
+              "title": "1. Các biện pháp ngăn chặn hoạt động sử dụng mạng để khủng bố gồm:",
+              "node_id": "0180",
+              "line_num": 367,
+              "nodes": [
+                {
+                  "title": "a) Vô hiệu hóa nguồn Internet sử dụng để thực hiện hành vi khủng bố;",
+                  "node_id": "0181",
+                  "line_num": 369
+                },
+                {
+                  "title": "b) Ngăn chặn việc thiết lập và mở rông trao đổi thông tin về các tín hiệu nhân tô, phương pháp và cách sử dụng Internet để thực hiện hành vi khủng bố, về mục tiêu và hoạt động của các tổ chức khủng bố trên mạng;",
+                  "node_id": "0182",
+                  "line_num": 371
+                },
+                {
+                  "title": "c) Trao đổi kinh nghiêm và thực tiến kiểm soát các nguồn Internet, tìm và kiểm soát nội dung của trang tin điện tử có mục đích khủng bố.",
+                  "node_id": "0183",
+                  "line_num": 373
+                }
+              ]
+            },
+            {
+              "title": "2. Chính phủ quy định chi tiết về trách nhiện và các biện pháp ngăn chặn hoạt động sử dụng mạng để khủng bố quy định tại khoản 1 Điều này",
+              "node_id": "0184",
+              "line_num": 375
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG III MẬT MÃ DÂN SỰ",
+      "node_id": "0185",
+      "line_num": 377,
+      "nodes": [
+        {
+          "title": "Điều 30. Sản phẩm, dịch vã dân sự",
+          "node_id": "0186",
+          "line_num": 379,
+          "nodes": [
+            {
+              "title": "1. Sản phẩm mật mã dân sự là các tài liệu, trang thiết bị kỹ thuật và nghiệp vụ mật mã để bảo vệ thông tin không thuộc phạm vi bi mật nhà nước",
+              "node_id": "0187",
+              "line_num": 381
+            },
+            {
+              "title": "2. Dịch vụ mật mã dân sự gồm dịch vụ bảo vệ thông tin sử dụng sản phâm mật mã dân sự, kiêm định, đánh giá sản phẩm mật mã dân sự, tư vân bảo mật, an toàn thông tin mạng sử dụng sản phâm mật mã dân sự",
+              "node_id": "0188",
+              "line_num": 383
+            }
+          ]
+        },
+        {
+          "title": "Điều 31. Kinh doanh sản phẩm, dịch vã dân sự Doanh nghiệp phải có Giấy phép kinh doanh sản phâm, dịch vụ mật mã dân sự khi kinh doanh sản phẩm, dịch vụ mật mã dân sự thuộc Danh mục sản phâm, dịch vụ mất mã dân sự",
+          "node_id": "0189",
+          "line_num": 385,
+          "nodes": [
+            {
+              "title": "2. Doanh nghiệp được cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự khi đáp ứng đủ các điêu kây",
+              "node_id": "0190",
+              "line_num": 387,
+              "nodes": [
+                {
+                  "title": "a) Có đội ngũ quản lý, điều hành, kỹ thuật đáp ứng yêu cầu chuyên môn về bảo mật, an toàn thông tin;",
+                  "node_id": "0191",
+                  "line_num": 389
+                },
+                {
+                  "title": "b) Có hệ thông trang thiết bị, cơ sở vật chất phù hợp với quy mô cung cấp sản phẩm, dịch vụ mật mã dân sự",
+                  "node_id": "0192",
+                  "line_num": 391
+                },
+                {
+                  "title": "c) Có phương án kỹ thuật phù hợp với tiêu chuân, quy chuân kỹ thuật;",
+                  "node_id": "0193",
+                  "line_num": 393
+                },
+                {
+                  "title": "d) Có phương án bảo mật và an toàn thông tin mạng trong quá trình quản lý và cung cấp sản phẩm, dịch vã dân sự; ly",
+                  "node_id": "0194",
+                  "line_num": 395
+                },
+                {
+                  "title": "đ) Có phương án kinh doanh phù hợp",
+                  "node_id": "0195",
+                  "line_num": 397
+                }
+              ]
+            },
+            {
+              "title": "3. Sản phẩm mật mã dân sự phải được kiếm định, chứng nhận hợp quy trước khi lưu thông trên thị trường",
+              "node_id": "0196",
+              "line_num": 399
+            },
+            {
+              "title": "4. Doanh nghiệp được cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự phải nộp phí theo quy định của pháp luật về phí và lệ phí",
+              "node_id": "0197",
+              "line_num": 401
+            },
+            {
+              "title": "5. Chính phủ ban hành Danh mục sản phẩm, dịch vụ mật mã dân sự và quy định chi tiết Điều này",
+              "node_id": "0198",
+              "line_num": 403
+            }
+          ]
+        },
+        {
+          "title": "Điều 32. Trình tự, thủ tục đề nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự",
+          "node_id": "0199",
+          "line_num": 405,
+          "nodes": [
+            {
+              "title": "1.Doanh nghiệp đề nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự nộp hồ sơ đề nghị cấp Giấy phép tại Ban Cơ yếu Chính phủ",
+              "node_id": "0200",
+              "line_num": 407
+            },
+            {
+              "title": "2. Hồ sơ đề nghị cấp Giấy phép kinh doanh sản phầm, dịch vụ mật mã dân sự được lập thành hai bộ, gồm:",
+              "node_id": "0201",
+              "line_num": 409,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự;",
+                  "node_id": "0202",
+                  "line_num": 411
+                },
+                {
+                  "title": "b) Bản sao Giấy chứng nhận đăng ký doanh nghiệp hoặc Giấy chứng nhận đăng ký đầu tư hoặc giấy tờ khác có giá trị tương đương;",
+                  "node_id": "0203",
+                  "line_num": 413
+                },
+                {
+                  "title": "c) Bản sao văn bằng hoặc chứng chỉ chuyên môn về bảo mật, an toàn thông tin của đội ngũ quản lý, điều hành, kỹ thuật;",
+                  "node_id": "0204",
+                  "line_num": 415
+                },
+                {
+                  "title": "d) Phương án kỹ thuật gồm tài liệu về đặc tính kỹ thuật, thuật của sản phâm, tiêu chuần, quy chuẩn kỹ thuật của sản phầm; tiêu chuân, chất lượng dịch vụ, các biện pháp, giải pháp kỹ thuật, phương án bảo hành, bào tri sản phâm",
+                  "node_id": "0205",
+                  "line_num": 417
+                },
+                {
+                  "title": "đ) Phương án bảo mật và an toàn thông tin mạng trong qua trình quản lý và cung cấp sản phẩm, dịch vụ dân sự",
+                  "node_id": "0206",
+                  "line_num": 419
+                },
+                {
+                  "title": "e) Phương án kinh doanh gôm phạm vi, đối tượng cung cấp, quy mô số lượng sản phâm, dịch vụ hệ thông phục vụ khách hàng và bảo đảm kỹ thuật",
+                  "node_id": "0207",
+                  "line_num": 421
+                }
+              ]
+            },
+            {
+              "title": "3. Trong thời hạn 30 ngày kể từ ngày nhận đủ hồ sơ, Ban Cơ yếu Chính phủ thẩm định và cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự; trường hợp từ chối cấp thì phải thông báo bằng văn bản và nêu rõ lý do.",
+              "node_id": "0208",
+              "line_num": 423
+            },
+            {
+              "title": "4 Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự có thời hạn 10 năm",
+              "node_id": "0209",
+              "line_num": 425
+            }
+          ]
+        },
+        {
+          "title": "Điều 33. Sửa đồi, bố sung, cấp lại, gia hạn, tạm đình chỉ và thu hồi Giấy phép kinh doanh sản phẩm, dịch vụ dân sự",
+          "node_id": "0210",
+          "line_num": 427,
+          "nodes": [
+            {
+              "title": "1.Việc sửa đồi, bố sung Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự được thực hiện trong trường hợp doanh nghiệp đã được cấp Giây phép thay đổi tên, thay đổi người đại diện theo pháp luật hoặc thay đôi, bồ sung sản phẩm, dịch vụ mật mã dân sự 1S",
+              "node_id": "0211",
+              "line_num": 429,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị sửa đổi, bổ sung Giấy phép;",
+                  "node_id": "0212",
+                  "line_num": 433
+                },
+                {
+                  "title": "b) Bản sao Giấy chứng nhận đăng ký doanh nghiệp hoặc Giấy chứng nhận đăng ký đầu tư hoặc giấy tờ khác có giá trị tương đương;",
+                  "node_id": "0213",
+                  "line_num": 435
+                },
+                {
+                  "title": "c) Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dược cấp",
+                  "node_id": "0214",
+                  "line_num": 437
+                },
+                {
+                  "title": "d) Phương án kỹ thuật, phương án bảo mật và an toàn thông tin mạng phương án kinh doanh đối với sản phẩm, dịch vụ bố sung theo quy định tại các điểm d, đ và e khoản 2 Điều 32 của Luật này trong trường hợp doanh nghiệp đề nghị bố sung sản phẩm, dịch vụ mật mã dân sự, ngành doanh; Trong thời hạn 10 ngày làm việc kể từ ngày nhận đủ hồ sơ, Ban Cơ yếu Chính phủ thẩm định, sửa đổi, bố sung và cấp lại Giáy phép cho doanh nghiệp; trường hợp từ chối cấp thi phải thông báo bằng văn bản và nêu rõ lý do",
+                  "node_id": "0215",
+                  "line_num": 439
+                }
+              ]
+            },
+            {
+              "title": "2 Trường hợp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự bị mất hoặc bị hư hỏng, doanh nghiệp gửi đơn đề nghị cấp lại Giây phép, trong đó nêu rõ lý do, tới Ban Cơ yếu Chính phủ Trong thời hạn 05 ngày làm việc kế từ ngày nhận được đơn đề nghị, Ban Cơ yếu Chính phủ xem xét và cấp lại Giáy phép cho doanh nghiệp",
+              "node_id": "0216",
+              "line_num": 441
+            },
+            {
+              "title": "3. Doanh nghiệp không vị phạm các quy định của pháp luật về kinh doanh sản phẩm, dịch vụ mật mã dân sự được gia hạn Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự một lần với thời gian gia hạn không quá 01 năm Hồ sơ đề nghị gia hạn Giấy phép phải được gửi tới Ban Cơ yêu Chính phủ châm nhất là 60 ngày trước ngày Giấy phép hết hạn Hồ sơ đề nghị gia hạn Giây phép được lập thành hai bộ, gồm",
+              "node_id": "0217",
+              "line_num": 443,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị gia hạn Giây phép bb Giáy phép kinh doanh sản phâm, dịch vụ mật mã dân sự đang có hiệu lực;",
+                  "node_id": "0218",
+                  "line_num": 445
+                },
+                {
+                  "title": "C) Báo cáo hoạt động của doanh nghiệp trong 02 năm gần nhất Trong thời hạn 20 ngày kể từ ngày nhận đủ hồ sơ, Ban Cơ yếu Chính phù thầm định, quyết định gia hạn và cấp lại Giấy phép cho doanh nghiệp, trường hợp từ chối cấp thì phải thông báo băn và nêu rõ lý do.",
+                  "node_id": "0219",
+                  "line_num": 447
+                }
+              ]
+            },
+            {
+              "title": "4. Doanh nghiệp bị tạm đình chi hoạt động kinh doanh sản phẩm, dịch vụ mật mã dân sự có thời hạn không quá 06 tháng trong các trường hợp sau đây",
+              "node_id": "0220",
+              "line_num": 449,
+              "nodes": [
+                {
+                  "title": "a) Cung cấp sản phầm, dịch vụ không đúng với nội dung ghi trên Giấy phép;",
+                  "node_id": "0221",
+                  "line_num": 451
+                },
+                {
+                  "title": "b) Không đáp ứng được một trong các điều kiện quy định tại khoản 2",
+                  "node_id": "0222",
+                  "line_num": 453
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 31 của Luật này;",
+          "node_id": "0223",
+          "line_num": 455,
+          "nodes": [
+            {
+              "title": "C) Các trường hợp khác theo quy định của pháp luật",
+              "node_id": "0224",
+              "line_num": 457
+            },
+            {
+              "title": "5. Doanh nghiệp bị thu hồi Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự trong các trường hợp sau đây:",
+              "node_id": "0225",
+              "line_num": 459,
+              "nodes": [
+                {
+                  "title": "a) Không triển khai cung cấp dịch vụ trong thời hạn 01 năm kế từ ngày được cấp Giấy phép mà không có lý do chính đáng;",
+                  "node_id": "0226",
+                  "line_num": 461
+                },
+                {
+                  "title": "b) Giấy phép đã hết hạn; các) Hết thời hạn tạm đình chỉ mà doanh nghiệp không kược các lý do quy định tại khoản 4 Điều này",
+                  "node_id": "0227",
+                  "line_num": 463
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 34. Xuất khẩu, nhập khẩu sận phẩn sự Khi xuất khẩu, nhập khẩu sản phẩm mựt mã dân sự thuộc Danh mục sản phẩm mật mã dân sự xuất khẩu, nhập khẩu theo giấy phép, doanh nghiệp phải có Giấy phép xuất khâu, nhập khẩu sản phẩm mật mã dân sự do cơ quan nhà nước có thẩm quyền cấp",
+          "node_id": "0228",
+          "line_num": 465,
+          "nodes": [
+            {
+              "title": "2.Doanh nghiệp được cấp Giáy phép xuất khẩu, nhập khẩu mật mã dân sự khi đáp ứng đủ các điều kây:",
+              "node_id": "0229",
+              "line_num": 467,
+              "nodes": [
+                {
+                  "title": "a) Có Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự;",
+                  "node_id": "0230",
+                  "line_num": 469
+                },
+                {
+                  "title": "b) Sản phầm mật mã dân sự nhập khấu phải được chứng nhận, công bô hợp quy theo quy định tại Điều 39 của Luật này;",
+                  "node_id": "0231",
+                  "line_num": 471
+                },
+                {
+                  "title": "c) Đối tượng và mục đích sử dụng sản phẩm mật mã dân sự không gây phương hại đến quốc phòng, an ninh quốc gia và trật tự, an toàn xã hội",
+                  "node_id": "0232",
+                  "line_num": 473
+                }
+              ]
+            },
+            {
+              "title": "3. Hồ sơ đề nghị cấp Giấy phép xuất khẩu, nhập khẩu mật mã dân sự gồm",
+              "node_id": "0233",
+              "line_num": 475,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị cấp Giấy phép xuất khầu, nhập khẩu sản phẩm mật mã dân sự;",
+                  "node_id": "0234",
+                  "line_num": 477
+                },
+                {
+                  "title": "b) Bản sao Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự;",
+                  "node_id": "0235",
+                  "line_num": 479
+                },
+                {
+                  "title": "c) Bản sao Giấy chứng nhận hợp quy đối với sản phâm mật mã dân sự nhập khâu",
+                  "node_id": "0236",
+                  "line_num": 481
+                }
+              ]
+            },
+            {
+              "title": "4. Trong thời hạn 10 ngày làm việc kể từ ngày nhận đù hồ sơ, Ban Cơ yêu Chính phủ thẩm định và cấp Giấy phép xuất khẩu, nhập khẩu sản phẩm mật mã dân sự cho doanh nghiệp, trường hợp từ chối cấp thì phải thông báo băng văn bản và nêu rõ lý do",
+              "node_id": "0237",
+              "line_num": 483
+            },
+            {
+              "title": "5. Chính phủ ban hành Danh mục sản phẩm mật mã dân sự xuất khẩu, nhập khẩu theo giấy phép và quy định chi tiết Điều này.",
+              "node_id": "0238",
+              "line_num": 485
+            }
+          ]
+        },
+        {
+          "title": "Điều 35. Trách nhiệm của doanh nghiệp kinh doanh sản phẩm, dịch vụ mật mã dân sự Quản lý hồ sơ, tài liêu về giải pháp kỹ thuật, công nghệ của sản phầm",
+          "node_id": "0239",
+          "line_num": 487,
+          "nodes": [
+            {
+              "title": "2. Lập, lưu giữ và bảo mật thông tin của khách hàng, tên, loại hình, số",
+              "node_id": "0240",
+              "line_num": 489
+            },
+            {
+              "title": "3. Định kỳ hăng năm báo cáo Ban Cơ yêu Chính phủ về tình hình kinh doanh, xuất khẩu, nhập khâu sản phẩm, dịch vụ mật mã tông hợp thông tin khách hàng trước ngày 31 tháng 12",
+              "node_id": "0241",
+              "line_num": 493
+            },
+            {
+              "title": "4 Có các biện pháp bảo đảm an ninh, an toàn trong vận chuyển và bao quản sản phầm mật mã dân sự",
+              "node_id": "0242",
+              "line_num": 495
+            },
+            {
+              "title": "5 Từ chối cung cấp sản phẩm, dịch vụ mật mã phát hiện tổ chức, cá nhân vi phạm pháp luật về sử dụng sản phâm, dịch vụ mật mã dân sự vi phạm cam kết đã thỏa thuận về sử dụng sản phâm, dịch vụ do doanh nghiệp cung cấp.",
+              "node_id": "0243",
+              "line_num": 497
+            },
+            {
+              "title": "6 Tam ngừng hoặc ngừng cung cấp sản phầm, dịch vụ mật mã dân sự đề bảo đảm quốc phòng, an ninh quốc gia, trật tự, an toàn xã hội theo yêu câu của cơ quan nhà nước có thẩm quyền",
+              "node_id": "0244",
+              "line_num": 499
+            },
+            {
+              "title": "7. Phối hợp, tạo điều kiện cho cơ quan nhà nước có thẩm quyền thực hiện các biện pháp nghiệp vụ khi có yêu cầu",
+              "node_id": "0245",
+              "line_num": 501
+            }
+          ]
+        },
+        {
+          "title": "Điều 36. Trách nhiệm của tố chức, cá nhân sử dụng sản phâm, dịch vụ mật mã dân sự",
+          "node_id": "0246",
+          "line_num": 503,
+          "nodes": [
+            {
+              "title": "1. Tuân thù các quy định đã cam kết với doanh nghiệp cung cấp sản phẩm mật mã dân sự về quản lý sử dụng khóa mã, chuyển nhượng, sửa chữa, bảo dưỡng, bỏ, tiêu hủy sản phầm mật mã dân sự và các nội dung khác có liên quan",
+              "node_id": "0247",
+              "line_num": 505
+            },
+            {
+              "title": "2. Cung cấp các thông tin cần thiết liên quan tới khóa mã cho cơ quan nhà nước có thầm quyền khi có yêu cầu",
+              "node_id": "0248",
+              "line_num": 507
+            },
+            {
+              "title": "3. Phối hợp, tao điều kiện cho cơ quan nhà nước có thầm quyền thực hiện các biện pháp ngăn ngừa tội phạm đánh cắp thông tin, khóa mã và sử dụng sản phầm mật mã dân sự vào những mục đích không hợp pháp.",
+              "node_id": "0249",
+              "line_num": 509
+            },
+            {
+              "title": "14 Tô chức, cá nhân sử dụng sản phâm mật mã dân sự không do doanh nghiệp được cấp phép kinh doanh sản phầm mật mã dân sự cung cấp phải khai báo với Ban Cơ yếu Chính phủ, trừ cơ quan đại diện ngoại giao, cơ quan lãnh sự của nước ngoài và cơ quan đại diện của tổ chức quốc tế liên Chính phủ tại Việt Nam",
+              "node_id": "0250",
+              "line_num": 511
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG IV TIÊU CHUẤN, QUY CHUẦN KỸ THUẬT AN TOÀN THONG TIN MẠNG",
+      "node_id": "0251",
+      "line_num": 513,
+      "nodes": [
+        {
+          "title": "Điều 37. Tiêu chuẩn, quy chuận kỹ thuật an toàn thông tin mạng",
+          "node_id": "0252",
+          "line_num": 515,
+          "nodes": [
+            {
+              "title": "1 Tiêu chuẩn an toàn thông tin mạng gồm tiêu chuẩn quốc tế, tiêu chuân khu vực, tiêu chuẩn nước ngoài, tiêu chuần quốc gia và tiêu chuẩn cơ sở đôi với hệ thông thông tin, phân cứng, phân mềm, hệ thông quản lý, vận hành an toàn thông tin mạng được công bố, thừa nhận áp dụng tại Việt Nam",
+              "node_id": "0253",
+              "line_num": 517
+            },
+            {
+              "title": "2. Quy chuẩn kỹ thuật an toàn thông tin mạng gồm quy chuẩn kỹ thuật quốc gia và quy chuẩn kỹ thuật địa phương đối với hệ thông thông tin, phân cứng, phần mêm, hệ thống quản lý, vận hành an toàn thông tin mạng được xây dựng, ban hành và áp dụng tại Việt Nam",
+              "node_id": "0254",
+              "line_num": 519
+            }
+          ]
+        },
+        {
+          "title": "Điều 38. Quản lý tiêu chuẩn, quy chuấn kỹ thuật an toàn thông tin mạng",
+          "node_id": "0255",
+          "line_num": 521,
+          "nodes": [
+            {
+              "title": "1. Chứng nhận hợp quy về an toàn thông tin mạng là việc tổ chức chứng nhận sự phù hợp chứng nhận hê thông thông tin, phân mêm, hệ thống quản lý, vận hành an toàn thông tin mạng phù hợp với quy chuẩn kỹ thuật an toàn thông tin mạng",
+              "node_id": "0256",
+              "line_num": 523
+            },
+            {
+              "title": "2 Công bố hợp quy về an toàn thông tin mạng là việc tổ chức, doanh nghiệp công bố về sự phù hợp của hệ thông thông tin, phần cứng, phần mềm, hệ thống quản lý, vận hành an toàn thông tin mạng với quy chuân kỹ thuật an toàn thông tin mạng",
+              "node_id": "0257",
+              "line_num": 525
+            },
+            {
+              "title": "3. Chứng nhận hợp chuần về an toàn thông tin mạng là việc tố chức chứng nhận sự phù hợp chứng nhận hệ thống thông tin, phần mềm, hệ thông quản lý, vận hành an toàn thông tin mạng phù hợp với tiêu chuân an toàn thông tin mạng",
+              "node_id": "0258",
+              "line_num": 527
+            },
+            {
+              "title": "4. Công bố hợp chuẩn về an toàn thông tin mạng là việc tổ chức, doanh nghiệp công bố về sự phù hợp của hệ thông thông tin, phân cứng, phân mêm, hệ thống quản lý, vận hành an toàn thông tin mạng với tiêu chuân an toàn thông tin mạng",
+              "node_id": "0259",
+              "line_num": 529
+            },
+            {
+              "title": "5.Bộ Khoa học và Công nghệ chủ trì, phối hợp với cơ quan có liên quan tổ chức thầm định và công bố tiêu chuẩn quốc gia về an toàn thông tin mang theo quy định của pháp luật về tiêu chuẩn, quy chuật",
+              "node_id": "0260",
+              "line_num": 531
+            },
+            {
+              "title": "6. Bộ Thông tin và Truyền thông có trách nhiệm sau đây:",
+              "node_id": "0261",
+              "line_num": 533,
+              "nodes": [
+                {
+                  "title": "a) Xây dựng dự thảo tiêu chuần quốc gia an toàn thông tin mạng, trừ tiêu chuẩn quốc gia quy định tại khoản 7 Điều này;",
+                  "node_id": "0262",
+                  "line_num": 535
+                },
+                {
+                  "title": "b) Ban hành quy chuẩn kỹ thuật quốc gia an toàn thông tin mạng, trừ quy chuẩn quốc gia quy định tại khoản 7 Điều này, quy định về đánh giá hợp quy về an toàn thông tin mạng;",
+                  "node_id": "0263",
+                  "line_num": 537
+                },
+                {
+                  "title": "c) Quản lý chất lượng sản phẩm, dịch vụ an toàn thông tin mạng, trừ sản phầm, dịch vụ mật mã dân sự;",
+                  "node_id": "0264",
+                  "line_num": 539
+                },
+                {
+                  "title": "d) Đăng ký, chi định và quản lý hoạt động của tổ chức chứng nhận sự phù hợp về an toàn thông tin mạng, trừ tổ chức chứng nhận sự phù hợp đối với sản phầm, dịch vụ mật mã dân sự",
+                  "node_id": "0265",
+                  "line_num": 541
+                }
+              ]
+            },
+            {
+              "title": "7. Ban Cơ yếu Chính phủ có trách nhiệm giúp Bộ trưởng Bộ Quốc phòng xây dựng dự thảo tiêu chuẩn quốc gia đối với sản phẩm, dịch vụ mật mã dân sự trình cơ quan nhà nước có thầm quyền công bố và hướng dẫn thực hiện, xây",
+              "node_id": "0266",
+              "line_num": 543
+            },
+            {
+              "title": "8.Uy ban nhân dân cấp tỉnh xây dựng, ban hành và hương dẫn thực hiện quy chuẩn kỹ thuật địa phương về an toàn thông tin mạng, quân lý chất lượng sản phâm, dịch vụ an toàn thông tiê địa bàn",
+              "node_id": "0267",
+              "line_num": 547
+            }
+          ]
+        },
+        {
+          "title": "Điều 39. Đánh giá hợp chuấn, hợp quy về an toàn thông tin mạng Việc đánh giá hợp chuân, hợp quy về an toàn thông tin mạng được thực hiên trong các trường hợp sau đây",
+          "node_id": "0268",
+          "line_num": 549,
+          "nodes": [
+            {
+              "title": "a) Trước khi tổ chức, cá nhân đưa sản phầm an toàn thông tin mạng vào lưu thông trên thị trường phải thực hiện chứng nhận hợp quy hoặc công bố hợp quy và sử dụng dầu hợp quy;",
+              "node_id": "0269",
+              "line_num": 551
+            },
+            {
+              "title": "b) Phục vụ hoạt động quản lý nhà nước về an toàn thông tin mạng",
+              "node_id": "0270",
+              "line_num": 553
+            },
+            {
+              "title": "2. Việc đánh giá hợp chuần, hợp quy về an toàn thông tin mạng phục vụ hệ thống thông tin quan trọng quốc gia và phục vụ hoạt động quản lý nhà nước về an toàn thông tin mạng được thực hiện tại tổ chức chứng nhận sự phủ hợp do Bộ trưởng Bộ Thông tin và Truyền thông chi định",
+              "node_id": "0271",
+              "line_num": 555
+            },
+            {
+              "title": "3. Việc đánh giá hợp chuẩn, hợp quy đối với sản phẩm, dịch vụ mật mã dân sự được thực hiện tại tổ chức chứng nhận sự phù hợp do Bộ trưởng Bộ Quốc phong chỉ định",
+              "node_id": "0272",
+              "line_num": 557
+            },
+            {
+              "title": "4. Việc thừa nhận kết quả đánh giá hợp chuân, hợp quy về an toàn thông tin mạng giữa Việt Nam với quốc gia, vùng lãnh thổ khác, giữa tô chức chứng nhận sự phù hợp của Việt Nam với tổ chức chứng nhận sự phù hợp của quốc gia, vùng lãnh thố khác được thực hiện theo quy định của pháp luật về tiêu chuẩn, quy chuẩn kỹ thuật",
+              "node_id": "0273",
+              "line_num": 559
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG V KINH DOANH TRONG LĨNH VỰC AN TOÀN THÔNG TIN MẠNG",
+      "node_id": "0274",
+      "line_num": 561,
+      "nodes": [
+        {
+          "title": "Mục 1 CẤP GIẤY PHÉP KINH DOANH SẢN PHẨM, DỊCH VỤ AN TOÀN THỐNG TIN MẠNG",
+          "node_id": "0275",
+          "line_num": 563
+        },
+        {
+          "title": "Điều 40. Kinh doanh trong lĩnh vực an toàn thông tin mạng Kinh doanh trong lĩnh vực an toàn thông tin mạng là ngành, nghề kinh doanh có điều kiện Kinh doanh trong lĩnh vực an toàn thông tin mạng gồm kinh doanh san phẩm an toàn thông tin mạng và kinh doanh dịch vụ an toàn thông tin mạng",
+          "node_id": "0276",
+          "line_num": 565,
+          "nodes": [
+            {
+              "title": "2. Doanh nghiệp kinh doanh san phẩm, dịch vụ an toàn thông tin mạng quy LD",
+              "node_id": "0277",
+              "line_num": 567
+            },
+            {
+              "title": "3. Việc kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng phải tuân thủ quy định của Luật này và quy định khác của pháp luật có liên quan Điều kiện kinh doanh, trình tự thủ tục cấp Giấy phép kinh doanh sản phẩm dịch vụ mật mã dân sự, việc xuất khẩu, nhập khẩm mật mã dân sự, trách nhiệm của doanh nghiệp kinh doanh sản phâm, dịch vụ mật mã dân sự và việc sử dụng sản phẩm, dịch vụ mật mã dân sự thực hiện theo quy định tai",
+              "node_id": "0278",
+              "line_num": 571
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Chương III của Luật này Điều kiện kinh doanh, trình tự, thủ tục cấp Giấy phép kinh doanh dịch vụ chứng thực chữ ký điện tử thực hiện theo quy định của pháp luật về giao dịch điện tử",
+      "node_id": "0279",
+      "line_num": 573,
+      "nodes": [
+        {
+          "title": "Điều 41. Sản phẩm, dịch vụ trong lĩnh vực an toàn thông tin mạng",
+          "node_id": "0280",
+          "line_num": 575,
+          "nodes": [
+            {
+              "title": "1. Dịch vụ an toàn thông tin mạng gồm:",
+              "node_id": "0281",
+              "line_num": 577,
+              "nodes": [
+                {
+                  "title": "a) Dịch vụ kiểm tra, đánh giá an toàn thông tin mạng;",
+                  "node_id": "0282",
+                  "line_num": 579
+                },
+                {
+                  "title": "b) Dịch vụ bảo mật thông tin không sử dụng mật mã dân sự;",
+                  "node_id": "0283",
+                  "line_num": 581
+                },
+                {
+                  "title": "c) Dịch vụ mật mã dân sự",
+                  "node_id": "0284",
+                  "line_num": 583
+                },
+                {
+                  "title": "d) Dịch vụ chứng thực chữ ký điện tử;",
+                  "node_id": "0285",
+                  "line_num": 585
+                },
+                {
+                  "title": "đ) Dịch vụ tư vấn an toàn thông tin mạng;",
+                  "node_id": "0286",
+                  "line_num": 587
+                },
+                {
+                  "title": "e) Dịch vụ giám sát an toàn thông tin mạng",
+                  "node_id": "0287",
+                  "line_num": 589
+                },
+                {
+                  "title": "g) Dịch vụ ứng cứu sự cố an toàn thông tin mạng;",
+                  "node_id": "0288",
+                  "line_num": 591
+                },
+                {
+                  "title": "h) Dịch vụ khôi phục dữ liệu; 1) Dịch vụ phòng ngừa, chống tấn công mạng",
+                  "node_id": "0289",
+                  "line_num": 593
+                },
+                {
+                  "title": "k) Dịch vụ an toàn thông tin mạng khác.",
+                  "node_id": "0290",
+                  "line_num": 595
+                }
+              ]
+            },
+            {
+              "title": "2. Sản phầm an toàn thông tin mạng gồm:",
+              "node_id": "0291",
+              "line_num": 597,
+              "nodes": [
+                {
+                  "title": "a) Sản phẩm mật mã dân sự,",
+                  "node_id": "0292",
+                  "line_num": 599
+                },
+                {
+                  "title": "b) Sản phẩm kiểm tra, đánh giá an toàn thông tin mạng;",
+                  "node_id": "0293",
+                  "line_num": 601
+                },
+                {
+                  "title": "c) Sản phẩm giám sát an toàn thông tin mạng",
+                  "node_id": "0294",
+                  "line_num": 603
+                },
+                {
+                  "title": "d) Sản phẩm chống tấn công, xâm nhập",
+                  "node_id": "0295",
+                  "line_num": 605
+                },
+                {
+                  "title": "đ) Sản phẩm an toàn thông tin mạng khác",
+                  "node_id": "0296",
+                  "line_num": 607
+                }
+              ]
+            },
+            {
+              "title": "3. Chính phủ quy định chi tiết danh mục sản phẩm, dịch vụ an toàn thông tin mạng quy định tại điểm k khoản 1 và điểm đ kinu này.",
+              "node_id": "0297",
+              "line_num": 609
+            }
+          ]
+        },
+        {
+          "title": "Điều 42. Điều kiện cấp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng",
+          "node_id": "0298",
+          "line_num": 611,
+          "nodes": [
+            {
+              "title": "1 Doanh nghiệp được cấp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng, trừ sản phẩm, dịch vụ quy định tại các điểm a, b, c, d khoản 1 và điềm a khoản 2 Điều 41 của Luật này, khi đáp ứng đủ các điều kiện sau đây",
+              "node_id": "0299",
+              "line_num": 613,
+              "nodes": [
+                {
+                  "title": "a) Phù hợp với chiên lược, quy hoạch, kê hoạch phát triên an toàn thông tin mạng quốc gia,",
+                  "node_id": "0300",
+                  "line_num": 615
+                },
+                {
+                  "title": "b) Có hệ thông trang thiết bị, cơ sở vật chất phù hợp với quy mô cung cấp sản phẩm, dịch vụ an toàn thông tin mạng có đội ngũ quản lý, điều hành, kỹ thuật đáp ứng được yêu câu chuyên môn về an toàn thông tin;",
+                  "node_id": "0301",
+                  "line_num": 617
+                },
+                {
+                  "title": "d) Có phương án kinh doanh phù hợp",
+                  "node_id": "0302",
+                  "line_num": 619
+                }
+              ]
+            },
+            {
+              "title": "2. Doanh nghiệp được cấp Giây phép kinh doanh dịch vụ kiểm tra, đánh giá an toàn thông tin mạng khi đáp ứng đủ các điều kiện sau đây",
+              "node_id": "0303",
+              "line_num": 621,
+              "nodes": [
+                {
+                  "title": "a) Các điều kiện quy định tại khoản 1 Điều này",
+                  "node_id": "0304",
+                  "line_num": 623
+                },
+                {
+                  "title": "b) Là doanh nghiệp được thành lập và hoạt động hợp pháp trên lãnh thổ Việt Nam, trừ doanh nghiệp có vôn đầu tư nước ngoài;",
+                  "node_id": "0305",
+                  "line_num": 625
+                },
+                {
+                  "title": "c) Người đại diện theo pháp luật, đội ngũ quản lý, đỹ thuật là công dân Việt Nam thường trú tại Việt Nam;",
+                  "node_id": "0306",
+                  "line_num": 627
+                },
+                {
+                  "title": "d) Có phương án kỹ thuật phù hợp với tiêu chuẩn, quy chuẩn kỹ thuật;",
+                  "node_id": "0307",
+                  "line_num": 629
+                },
+                {
+                  "title": "đ) Có phương án bảo mật thông tin khách hàng trình cung cấp dịch vụ;",
+                  "node_id": "0308",
+                  "line_num": 631
+                },
+                {
+                  "title": "e) Đội ngũ quản lý, điều hành, kỹ thuật có văn băng chỉ chuyên môn về kiểm tra, đánh giá an toàn thông tin",
+                  "node_id": "0309",
+                  "line_num": 633
+                }
+              ]
+            },
+            {
+              "title": "3 Doanh nghiệp được cấp Giây phép kinh doanh dịch vụ bảo mật thông tin không sử dụng mật mã dân sự khi đáp ứng đú các điều kây",
+              "node_id": "0310",
+              "line_num": 635,
+              "nodes": [
+                {
+                  "title": "a) Các điều kiện quy định tại các điểm a, b, c, d và đ khoản 2 Điều này",
+                  "node_id": "0311",
+                  "line_num": 637
+                },
+                {
+                  "title": "b) Đôi ngũ quân lý điều hành, kỹ thuật có văn bằng chi chuyên môn về bảo mật thông tin",
+                  "node_id": "0312",
+                  "line_num": 639
+                }
+              ]
+            },
+            {
+              "title": "4 Chính phủ quy định chi tiếu này",
+              "node_id": "0313",
+              "line_num": 641
+            }
+          ]
+        },
+        {
+          "title": "Điều 43. Hồ sơ đề nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng Doanh nghiệp để nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng nộp hồ sơ đề nghị cấp Giáy phép tại Bộ Thông tin và Truyền thông",
+          "node_id": "0314",
+          "line_num": 643,
+          "nodes": [
+            {
+              "title": "2. Hồ sơ đề nghị cấp Giấy phép kinh doanh sản pụẩn toàn thông tin mạng được lập thành năm bộ, gồm:",
+              "node_id": "0315",
+              "line_num": 645,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị cấp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng, trong đó nêu rõ loại hình sản phâm, dịch vụ an toàn thông tin mạng sẽ kinh doanh;",
+                  "node_id": "0316",
+                  "line_num": 647
+                },
+                {
+                  "title": "b) Bản sao Giấy chứng nhận đăng ký doanh nghiệp, Giấy chứng nhận đăng ký đầu tư hoặc giấy tờ khác có giá trị tương đương; các ban thuyết minh hệ thống thiết bị kỹ thuật bảo đảm phù hợp với quy định của pháp luật;",
+                  "node_id": "0317",
+                  "line_num": 649
+                },
+                {
+                  "title": "d) Phương án kinh doanh gồm phạm vi, đối tượng cung cấp sản phẩm dịch vụ, tiêu chuẩn, chất lượng sản phẩm, dịch vụ;",
+                  "node_id": "0318",
+                  "line_num": 651
+                },
+                {
+                  "title": "đ) Bản sao văn băng hoặc chứng chỉ chuyên môn về an toàn thông tin của đội ngũ quản lý, điều hành, kỹ thuật",
+                  "node_id": "0319",
+                  "line_num": 653
+                }
+              ]
+            },
+            {
+              "title": "3. Ngoài giấy tờ, tài liệu quy định tại khoản 2 Điều này, hồ sơ đề nghị cấp Giây phép kinh doanh dịch vụ kiểm tra, đánh giá an toàn thông tin hoặc dịch vụ bảo mật thông tin không sử dụng mật mã dân sự còn phải có:",
+              "node_id": "0320",
+              "line_num": 655,
+              "nodes": [
+                {
+                  "title": "a) Phiếu lý lịch tư pháp của người đại diện theo pháp luật và đội ngũ quản lý, điều hành, kỹ thuật;",
+                  "node_id": "0321",
+                  "line_num": 657
+                },
+                {
+                  "title": "b) Phương án kỹ thuật;",
+                  "node_id": "0322",
+                  "line_num": 659
+                },
+                {
+                  "title": "c) Phương án bảo mật thông tin khách hàng trong quá trình cung cấp dịch vụ",
+                  "node_id": "0323",
+                  "line_num": 661
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 44. Thẩm định hồ sơ và cấp Giấy phép kinh doanh sản phẩm dịch vụ an toàn thông tin mạng",
+          "node_id": "0324",
+          "line_num": 663,
+          "nodes": [
+            {
+              "title": "1. Trong thời hạn 40 ngày kể từ ngày nhận đủ hồ sơ, Bộ Thông tin và Truyên thông chủ trì, phối hợp với bộ, ngành có liên quan thẩm định và cấp Giây phép kinh doanh sản phầm, dịch vụ an toàn thông tin mạng, trừ kinh doanh sản phầm, dịch vụ quy định tại điểm c, điểm d khoản 1 và điểm a khoàn",
+              "node_id": "0325",
+              "line_num": 665
+            }
+          ]
+        },
+        {
+          "title": "Điều 41 của Luật này, trường hợp từ chối cấp thi phải thông báo báng văn bản và nêu rõ lý do.",
+          "node_id": "0326",
+          "line_num": 667,
+          "nodes": [
+            {
+              "title": "2. Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mang có nội dung chính sau đây",
+              "node_id": "0327",
+              "line_num": 669,
+              "nodes": [
+                {
+                  "title": "a) Tên doanh nghiệp, tên giao dịch của doanh nghiệp băng tiếng Việt và tiếng nước ngoài (nếu có); địa chi trụ sở chính tại Việt Nam",
+                  "node_id": "0328",
+                  "line_num": 671
+                },
+                {
+                  "title": "b) Tên của người đại diện theo pháp luật;",
+                  "node_id": "0329",
+                  "line_num": 673
+                },
+                {
+                  "title": "c) Số giấy phép, ngày cấp giấy phép, ngày phép;",
+                  "node_id": "0330",
+                  "line_num": 675
+                },
+                {
+                  "title": "d) Sản phẩm, dịch vụ an toàn thông tin mạng được phép kinh doanh",
+                  "node_id": "0331",
+                  "line_num": 677
+                }
+              ]
+            },
+            {
+              "title": "3. Doanh nghiệp được cấp Giấy phép kinh doanh sản phẩm, dịch vụ an",
+              "node_id": "0332",
+              "line_num": 679
+            }
+          ]
+        },
+        {
+          "title": "Điều 45. Sửa đổi, bổ sung, gia hạn, tạm đình chi, thu hồi và cấp lại Giấy phép kinh doanh sản phấm, dịch vụ an toàn thông tin mạng",
+          "node_id": "0333",
+          "line_num": 683,
+          "nodes": [
+            {
+              "title": "1. Việc sửa đôi, bồ sung Giấy phép kinh doanh sản phâm, dịch vụ an toàn thông tin mạng được thực hiện trong trường hợp doanh nghiệp đã được cấp Giấy phép thay đổi tên, thay đổi người đại diện theo pháp luật hoặc thay đổi, bổ sung sản phẩm, dịch vụ an toàn thông tin mạng mà mình cung cấp Doanh nghiệp có trách nhiệm nộp hồ sơ đề nghị sửa đối, bổ sung nội dung Giấy phép tại Bộ Thông tin và Truyền thông Hồ sơ được lập thành hai bộ, gồm đơn đề nghị sửa đổi, bố sung nội dung Giáy phép, báo cáo mô tả chi tiết nội dung đề nghị sửa đôi, bồ sung và các tài liệu khác có liên quan Trong thời hạn 10 ngày làm việc kể từ ngày nhận đủ hồ sơ, Bộ Thông tin và Truyền thông thẩm định, sửa đổi, bố sung và cấp lại Giây phép cho doanh nghiệp; trường hợp từ chối cấp thì phải thông báo bằng văn bản và nêu rõ lý do 2, Trường hợp Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin bị mất hoặc bị hư hòng, doanh nghiệp gửi đơn đề nghị cấp lại Giấy phép, trong đó nêu rõ lý do, tới Bộ Thông tin và Truyên thông, Trong thời hạn 05 ngày làm việc kể từ ngày nhận được đơn đề nghị, Bộ Thông tin và Truyền thông xem xét và cấp lại Giấy phép cho doanh nghiệp",
+              "node_id": "0334",
+              "line_num": 685
+            },
+            {
+              "title": "3. Doanh nghiệp không vi phạm quy định của pháp luật về kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng được gia han Giáy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng một lân vơi thời gian gia hạn không quá 01 năm Hồ sơ đề nghị gia hạn Giấy phép phải được gửi tới Bộ Thông tin và Truyền thông chậm nhất là 60 ngày trước ngày Giây phép hết hạn Hồ sơ đề nghị gia hạn Giấy phép được lập thành hai bộ, gồm:",
+              "node_id": "0335",
+              "line_num": 687,
+              "nodes": [
+                {
+                  "title": "a) Đơn đề nghị gia hạn Giấy phép;",
+                  "node_id": "0336",
+                  "line_num": 689
+                },
+                {
+                  "title": "b) Giấy phép kinh doanh sản phầm, dịch vụ an toàn thông tin mạng đang có hiệu lực;",
+                  "node_id": "0337",
+                  "line_num": 691
+                },
+                {
+                  "title": "c) Báo cáo hoạt động của doanh nghiệp trong 02 năm gần nhất Trong thời hạn 20 ngày kế từ ngày nhận đủ hồ sơ, Bộ Thông tin và Truyền thông thẩm định, quyết định gia hạn và cấp lại Giấy phép cho doanh nghiệp, trường hợp từ chối cấp thi phải thông báo băn và nêu rõ lý do",
+                  "node_id": "0338",
+                  "line_num": 693
+                }
+              ]
+            },
+            {
+              "title": "4 Doanh nghiệp bị tạm đình chỉ hoạt động kinh doanh sản phâm, dịch vụ an toàn thông tin mạng có thời hạn không quá 06 tháng trong các trường hợp sau đây",
+              "node_id": "0339",
+              "line_num": 695,
+              "nodes": [
+                {
+                  "title": "a) Cung cấp dịch vụ không đúng với nội dung ghi trên Giây phép;",
+                  "node_id": "0340",
+                  "line_num": 697
+                },
+                {
+                  "title": "b) Không đáp ứng được một trong các điều kiện quy định tại Điều 42 của Luật này; RY",
+                  "node_id": "0341",
+                  "line_num": 699
+                },
+                {
+                  "title": "C) Các trường hợp khác theo quy định của pháp luật",
+                  "node_id": "0342",
+                  "line_num": 701
+                }
+              ]
+            },
+            {
+              "title": "5. Doanh nghiệp bị thu hồi Giấy phép kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng trong các trường hợp sau đây:",
+              "node_id": "0343",
+              "line_num": 703,
+              "nodes": [
+                {
+                  "title": "a) Không triển khai cung cấp dịch vụ trong thời hạn 01 năm kể từ ngày được cấp Giấy phép mà không có lý do chính đáng;",
+                  "node_id": "0344",
+                  "line_num": 705
+                },
+                {
+                  "title": "b) Giấy phép đã hết hạn;",
+                  "node_id": "0345",
+                  "line_num": 707
+                },
+                {
+                  "title": "c) Hết thời hạn tạm đình chi mà doanh nghiệp không khắc phục được các lý do quy định tại khoản 4 Điều này",
+                  "node_id": "0346",
+                  "line_num": 709
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Điều 46. Trách nhiệm của doanh nghiệp kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng",
+          "node_id": "0347",
+          "line_num": 711,
+          "nodes": [
+            {
+              "title": "1 Quân lý hồ sơ, tài liệu về giải pháp kỹ thuật, công nghệ của sản phầm",
+              "node_id": "0348",
+              "line_num": 713
+            },
+            {
+              "title": "2 Lập, lưu giữ và bảo mật thông tin của khách hàng",
+              "node_id": "0349",
+              "line_num": 715
+            },
+            {
+              "title": "3. Định kỳ hăng năm báo cáo Bộ Thông tin và Truyền thông về tình hình kinh doanh, xuất khẩu, nhập khẩu sản phẩm, dịch vụ an toàn thông tin mạng trước ngày 31 tháng 12.",
+              "node_id": "0350",
+              "line_num": 717
+            },
+            {
+              "title": "4 Từ chối cung cấp sản phẩm, dịch vụ an toàn thông tin mạng khi phát hiện tổ chức, cá nhân vị phạm pháp luật về sử dụng sản phẩm, dịch vụ an toàn thông tin mạng, vi phạm cam kết đã thỏa thuận về sử dụng sản phẩm, dịch vụ do doanh nghiệp cung cấp.",
+              "node_id": "0351",
+              "line_num": 719
+            },
+            {
+              "title": "5. Tạm ngừng hoặc ngừng cung cấp sản phẩm, dịch vụ an toàn thông tin mang để bảo đảm quốc phòng, an ninh quốc gia, trật tự, an toàn xã hội theo yêu cầu của cơ quan nhà nước có thầm quyền",
+              "node_id": "0352",
+              "line_num": 721
+            },
+            {
+              "title": "6. Phối hợp, tạo điều kiện cho cơ quan nhà nước có thẩm quyền thực hiện các biện pháp nghiệp vụ khi có yêu cầu",
+              "node_id": "0353",
+              "line_num": 723
+            }
+          ]
+        },
+        {
+          "title": "Mục 2 QUẢN LÝ NHẬP KHẦU SẢN PHẦM AN TOÀN THÔNG TIN MẠNG",
+          "node_id": "0354",
+          "line_num": 725
+        },
+        {
+          "title": "Điều 47. Nguyên tắc quản lý nhập khẩu sản phẩm an toàn thông tin mạng",
+          "node_id": "0355",
+          "line_num": 727,
+          "nodes": [
+            {
+              "title": "1. Việc quản lý nhập khẩu đối với sản phẩm an toàn thông tin mạng được thực hiện theo quy định của Luật này và quy định khác của pháp luật có liên quan.",
+              "node_id": "0356",
+              "line_num": 729
+            },
+            {
+              "title": "2 Việc nhập khẩu sản phẩm an toàn thông tin mạng của cơ quan, tổ chức, cá nhân được hưởng quyên ưu đãi, miễn trừ ngoại giao thực hiện theo quy định của pháp luật về hải quan, pháp luật về ưu đãi, miễn trừ dành cho cơ quan đại diện ngoại giao, cơ quan lãnh sự của nước ngoài và cơ quan đại diện của tổ chức quốc tế liên Chính phủ tại Việt Nam",
+              "node_id": "0357",
+              "line_num": 731
+            },
+            {
+              "title": "3. Trong trường hợp Việt Nam chưa có quy chuẩn kỹ thuật an toàn thông",
+              "node_id": "0358",
+              "line_num": 733
+            }
+          ]
+        },
+        {
+          "title": "Điều 48. Sản phầm nhập khẩu theo giấy phép trong lĩnh vực an toàn thông tin mạng K. Khi nhập khấu sản phầm an toàn thông thuộc Danh mục sản phâm an toàn thông tin mạng nhập khẩu theo giáy phép do Chính phủ quy định, doanh nghiệp phải có Giây phép nhập khẩu sản phâm an toàn thông tin mạng do cơ quan nhà nước có thẩm quyền cấp 2, Tổ chức, doanh nghiệp nhập khẩu sản phẩm an toàn thông tin mạng phải thực hiện chứng nhận, công bố hợp quy trước khi nhập khẩu theo quy định tại",
+          "node_id": "0359",
+          "line_num": 737
+        },
+        {
+          "title": "Điều 39 của Luật này.",
+          "node_id": "0360",
+          "line_num": 739,
+          "nodes": [
+            {
+              "title": "3. Tổ chức, doanh nghiệp được cấp Giấy phép nhập khầu sản phẩm an toàn thông tin mạng khi đáp ứng đủ các điều kây:",
+              "node_id": "0361",
+              "line_num": 741,
+              "nodes": [
+                {
+                  "title": "a) Có Giấy phép kinh doanh sản phẩm an toàn thông tin mạng;",
+                  "node_id": "0362",
+                  "line_num": 743
+                },
+                {
+                  "title": "b) Sản phẩm an toàn thông tin mạng phải thực hiện chứng nhận, công bố hợp quy theo quy định tại Điều 39 của Luật này; các Đôi tượng và mục đích sử dụng sản phâm an toàn thông tin mang không gây phương hại đến quốc phong, an ninh quốc gia và trật tự, an toàn xã hội",
+                  "node_id": "0363",
+                  "line_num": 745
+                }
+              ]
+            },
+            {
+              "title": "4. Bộ Thông tin và Truyền thông quy định chi tiết về trình tự, thủ tục, hồ sơ cấp Giấy phép nhập khẩu sản phẩm an toàn thông tin mạng theo giảy phép",
+              "node_id": "0364",
+              "line_num": 747
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG VI PHÁT TRIỂN NGUỒN NHÂN LỰC AN TOÀN THÔNG TIN MẠNG",
+      "node_id": "0365",
+      "line_num": 749,
+      "nodes": [
+        {
+          "title": "Điều 49. Đào tạo, bồi dưỡng nghiệp vụ về an toàn thông tin mạng",
+          "node_id": "0366",
+          "line_num": 751,
+          "nodes": [
+            {
+              "title": "1 Chủ quản hệ thông thông tin có trách nhiệm đào tạo và bồi dưỡng kiến thức, nghiệp vụ cho cán bộ quản lý, kỹ thuật về an toàn thông tin mạng",
+              "node_id": "0367",
+              "line_num": 753
+            },
+            {
+              "title": "2. Cán bộ chuyên trách về an toàn thông tin mạng được bồ tri, tao điều kiện làm việc phú hợp với chuyên môn, được ưu tiên bôi dưỡng nghiệp vụ về an toàn thông tin mang",
+              "node_id": "0368",
+              "line_num": 755
+            },
+            {
+              "title": "3. Nhà nước khuyến khích tô chức, cá nhân đounh, liên kết với tô chức khác đề đầu tư xây dựng cơ sở giáo dục đại học, cơ sở giáo dục nghê nghiệp nhằm đảo tạo nhân lực trong lĩnh vực an toàn thông tin mạng",
+              "node_id": "0369",
+              "line_num": 757
+            },
+            {
+              "title": "4. Bộ Nội vụ chủ tri, phối hợp với Bộ Thông tin và Truyên thông, bộ, ngành có liên quan xây dựng kế hoạch và tổ chức thực hiện đảo tạo, bồi dưỡng kiến thức, nghiệp vụ về an toan thông tin mạng cho cán bô, công chức, viên chức",
+              "node_id": "0370",
+              "line_num": 759
+            }
+          ]
+        },
+        {
+          "title": "Điều 50. Văn bằng, chứng chỉ đào tạo về an toàn thông tin mạng",
+          "node_id": "0371",
+          "line_num": 761,
+          "nodes": [
+            {
+              "title": "1 Cơ sở giáo dục đại học, cơ sở giáo dục nghê nghiệp trong phạm vi nhiêm vụ, quyên hạn của mình cấp văn bằng, chứng chỉ đào tạo về an toàn thông tin mạng",
+              "node_id": "0372",
+              "line_num": 763
+            },
+            {
+              "title": "2 Bộ Giáo dục và Đào tạo chủ trì, phối hợp với Bộ Thông tin và Truyền thông, bộ, ngành có liên quan công nhận văn băng giáo dục đại học về an toàn thông tin mạng do tổ chức nước ngoài cấp.",
+              "node_id": "0373",
+              "line_num": 765
+            },
+            {
+              "title": "3.Bộ Lao động - Thương binh và Xã hội chủ tri, phối hợp với Bộ Thông tin và Truyền thông, bộ, ngành có liên quan công nhận văn bằng, chứng chỉ giáo dục nghề nghiệp về an toàn thông tin mạng do tổ chức nước ngoài cấp",
+              "node_id": "0374",
+              "line_num": 767
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG VII QUẢN LÝ NHÀ NƯỚC VỀ AN TOÀN THÔNG TIN MẠNG",
+      "node_id": "0375",
+      "line_num": 769,
+      "nodes": [
+        {
+          "title": "Điều 51. Nội dung quản lý nhà nước về an toàn thông tin mạng Xây dựng chiến lược, quy hoạch, kế hoạch và chính sách trong lĩnh vực an toàn thông tin mạng, xây dựng và chỉ đạo thực hiện chương trình quốc gia về an toàn thông tin mạng",
+          "node_id": "0376",
+          "line_num": 771,
+          "nodes": [
+            {
+              "title": "2.Ban hành và tổ chức thực hiện văn bản quy phạm pháp luật về an toàn thông tin mạng, xây dựng, công bô tiêu chuẩn quốc gia, ban hành quy chuẩn kỹ thuật về an toàn thông tin mạng",
+              "node_id": "0377",
+              "line_num": 773
+            },
+            {
+              "title": "3. Quản lý nhà nước về mật mã dân sự.",
+              "node_id": "0378",
+              "line_num": 775
+            },
+            {
+              "title": "4 Quản lý công tác đánh giá, công bố hợp chuân, hợp quy về an toàn thông tin mạng",
+              "node_id": "0379",
+              "line_num": 777
+            },
+            {
+              "title": "5. Quản lý công tác giám sát an toàn hệ thống thông tin",
+              "node_id": "0380",
+              "line_num": 779
+            },
+            {
+              "title": "6. Thẩm định về an toàn thông tin mạng trong hồ sơ thiết kế hệ thông thông tin",
+              "node_id": "0381",
+              "line_num": 781
+            },
+            {
+              "title": "7. Tuyên truyền, phố biên pháp luật về an toàn thông tin mạng",
+              "node_id": "0382",
+              "line_num": 783
+            },
+            {
+              "title": "8. Quản lý hoạt động kinh doanh sản phẩm, dịch vụ an toàn thông tin mạng",
+              "node_id": "0383",
+              "line_num": 785
+            },
+            {
+              "title": "9. Tổ chức nghiên cứu, ứng dụng khoa học và công nghệ về an toàn thông tin mạng, phát triển nguồn nhân lực an toàn thông tin mạng, đào tạo cán bộ chuyên trách về an toàn thông tin mạng",
+              "node_id": "0384",
+              "line_num": 787
+            },
+            {
+              "title": "10.Kiểm tra, thanh tra, giải quyết khiêu nại, tố cáo, xử lý vi phạm pháp luật về an toàn thông tin mạng",
+              "node_id": "0385",
+              "line_num": 789
+            },
+            {
+              "title": "11.Hợp tác quốc tế về an toàn thông tin mạng 2X",
+              "node_id": "0386",
+              "line_num": 791
+            }
+          ]
+        },
+        {
+          "title": "Điều 52. Trách nhiệm quản lý nhà nước về an toàn thông tin mạng",
+          "node_id": "0387",
+          "line_num": 793,
+          "nodes": [
+            {
+              "title": "1. Chính phủ thống nhất quản lý nhà nước về an toàn thông tin mạng",
+              "node_id": "0388",
+              "line_num": 795
+            },
+            {
+              "title": "2.Bộ Thông tin và Truyền thông chịu trách nhiêm trước Chính phủ thực hiện quản lý nhà nước về an toàn thông tin mạng, có nhiệm vụ, quyền hạn sau đây: a la ) Ban hành hoặc xây dựng, trình cấp có thầm quyên ban hành văn bản quy pham pháp luật, chiên lược, quy hoạch, kế hoạn quốc gia, quy chuẩn kỹ thuật quốc gia về an toàn thông tin mạng;",
+              "node_id": "0389",
+              "line_num": 797,
+              "nodes": [
+                {
+                  "title": "b) Thấm định về an toàn thông tin mạng trong hồ sơ thiết kế hệ thống thông tin;",
+                  "node_id": "0390",
+                  "line_num": 799
+                },
+                {
+                  "title": "c) Quản lý công tác giám sát an toàn hệ thống thông tin trên toàn quốc, trừ hê thống thông tin quy định tại điểm c khoản 3 và điểm b khoản 5 Điều này;",
+                  "node_id": "0391",
+                  "line_num": 801
+                },
+                {
+                  "title": "d) Quản lý công tác đánh giá về an toàn thông tin mạng;",
+                  "node_id": "0392",
+                  "line_num": 803
+                },
+                {
+                  "title": "đ) Cấp Giấy phép kinh doanh sản phâm, dịch vụ an toàn thông tin mạng Giây phép nhập khẩu sản phâm an toàn thông tin, trừ sản phâm, dịch vụ mật mã dân sự;",
+                  "node_id": "0393",
+                  "line_num": 805
+                },
+                {
+                  "title": "e) Nghiên cứu, ứng dụng khoa học và công nghệ về an toàn thông tin mạng, đào tạo, bồi dưỡng, phát triển nhân lực;",
+                  "node_id": "0394",
+                  "line_num": 807
+                },
+                {
+                  "title": "g) Quản lý và thực hiện hợp tác quốc tế về an toàn thông tin mạng;",
+                  "node_id": "0395",
+                  "line_num": 809
+                },
+                {
+                  "title": "h) Kiểm tra, thanh tra, giải quyết khiêu nại, tố cáo và xử lý vi phạm pháp luật về an toàn thông tin mạng; 1) Chủ trì, phối hợp với bộ, ngành, Ủy ban nhân dân cấp tỉnh và doanh nghiệp có liên quan trong việc bào đảm an toàn thông tin mạng;",
+                  "node_id": "0396",
+                  "line_num": 811
+                },
+                {
+                  "title": "k) Tô chức tuyên truyền, phố biến pháp luật về an toàn thông tin mạng",
+                  "node_id": "0397",
+                  "line_num": 813
+                },
+                {
+                  "title": "I) Định kỳ hăng năm báo cáo Chính phủ về hoạt động an toàn thông tin mạng",
+                  "node_id": "0398",
+                  "line_num": 815
+                }
+              ]
+            },
+            {
+              "title": "3. Bộ Quốc phòng có nhiệm vụ, quyền han sau đây:",
+              "node_id": "0399",
+              "line_num": 817,
+              "nodes": [
+                {
+                  "title": "a) Ban hành hoặc xây dựng, trình cấp có thẩm quyền ban hành văn bản quy pham pháp luật, chiến lược, quy hoạch, kế hoạch, tiêu chuẩn quốc gia, quy chuẩn kỹ thuật quốc gia về an toàn thông tin mạng thuộc lĩnh vực do Bộ Quốc phòng quản lý;",
+                  "node_id": "0400",
+                  "line_num": 819
+                },
+                {
+                  "title": "b) Kiểm tra, thanh tra, giải quyết khiếu nại, tố cáo và xử lý vi pham pháp luật trong hoạt động bảo đảm an toàn thông tin mạng thuộc lĩnh vực do Bộ Quốc phòng quản lý;",
+                  "node_id": "0401",
+                  "line_num": 821
+                },
+                {
+                  "title": "c) Thực hiện quản lý công tác giám sát an toàn hệ thông thông tin thuộc Bộ Quốc phòng",
+                  "node_id": "0402",
+                  "line_num": 823
+                }
+              ]
+            },
+            {
+              "title": "4. Ban Cơ yêu Chính phủ giúp Bộ trưởng Bộ Quốc phòng thực hiện quản Lf",
+              "node_id": "0403",
+              "line_num": 825,
+              "nodes": [
+                {
+                  "title": "a) Xây dựng, trình cấp có thẩm quyền ban hành văn bản quy phạm pháp luật về quản lý mật mã dân sự;",
+                  "node_id": "0404",
+                  "line_num": 829
+                },
+                {
+                  "title": "b) Chủ trì, phối hợp với bộ, ngành có liên quan xây dựng, trình cơ quan nhà nước có thẩm quyền ban hành tiêu chuẩn quốc gia, quy chuẩn kỹ thuật quốc gia đối với sản phẩm, dịch vật mã dân sự",
+                  "node_id": "0405",
+                  "line_num": 831
+                },
+                {
+                  "title": "c) Quản lý hoạt động kinh doanh, sử dụng mật mã dân sự, quản lý chất lượng sản phẩm, dịch vụ mật mã dân sự, quản lý công tác đánh giá, công bồ hợp chuân, hợp quy đối với sản phẩm, dịch vâ dân sự;",
+                  "node_id": "0406",
+                  "line_num": 833
+                },
+                {
+                  "title": "d) Xây dựng, trình cấp có thẩm quyền ban hành Danh mục sản phẩm, dịch vụ mật mã dân sự và Danh mục sản phẩm mật mã dân sự xuất khẩu, nhập khẩu theo giấy phép;",
+                  "node_id": "0407",
+                  "line_num": 835
+                },
+                {
+                  "title": "đ) Cấp Giấy phép kinh doanh sản phẩm, dịch vụ mật mã dân sự, Giấy phép xuất khẩu, nhập khâu sản phẩm sự",
+                  "node_id": "0408",
+                  "line_num": 837
+                },
+                {
+                  "title": "e) Kiêm tra, thanh tra, giải quyết khiều nại, tố cáo và xử lý vi phạm pháp luật trong hoạt động kinh doanh, sử dụng mã dân sự",
+                  "node_id": "0409",
+                  "line_num": 839
+                },
+                {
+                  "title": "g) Hợp tác quốc tế về mật mã dân sự",
+                  "node_id": "0410",
+                  "line_num": 841
+                }
+              ]
+            },
+            {
+              "title": "5.Bộ Công an có nhiệm vụ, quyền hạn sau đây",
+              "node_id": "0411",
+              "line_num": 843,
+              "nodes": [
+                {
+                  "title": "a) Chủ trì, phối hợp với bộ, ngành có liên quan xây dựng và trình cấp có thầm quyền ban hành hoặc ban hành theo thẩm quyền và hướng dẫn thực hiện văn bản quy pham pháp luật về bảo vệ bí mật nhà nước, phòng, chống tội phạm mạng, lợi dung mạng để xâm pham an ninh quốc gia, trật tự, an toàn xã hội;",
+                  "node_id": "0412",
+                  "line_num": 845
+                },
+                {
+                  "title": "b) Thực hiện quản lý công tác giám sát an toàn hệ thông thông tin thuộc Bộ Công an;",
+                  "node_id": "0413",
+                  "line_num": 847
+                },
+                {
+                  "title": "c) Tổ chức, chỉ đạo, triên khai công tác phòng, chống tội phạm, tổ chức điều tra tội phạm mang và hành vi vi phạm pháp luật khác trong lĩnh vực an toàn thông tin mạng;",
+                  "node_id": "0414",
+                  "line_num": 849
+                },
+                {
+                  "title": "d) Phối hợp với Bộ Thông tin và Truyền thông, bộ, ngành có liên quan kiểm tra, thanh tra về an toàn thông tin mạng, xử lý vi phạm pháp luật về an toàn thông tin mạng theo thẩm quyền",
+                  "node_id": "0415",
+                  "line_num": 851
+                }
+              ]
+            },
+            {
+              "title": "6. Bộ Nội vụ có trách nhiệm tố chức đào tạo, bồi dưỡng kiến thức, nghiệp vụ an toàn thông tin mạng cho cán bộ, công chức, viên chức",
+              "node_id": "0416",
+              "line_num": 853
+            },
+            {
+              "title": "7.Bộ Giáo dục và Đào tạo có trách nhiệm tổ chức đào tạo, phổ biến kiến thức về an toàn thông tin mạng trong cơ sở giáo dục đại học.",
+              "node_id": "0417",
+              "line_num": 855
+            },
+            {
+              "title": "8. Bộ Lao động - Thương binh và Xã hội có trách nhiệm tô chức đảo tạo, bồi dưỡng, phổ biến kiến thức về an toàn thông tin mạng trong cơ sở giáo dục nghề nghiệp",
+              "node_id": "0418",
+              "line_num": 857
+            },
+            {
+              "title": "9. Bộ Tài chính có trách nhiệm hướng dẫn, bố trí kinh phí thực hiện nhiệm vụ bảo đảm an toàn thông tin mạng theo quy định của pháp luật",
+              "node_id": "0419",
+              "line_num": 859
+            },
+            {
+              "title": "10. Bộ, cơ quan ngang bộ trong phạm vị nhiệm vụ, quyền hạn của mình có trách nhiệm quản lý an toàn thông tin mạng của ngành minh và phối hợp với Bộ Thông tin và Truyên thông thực hiện quản lý nhà nước về an toàn thông tin mạng",
+              "node_id": "0420",
+              "line_num": 861
+            },
+            {
+              "title": "11.UỦ ban nhân dân cấp tỉnh trong phạm vụ quyền hạn của mình thực hiện quản lý nhà nước về an toàn thông tin mạng ở địa phương",
+              "node_id": "0421",
+              "line_num": 863
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CHƯƠNG VIII",
+      "node_id": "0422",
+      "line_num": 865,
+      "nodes": [
+        {
+          "title": "Điều 53. Hiệu lực thi hành Luật này có hiệu lực thi hành từ ngày 01 tháng 7 năm 2016",
+          "node_id": "0423",
+          "line_num": 869
+        },
+        {
+          "title": "Điều 54.Quy định chi tiết Chính phủ, cơ quan nhà nước có thẩm quyền quy định chi tiết các điều khoản được giao trong Luật Luật này đã được Quốc hội nước Cộng hòa xã hội chủ nghĩa Việt Nam khóa XIII, kỳ họp thứ 10 thông qua ngày 19 tháng 11 năm 2015 CHỦ TỊCH QUỐC HỘI Nguyễn Sinh Hùng",
+          "node_id": "0424",
+          "line_num": 871
+        }
+      ]
+    }
+  ]
+}

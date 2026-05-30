@@ -1,0 +1,627 @@
+QUỐC HỘI CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM Độc lập - Tự do Hạnh phúc Luật số: 80/2025/QH15 VĂN PHÒNG CHÍNH PHỦ CỔNG THÒNG TIN ĐIỆN TỪ CHÍNH PHÙ
+
+# CÔNG VĂN ĐẾN ĐIÊN GIA CÁN BỘ, CÔNG CHỨC Ngày: 16.17.1202.5 Giớ. Ngày 16/7 Kinh chuyển... ĐT Cán cứ Hiên pháp nước Công hòa xã hội chủ nghĩa Việt Nam đã được sưa đổi, bổ sung một số điều theo Nghị quyết số 203/2025/QHI5; Quốc hội ban hành Luật Cán bộ, công chức Chương NHỮNG QUY ĐỊNH CHUNG
+
+## Điều 1. Cán bộ, công chức
+
+### 1. Cán bộ là công dân Việt Nam, được bâu cử, phê chuẩn, bố nhiệm hoặc chi định giữ chức vụ, chức danh theo nhiệm kỳ trong cơ quan của Đảng Cộng sản Việt Nam, Nhà nước, Mặt trận Tổ quốc Việt Nam, các tổ chức chính trị - xã hội ở trung ương, ở cấp tỉnh, ở cấp xã, trong biên chế và hưởng lương từ ngân sách nhà nước.
+
+### 2. Công chức là công dân Việt Nam, được tuyên dụng vào vị trí việc làm trong cơ quan của Đảng Cộng sản Việt Nam, Nhà nước, Mặt trận Tổ quốc Việt Nam, các tổ chức chính trị - xã hội ở trung ương, ở cấp xỉ, trong cơ quan, đơn vị thuộc Quân đội nhân dân mà không phải la sĩ quan, quân nhân chuyên nghiệp, công nhân, viên chức quốc phòng, trong cơ quan, đơn vị thuộc Công an nhân dân mà không phải là sĩ quan, hạ sĩ quan, chiến sĩ phục vụ theo chế độ chuyên nghiệp, công nhân công an; trong tổ chức cơ yếu mà không phải là người làm công tác cơ yếu, trong biên chế và hưởng lương từ ngân sách nhà nước
+
+## Điều 2. Nguyên tắc trong thi hành công vụ
+
+### 1. Tuân thủ Hiến pháp và pháp luật
+
+### 2 Tôn trọng, bảo đảm, bảo vệ quyền con người, quyền công dân, bảo vệ lợi ích của Nhà nước, quyền và lợi ích hợp pháp của tổ chức và cá nhân.
+
+### 3. Công khai, minh bạch, đúng thẩm quyền và có sự kiểm tra, giám sát
+
+### 4. Bảo đảm tính hệ thông, thống nhất, liên tục, thông suốt, chuyên nghiệp hiện đại và hiệu quả
+
+### 5. Bảo đảm thứ bậc hành chính và sự phối hợp chặt chẽ
+
+## Điều 3. Nguyên tắc quản lý cán bộ, công chức
+
+### 1.Bảo đảm sự lãnh đạo của Đảng Cộng sản Việt Nam, sự quản lý của Nhà nước
+
+### 2. Kết hợp giữa tiêu chuẩn chức danh, vị trí việc làm và chi tiêu biên chế
+
+### 3. Thực hiện nguyên tắc tập trung dân chủ, chế độ trách nhiệm cá nhân và phân công, phân cấp rõ ràng
+
+### 4. Việc đánh giá, bố trí, sử dụng cán bộ, công chức phải căn cứ vào phâm chất chính trị, đạo đức, năng lực và kết quả, hiệu quả thực thi nhiêm vụ theo yêu cầu vị trí việc làm
+
+### 5 Bảo đảm thống nhất, đồng bộ, liên thông trong hệ thống chính trị..
+
+### 6 Thực hiện bình đằng giới 7, uu tiên trong tuyển dụng, bố nhiện chế độ, chính sách đối với người dân tộc thiểu số
+
+## Điều 4. Cơ chế thu hút nguồn nhân lực chất lượng cao và chính sách đối với người có tài năng trong hoạt động công vụ Nhà nước có cơ chế đặc biệt để thu hút chuyên gia, nhà khoa học, luật gia luật sư giói, doanh nhân tiêu biểu, xuất sắc, sinh viên tốt nghiệp xuất sắc và nguôn nhân lực chất lượng cao khác vào làm việc trong cơ quan của Đảng Công sản Việt Nam, Nha nước, Mặt trận Tô quốc Việt Nam, các tổ chức chính tri - xã hội, chính sách trọng dụng, đãi ngộ xứng đảng đôi với người có tai năng trong hoạt động công vụ phù hợp với điều kiện phát triển kinh tế - xã hội của đất nước.
+
+### 2.Người có tài năng trong hoạt động công vụ là cán bộ, công chức có phẩm chất chính trị, đạo đức tốt, có khát vọng công hiên, phụng sự Tố quốc và Nhân dân, có năng lực chuyên môn, kỹ năng vượt trội thế hiện qua giải quyết công việc; có tư duy đôi mới, năng động, sáng tạo, dám nghĩ, dám làm, dám chịu trách nhiệm vi lợi ích chung, đạt được những thành tích nôi bật trong hoạt động công vụ thể hiện bằng kết quả, sản phẩm cụ thể, mang lại giá trị, hiệu quả cao cho tổ chức, ngành, lĩnh vực trong phạm vị cả nước hoặc địa phương
+
+### 3. Chính phủ quy định khung cơ chế, chính sách thu hút, trọng dụng và đãi ngộ đối với đối tượng quy định tại khoản 2 Điều này
+
+### 4 Căn cứ vào quy định của Chính phủ và định hướng phát triển ngành, lĩnh vực chiến lược, trọng tâm của quốc gia, địa phương, người đứng đầu Bộ, ngành cơ quan trung ương hoặc Hội đồng nhân dân cấp tỉnh xác định ngành, lĩnh vực cân ưu tiên sử dụng nguồn nhân lực chất lượng cao trong từng giai đoạn và quyết định chính sách đối với đối tượng quy định tại khoản 1 và khoản 2 Điều này thuộc phạm vi quản lý phù hợp với khả năng ngân sách và thâm quyền quản lý cán bộ công chức
+
+### 5. Ngân sách nhà nước bảo đảm kinh phi để thực hiện chính sách đối với đối tượng quy định tại khoản 1 và khoản 2 Điều này, Bộ, ngành, cơ quan trung ương và địa phương được huy động các nguôn hợp pháp khác để thực hiện chính sách
+
+## Điều 5. Giải thích từ ngữ Trong Luật này, các từ ngữ dưới đây được hiểu như sau:
+
+### 1. Công vu là hoạt động do cản bộ, công chức thực hiện nghĩa vụ, quyền hạn được giao theo quy định của cấp có thấm quyền và của pháp luật nhăm thực hiên quản lý nhà nước và đáp ứng nhu cầu chung của xã hội
+
+### 2. Cơ quan quản lý cán bộ, công chức là cơ quan, tổ chức có thầm quyên thực hiện các nội dung quản lý cán bộ, công chức
+
+### 3 Cơ quan sử dung cản bộ, công chức là cơ quan, tổ chức, đơn vị được giao thâm quyền sử dụng, phân công, bố tri, kiếm tra, đánh giá việc thực hiện nhiệm vụ, quyên hạn của cán bộ, công chức và các thâm quyền khác theo phân cấp, ủy quyền
+
+### 4. Vị trí việc làm là công việc gắn với chức vụ, chức danh, ngạch công chức trên cơ sở chức năng, nhiệm vụ cụ thể của cơ quan, tố chức, đơn vị
+
+### 5. Ngạch là tên gọi thể hiện thứ bậc về chuyên môn, nghiệp vụ của công chức
+
+### 66 Chi định là việc cơ quan, tô chức có thâm quyền quyết định giao cán bộ giữ chức vụ, chức danh lãnh đạo, quản lý không qua bầu cử
+
+### 7. Điều động là việc cơ quan, tổ chức có thẩm quyền quyết định chuyển cán bộ, công chức từ cơ quan, tổ chức, đơn vị này đên làm việc ở cơ quan, tổ chức đơn vị khác
+
+### 8. Bổ nhiệm là việc cơ quan, tổ chức có thầm quyền quyết định giao cán bộ, công chức giữ một chức vụ, chức danh trong cơ quan, tổ chức, đơn vị
+
+### 9 Luân chuyển là việc cơ quan, tổ chức có thầm quyền phân công hoặc bồ nhiêm cán bô, công chức lãnh đao, quản lý giữ một chức vụ, chức danh lãnh đạo, quản lý tại cơ quan, tổ chức, đơn vị khác trong một thời han nhất đỉnh để tiếp tục đào tạo, bồi dưỡng và rèn luyện theo yêu cầu nhiệm vụ hoặc theo yêu câu của chức danh được quy hoạch.
+
+### 10. Biệt phái là việc công chức của cơ quan, tổ chức, đơn vị này được cử đến nguyen làm việc có thời han tại cơ quan, tô chức, đơn vì khác ngoài phạm vi cơ quan quản lý theo yêu cầu nhiệm vụ
+
+### 11. Từ chức là việc cán bộ, công chức lãnh đạo, quan lý tự nguyên xin thôi giữ chức vụ, chức danh khi chưa hết nhiệm kỳ hoặc chưa hết thời hạn bồ nhiệm
+
+### 12 Miễn nhiệm là việc cơ quan, tổ chức có thầm quyền quyết định cho cán bộ, công chức lãnh đạo, quản lý thôi giữ chức vụ, chức danh khi chưa hết nhiêm kỳ hoặc chưa hết thời hạn bồ nhiệm
+
+### 13. Tạm đình chi công tác là việc cơ quan, tổ chức có thẩm quyền quyết định việc cán bộ, công chức dừng thực hiện chức trách, nhiêm vụ được giao trong thời hạn nhất định
+
+# Chương II NGHĨA VỤ, QUYÊN CỦA CÁN BỘ, CÔNG CHỨC
+
+## Mục 1 NGHĨA VỤ CỦA CÁN BỘ, CÔNG CHƯC
+
+## Điều 6. Nghĩa vụ của cán bộ, công chức đối với Đảng, Nhàn dân Tuyệt đôi trung thành với Đảng Cộng sản Việt Nam, Nhà nước Công hòa xã hội chủ nghĩa Việt Nam, bảo vệ danh dự Tô quốc, lợi ich quốc gia, dân tộc
+
+### 2. Tôn trọng và bảo vệ quyền con người, quyên công dân, tận tụy phục vụ Nhân dân.
+
+### 3. Liên hệ chặt chẽ với Nhân dân, tôn trọng, lăng nghe ý kiến và chịu sự giám sát của Nhân dân
+
+### 4 Chấp hành nghiêm chính đường lôi, chủ trương, chính sách của Đảng và pháp luật của Nhà nước
+
+## Điều 7. Nghĩa vụ của cán bộ, công chức trong thi hành công vụ
+
+### 1 Thực hiện đúng, đầy đủ và chịu trách nhiệm về kết quả thực hiện nhiệm vụ, quyền hạn được giao, chủ động nâng cao năng lực, trình độ chuyên môn nghiệp vụ để đáp ứng yêu cầu của công việc, ứng dụng khoa học, công nghệ và chuyển đổi số trong thực thi nhiệm vụ.
+
+### 2. Có ý thức tổ chức ký luật, nghiêm chinh nội quy, quy chế của cơ quan, tổ chức, đơn vị; báo cáo người có thẩm quyền khi phát hiện hành vi vi phạm pháp luật trong cơ quan, tổ chức, đơn vị, bảo vệ bí mật nhà nước.
+
+### 3 Chủ động, sáng tạo trong thực hiện nhiệm vụ, công vu, phôi hợp chặt chẽ với đồng nghiệp trong thi hành công vụ, giữ gin đoàn kết trong cơ quan, tổ chức, đơn vi.
+
+### 4. Bảo vệ, quản lý và sử dung hiệu qua, tiết kiệm tài sản công được giao
+
+### 5 Chấp hành quyết định của cấp trên cứ cho rằng quyết định đó là trái pháp luật thì phải kip thời báo cáo bằng văn bản với người ra quyết định; trường hợp người ra quyết định vẫn quyết định việc thi hành thì phải chấp hành, đông thời báo cáo bằng văn bản với cấp trên trực tiếp của người ra quyết định và không phải chịu trách nhiệm về hậu quả của việc thi hành, Người ra quyết định phải chịu trách nhiệm trước pháp luật về quyết định của mình
+
+### 6. Các nghĩa vụ khác theo quy định của pháp luật và quy định của cấp có thẩm quyền
+
+## Điều 8. Nghĩa vụ của cán bộ, công chức là người đứng đầu trong thi hành công vụ Cán bộ, công chức là người đứng đầu cơ quan, tổ chức, đơn vị thực hiện quy định tại Điều 6 và Điều 7 của Luật này và các nghĩa vụ sau đây:
+
+Lãnh đạo, chi đạo tổ chức thực hiện nhiệm vụ được giao và chịu trách nhiệm về kết quả hoạt động của cơ quan, tổ chức, đơn vị;
+
+### 2 Kiềm tra, đôn đốc, hướng dẫn việc thi hành công vụ của cán bộ, công chức;
+
+### 3. Tổ chức thực hiện các biện pháp phòng, chống quan liêu, tham nhũng, tiêu cực, thực hành tiết kiệm, chông lãng phi và chịu trách nhiệm về việc đề xảy ra quan liêu, tham nhũng, tiêu cực, lãng phi trong cơ quan, tổ chức, đơn vị thuộc phạm vi quản lý;
+
+### 4 Tổ chức thực hiện các quy định của pháp luật về dân chủ cơ sở, văn hóa công sở trong cơ quan, tổ chức, đơn vị, xử lý kip thời, nghiêm minh cán bộ, công
+
+S chức thuộc thâm quyền quản lý có hành vi vị phạm kỳ luật, pháp luật, có thái đô quan liêu, hách dịch, cửa quyền, gây phiên hà công dân;
+
+### 5. Thường xuyên rà soát để bảo đảm cắt giảm tối đa thủ tục hành chính, tạo điều kiện thuận lợi cho người dân, doanh nghiệp và cơ quan, tô chức, đơn vị, cá nhân có liên quan, lãnh đạo, chỉ đạo, chịu trách nhiệm về việc giải quyết thủ tục hành chính của cơ quan, tổ chức, đơn vị thuộc phạm vi quản lý
+
+### 6. Giai quyết kịp thời theo thầm quyền hoặc kiến nghị cơ quan, tổ chức có thâm quyền giải quyết khiếu nại, tố cáo và kiến nghị của cá nhân, tổ chức;
+
+### 7 Các nghĩa vụ khác theo quy định của pháp luật và quy định của cấp có thâm quyến
+
+## Mục 2 QUYỀN CỦA CÁN BỘ, CÔNG CHỨC
+
+## Điều 9. Quyền của cán bộ, công chức về bảo đảm điều kiện thi hành công vụ
+
+### 1 Được giao quyền tương xứng với nhiệm vụ được giao
+
+### 2 Được bảo đảm trang thiết bị làm việc, phương tiện đi lại để thi hành công vu và các điều kiện làm việc khác theo quy định của pháp luật và của cấp có thẩm quyên
+
+### 3 Được bố trí hoặc được thuê nhà ở công vụ theo quy định của pháp luật và của cấp có thầm quyền
+
+### 4 Được cung cấp thông tin, dữ liệu liên quan đến nhiệm vụ, quyền hạn được giao
+
+### 5. Được tham gia đào tao, bồi dưỡng nân độ
+
+### 6. Được pháp luật bảo vệ khi thi hành công vụ
+
+### 7. Được xem xét loại trù, miễn, giảm trách nhiệm theo quy định của pháp luật và của cấp có thẩm quyền
+
+## Điều 10. Quyền của cán bộ, công chức về tiên lương, tiên thường và các chế độ liên quan đến tiền lương
+
+### 1 Được hưởng tiền lương, tiên thường và các khoản thu nhập khác theo kết quả, sản phầm của vị tri việc làm đảm nhiệm, phù hợp với điều kiện phát triển kinh tế - xã hội của đất nước, địa phương
+
+### 2. Được hưởng tiền làm thêm giờ, tiền lương làm việc vào ban đêm, công tác phí và các chế độ khác theo quy định
+
+### 3. Cán bộ, công chức làm việc ở vùng có điều kiện kinh tế - xã hội đặc biệt khó khăn hoặc trong các nghề, công việc nặng nhọc, độc hại, nguy hiêm được hưởng phụ cấp và chính sách ưu đãi theo quy định
+
+## Điều 11. Quyền của cán bộ, công chức về nghi ngơi và các quyền khác
+
+### 1. Cán bộ, công chức được nghi hăng năm, nghi việc riêng, nghi không hưởng lương theo quy định của pháp luật về lao động Trường hợp do yêu cầu nhiêm vụ, cán bộ, công chức không sử dụng hoặc sử dụng không hết số ngày
+
+nghi hăng năm thi ngoài tiên lương còn được thanh toán thêm một khoản tiên băng tiền lương cho những ngày không nghi
+
+### 2 Cán bộ, công chức được bảo đảm quyên học tập, nghiên cứu khoa học, tham gia các hoạt động kinh tế, xã hội, trừ các hoạt động quy định tại khoản 6
+
+## Điều 14 của Luật này, được hưởng chính sách ưu đãi về nhà ở, chế độ bảo hiêm xã hội, bảo hiểm y tế và chế độ khác theo quy định của pháp luật; trường hợp bị thương hoặc hy sinh trong khi thi hành công vụ thì được xem xét hưởng chế độ chính sách như thương binh hoặc được xem xét để công nhận là liệt sĩ
+
+## Mục 3 ĐẠO ĐỨC, VĂN HÓA GIAO TIẾP CỦA CÁN BỘ, CÔNG CHỨC
+
+## Điều 12. Đạo đức công vụ
+
+### 1 Cán bộ, công chức phải có đạo đức trong sáng, mẫu mực, thực hiện cần kiệm, liêm, chính, chí công vô tư trong thực thi công vụ
+
+### 2. Cán bộ, công chức phải yêu nước, trung thành với Tổ quốc, tôn trọng và tận tụy phục vụ Nhân dân Cán bộ, công chức phải có bản lĩnh, tỉnh thân đổi mới, sáng tạo, hội nhập quốc tế, đoàn kết, kỳ luật, kỳ cương trong công vụ; gương mấu, không ngừng tu dưỡng, học tập suốt đời.
+
+## Điều 13. Văn hóa giao tiếp
+
+### 1. Văn hóa giao tiếp ở công sở
+
+#### a) Trong giao tiếp ở công sở, cán bộ, công chức phải có thái độ lịch sự, tôn trọng đông nghiệp;
+
+#### b) Cán bộ, công chức phải lăng nghe ý kiên của đồng nghiệp, công băng, vô tư, khách quan kéi, đánh giá đông nghiệp.
+
+### 2. Văn hóa giao tiếp với Nhân dân:
+
+Và 19 1 2 a là là là hà hà nhà nhiệu chn cho cho hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hiệu hoặc thẻ công chức, có tác phong lịch sự, giữ gin uy tín, danh dự của cơ quan tổ chức, đơn vị và đồng nghiệp;
+
+#### b) Cán bộ, công chức phải tôn trọng, lăng nghe ý kiến và gần gũi với Nhân dân; nghiêm túc, khiêm tốn, ngôn ngữ giao tiếp phải chuân mực, rõ ràng, mạch lạc;
+
+#### c) Nghiêm cầm hành vi hách dịch, cửa quyên, thiêu trách nhiệm, gây khó khăn, phiến hà cho người dân, doanh nghiệp khi thi hành công vụ
+
+## Mục 4 NHỮNG VIỆC CÁN BỘ, CÔNG CHỨC KHÔNG ĐƯỢC LÀM
+
+## Điều 14. Những việc cán bộ, công chức không được làm Trôn tránh, thoái thác, né tránh, đùn đây trong việc thực hiện chức trách nhiệm vụ được giao, gây bè phái, mất đoàn kết, tự ý nghi việc, bỏ việc, tham gia đình
+
+công đảng tài, phát tán, phát ngôn thông tin sai lệch làm ảnh hưng đên hình ảnh uy tin của đất nước, địa phương, cơ quan, tổ chức, đơn vị nơi công tác
+
+### 2. Có hành vi tham ô, tham nhũng, tiêu cực, lãng phí, trục lợi, nhũng nhiễu và các hành vi khác vi phạm pháp luật đối với người dân, doanh nghiệp, cơ quan, tổ chức, cá nhân khác có liên quan trong quá trình thực hiện nhiệm vụ
+
+### 3. Sử dụng tài sản công của Nhà nước và tài sản của Nhân dân trái pháp luật
+
+### 4.Lợi dụng, lạm dụng nhiệm vụ, quyền hạn, sử dụng thông tin liên quan đến công vụ để trục lợi
+
+### 5. Có hành vị phân biệt đối xứ dân tộc, giới tính, độ tuổi, kôu giáo, tín ngưỡng, thành phần xã hội dưới mọi hình thức trong thi hành công vụ
+
+### 6. Những việc không được làm liên quan đến sản xuất, kinh doanh, công tác nhân sự theo quy định của pháp luật về phòng, chông thực hành tiết kiệm, chông lăng phí, bảo vệ bí mật nhà nước và những việc khác theo quy định của pháp luật và của cấp có thầm quyên trong thời gian công tác và sau khi thôi việc, nghi hưu
+
+# Chương CÁN BỘ
+
+## Điều 15. Chức vụ, chức danh cán bộ
+
+### 1. Chức vụ, chức danh cán bộ làm việc trong cơ quan của Đảng Cộng sản Việt Nam, Mặt trân Tố quốc Việt Nam, các tổ chức chính trị - xã hội được xác định căn cứ vào điều lệ của Đảng Cộng sản Việt Nam, Mặt trận Tố quốc Việt Nam, tổ chức chính trị - xã hội
+
+### 2. Chức vụ, chức danh cán bộ làm việc trong cơ quan nhà nước được xác định theo quy định của Hiên pháp, Luật Tổ chức Quốc hội, Luật Tổ chức Chính phủ, Luật Tổ chức chính quyền địa phương, Luật Tổ chức Toà án nhân dân, Luật Tổ chức Viện kiểm sát nhân dân, Luật Kiêm toán nhà nước và các quy định khác của pháp luật có liên quan
+
+### 3. Việc xác định chức vụ, chức danh tương đệơt ống thống chính trị được thực hiện theo quy định của cấp có thẩm quyền
+
+## Điều 16. Bầu cử, phê chuẩn, bố nhiệm, chức vụ, chức danh cán bộ Việc bầu cử, phê chuẩn, bổ nhiệm, chi định chức dụnh cán bộ theo nghiêm kỳ trong cơ quan của Đảng Cộng sản Việt Nam, Nhà nước, Mặt trận Tố quốc Việt Nam, các tổ chức chính trị - xã hội được thực hiện theo quy định của Hiến pháp, Luật Tổ chức Quốc hội, Luật Tổ chức Chính phủ, Luật Tổ chức chính quyền địa phương, Luật Tổ chức Toà án nhân dân, Luật Tổ chức Viện kiểm sát nhân dân, Luật Kiểm toán nhà nước, Luật Bầu cử đại biêu Quốc hội và đại biêu Hội đồng nhân dân, điều lệ, luật khác có liên quan và quy định của cấp có thấm quyên
+
+## Điều 17. Thực hiện quản lý đối với cán bô Việc điều động, luân chuyển, đào tạo, bồn giá, cho thôi việc, từ chức, miễn nhiệm và các nội dung khác liên quan đến công tác cán bộ được thực hiện theo quy định của pháp luật và của cấp có thầm quyền
+
+### 2. Cán bộ được nghi hưu theo quy định của pháp luật về lao đông, trừ trường hợp thực hiện theo quy định của cấp có thâm quyền
+
+# Chương IV CÔNG CHỨC
+
+## Mục l TUYẾN DỤNG CÔNG CHỨC
+
+## Điều 18. Nguyên tắc tuyển dụng công chức
+
+### 1.Bảo đảm công khai, minh bạch, khách quan và đúng pháp luật
+
+### 2.Bảo đảm cạnh tranh, bình đẳng
+
+### 3. Người được tuyển dụng phải đáp ứng ngay yêu cầu của vị trí việc lam cần tuyến
+
+### 4 Ưu tiên tuyển dụng người có tài năng, người có công với nước, người dân tộc thiểu số.
+
+## Điều 19. Điều kiện đăng ký dự tuyến công chức Người có đủ các điều kiên sau đây được đăng ký dự tuyến công chức
+
+#### a) Có 01 quốc tịch là quốc tịch Việt Nam theo quy định của Luật Quốc tịch;
+
+#### b) Đang cư trú tại Việt Nam
+
+#### c) Đủ 18 tuổi trở lên;
+
+#### d) Có phẩm chất chính trị, đạo đức tốt, có lý lịch rõ ràng;
+
+#### đ) Đù sức khòe để thực hiện nhiệm vụ;
+
+#### e) Đáp ứng các điều kiện theo yêu cầu của vị tri việc làm dự tuyền
+
+### 2. Người đăng ký dự tuyển vào vị trí việc làm lãnh đạo, quản lý, ngoài đáp trưng điều kiện quy định tại khoản 1 Điều này, còn phải đáp ứng tiêu chuẩn, điều kiên bố nhiệm theo quy định, trừ trường hợp thực hiện theo quyết định của cấp có thẩm quyền
+
+### 3. Những người sau đây không đý dự tuyển công chức
+
+#### a) Mất hoặc bị hạn chế năng lực hành vi dân sự, người có khó khăn trong nhận thức, làm chù hành vi;
+
+#### b) Đang bị truy cứu trách nhiệm hình sự, đang chấp hành hoặc đã chấp hành xong bản án, quyết định về hình sự của Tòa án mà chưa được xóa án tích; đang
+
+chấp hành biện pháp xử lý hành chính tại cơ sở cai nghiện bắt buộc, cơ sở giáo dục bắt buộc.
+
+## Điều 20. Phương thức, thẩm quyền dụng công chức
+
+### 1. Việc tuyền dụng công chức vào vị tri việc làm được thực hiên thông qua các phương thức sau đây:
+
+#### a) Thi tuyển
+
+#### b) Xét tuyển đối với một số nhóm đối tượng theo quy định của Chính phú
+
+### 2.Ngoài việc tuyến dụng công chức thông qua thi tuyển hoặc xét tuyên, cơ quan quản lý công chức quyết định tiếp nhận vào làm công chức đối với các đối tượng sau đây:
+
+#### a) Chuyên gia, nhà khoa học, luật gia, luật sư gioi, doanh nhân tiêu biểu, xuất sắc được thu hút vào làm việc trong cơ quan của Đảng Cộng sản Việt Nam, Nhà nước, Mặt trận Tổ quốc Việt Nam, các tổ chức chính trị - xã hội;
+
+#### b) Người có kinh nghiêm, đáp ứng ngay yêu câu của vị trí việc làm, đang là viên chức, người hưởng lương trong Quân đội nhân dân, Công an nhân dân, tổ chức cơ yếu mà không phải là công chức và các trường hợp khác đang làm việc tại các cơ quan, tổ chức, đơn vị trong hệ thống chính trị
+
+### 3. Cơ quan quản lý công chức thực hiện tuyên dụng hoặc phân cấp, ủy quyền thẩm quyền tuyển dụng cho cơ quan sử dụng công chức thực hiện
+
+### 4 Người được tuyền dụng được bô trí vào vị trí việc làm và xếp ngạch công chức tương ứng
+
+### 5. Chính phủ quy định chi tiếu này
+
+## Điều 21. Hợp đồng thực hiện nhiệm vụ của công chức
+
+### 1. Căn cứ tính chất, yêu cầu nhiệm vụ của cơ quan, tổ chức, đơn vị trong từng thời điểm và thực trạng, nhu cầu nguồn nhân lực và khả năng đáp ứng yêu cầu thực hiện nhiệm vụ được giao, cơ quan quản lý công chức quyết định:
+
+#### a) Ký hợp đồng đối với chuyên gia, nhà khoa học, luật gia, luật sư gioi, doanh nhân tiêu biểu, xuất sắc để thực hiện một hoặc một số nhiệm vụ của vị trí việc làm công chức lãnh đạo, quản lý;
+
+#### b) Ký hợp đồng đối với nhân lực chất lượng cao quy định tại khoản 1 Điều 4 của Luật này để thực hiện một hoặc một số nhiệm vụ chuyên môn, nghiệp vụ;
+
+#### c) Ký hợp đồng dịch vụ để thực hiện công việc của cơ quan, tổ chức, đơn vị do chưa đáp ứng đủ nguồn nhân lực
+
+### 2.Ngân sách nhà nước bảo đám cho việc ký kết hợp đồng quy định tại Điều này ngoài quỹ lương và ngoài kinh phí kành chính
+
+### 3. Chính phủ quy định chi tiếu này
+
+## Điều 22. Tuyến chọn, bố nhiệm phán sát viên Việc tuyên chọn, bố nhiệm Thâm phán Tòa án nhân dân, Kiêm sát viên Viện kiểm sát nhân dân được thực hiện theo quy định của pháp luật về tổ chức Tòa án nhân dân và pháp luật về tổ chức Viện kiểm sát nhân dân
+
+## Mục 2 VỊ TRÍ VIỆC LÀM VÀ NGẠCH CÔNG CHỨC
+
+## Điều 23. Vị trí việc làm công chức
+
+### 1. Căn cứ xác định vị trí việc làm
+
+#### a) Chức năng, nhiệm vụ và cơ cầu tổ chức của cơ quan, tổ chức, đơn vị sử dụng công chức;
+
+#### b) Mức độ phức tạp, tính chất, đặc điểm của từng ngành, piạh vực; phạm vi, đối tượng phục vụ, quy trình quản lý chuyên môn, nghiệp vụ; các) Mức độ hiện đại hóa công sở, trang thiết bị, phương tiện làm việc, mức độ ứng dụng khoa học, công nghệ, chuyển đồi số.
+
+### 2. Vị trí việc làm của công chức bao gôm các nội dung chinh sau:
+
+#### a) Tên gọi vị trí việc làm;
+
+#### b) Chức vụ, chức danh hoặc ngạch công chức tương ứng;
+
+#### c) Bản mô tả công việc và khung năng lực của vị trí việc làm
+
+### 3 Phân loại vị trí việc làm:
+
+#### a) Vị trí việc làm lãnh đạo, quản lý;
+
+#### b) Vị trí việc làm chuyên môn, nghiệp vụ
+
+#### c) Vị trí việc làm hỗ trợ, phục vụ
+
+### 4. Chính phủ quy định nguyên tắc, trình tự, thủ tục xây dựng, thầm quyền phê duyệt vị trí việc làm phù hợp với phân cấp quản lý cán bộ, công chức trong cơ quan của Đảng Cộng sản Việt Nam, Nhà nước, Mặt trận Tố quốc Việt Nam các tổ chức chính trị - xã hội và quy định chi tiết Điều này
+
+## Điều 24. Ngạch công chức và việc xếp ngạch công chức Ngạch công chức xếp theo thứ bậc về chuyên môn, nghiệp vụ, bao gồm
+
+#### a) Chuyên gia cao cấp
+
+#### b) Chuyên viên cao cấp và tương đương
+
+#### C) Chuyên viên chính và tương đương;
+
+#### d) Chuyên viên và tương đương;
+
+#### đ) Cán sự và tương đương
+
+#### e) Nhân viên
+
+### 2 Việc xếp ngạch công chức tương ứng với vị tri việc làm được thực hiện trong các trường hợp sau đây:
+
+#### a) Người được tuyển dụng vào vị trí việc làm
+
+#### b) Công chức được bô nhiệm chức vụ lãnh đạo, quản lý hoặc được bố tri vào vị trí việc làm mà vị tri việc làm đó được xếp ngạch công chức tương ứng khác với ngạch công chức đang giữ
+
+### 3. Việc xếp ngạch công chức phải bảo đảm phù hợp với tỷ lệ công chức cần bố tri theo từng vị trí việc làm trong cơ quan sử dụng công chức theo quy định của Chính phủ
+
+## Mục 3 ĐÁNH GIÁ CÔNG CHỨC
+
+## Điều 25. Thực hiện đánh giá công chức
+
+### 1 Nguyên tắc thực hiện đánh giá:
+
+#### a) Việc đánh giá phải bảo đảm dân chủ, công kăng, minh bạch, khách quan, xuyên suốt, liên tục, đa chiều;
+
+#### b) Nội dung đánh giá phải được định lượng tối đa về tiên độ, chất lương hiêu quả găn với vị trí việc làm;
+
+#### c) Ưng dụng khoa học, công nghệ, chuyển đồi số trong theo dõi, đánh giá, xếp loại chất lượng công chức
+
+### 2. Thẩm quyền đánh giá:
+
+#### a) Người đứng đầu cơ quan, tổ chức, đơn vị sử dụng công chức có trách nhiệm đánh giá công chức quyền
+
+#### b) Việc đánh giá người đứng đầu cơ quan, tổ chức, đơn vị do người đứng đầu cơ quan, tổ chức cấp trên quản lý trực tiếp thực hiện
+
+### 3.Phương thức đánh giá
+
+#### a) Theo dõi, đánh giá thường xuyên, liên tục, đa chiều, định lượng bằng các tiêu chí cụ thể gắn với tiến độ, chất lượng của kết quả, sản phẩm theo từng vị trí việc làm;
+
+#### b) Đánh giá, xếp loại chất lượng hăng năm
+
+### 4.Nội dung đánh giá:
+
+#### a) Phầm chất chính tri, phẩm chất đạo đức, văn hóa công vụ, ý thức kỳ luật, kỳ cương trong thực thi công vụ; việc chấp hành quy định của pháp luật về công chức, công vụ và quy định của cơ quan, tổ chức, đơn vị
+
+#### b) Năng lực chuyên môn, nghiệp vụ theo yêu câu của vị trí việc làm; khả năng đáp ứng yêu câu thực thi nhiệm vụ được giao thường xuyên, đột xuất, tỉnh thần trách nhiệm trong thực thi công vụ, thái độ phục vụ người dân, doanh nghiệp
+
+đôi với các vị trí việc làm tiếp xúc trực tiếp với người dân, doanh nghiệp, khả năng phối hợp với đồng nghiệp;
+
+#### c) Năng lực đổi mới, sáng tạo, dám nghĩ, dám làm, dám chịu trách nhiệm vi lợi ích chung trong thực thi công vụ
+
+#### d) Kết quả thực hiện nhiệm vụ thông qua số lượng, chất lượng và tiến độ của sản phẩm theo vị trí việc làm;
+
+#### đ) Nội dung khác theo yêu cầu của vị trí việc làm Ngoài các nội dung nêu trên, công chức lãnh đạo, quản lý còn được đánh giá theo kết quả hoạt động của cơ quan, tổ chức, đơn vị hoặc lĩnh vực được giao lãnh đạo, quản lý, phụ trách; khả năng tô chức triển khai thực hiện nhiệm vụ, năng lực tập hợp, đoàn kết cán bộ, công chức, viên chức, người lao động thuộc thâm quyên quản lý
+
+### 5. Chính phủ quy định chi tiếu này
+
+## Điều 26. Xếp loại chất lượng Căn cứ vào kết quả theo dõi, đánh giá, công chức được xếp loại chất lượng hằng năm theo các mức sau:
+
+#### a) Hoàn thành xuất sắc nhiệm vụ;
+
+#### b) Hoàn thành tốt nhiệm vụ
+
+#### c) Hoàn thành nhiệm vu;
+
+#### d) Không hoàn thành nhiệm vụ
+
+### 2. Kết quả xếp loại chất lượng phải được thông báo đến cá nhân công chức, công khai trong cơ quan, tổ chức, đơn vị và được lưu vào hồ sơ công chức
+
+## Điều 27. Sử dụng kết quả theo dõi, đánh giá, xếp loại chất lượng công chức
+
+### 1 Căn cứ kết quả theo dõi, đánh giá, xếp loại chất lương, cơ quan, tổ chức có thầm quyền xem xét, quyết định:
+
+#### a) Thực hiện đào tạo, bối dưỡng, quy hoạch, biểu động, bố nhiệm, bố nhiệm lại hoặc bố trí vào vị tri việc làm cao hơn; thực hiện chế độ tiên lương, chế độ, chính sách khác theo quy định của pháp luật và quy định của cấp có thấm quyền; bi bh chiện khen thường, chế độ thu nhập tăng thêm, tiên thưởng theo quy định;
+
+#### c) Xem xét, bố trí vào vị trí việc làm thấp hơn hoặc cho thội việc đối với trường hợp không hoàn thành nhiêm vụ hoặc không đáp ứng yêu cầu nhiệm vụ
+
+### 2 Chính phủ quy định chi tiếu này
+
+## Mục 4 ĐÀO TẠO, BỔI DƯỜNG CHỨC
+
+## Điều 28. Trách nhiệm của cơ quan, tổ chức, đơn vị trong đào tạo, bồi dưỡng công chức
+
+### 1. Căn cứ vào yêu cầu của vị trí việc làm, nhu cầu phát triển nguồn nhân lực, cơ quan quản lý công chức có trách nhiệm xây dưng kế hoạch và cử công chức tham gia đào tạo, bối dưỡng
+
+### 2. Cơ quan sử dung công chức có trách nhiêm tạo điều kiên để công chức tham gia đào tạo, bồi dưỡng theo kế hoạch
+
+### 3. Kinh phí đào tạo, bối dưỡng do ngân sách nhà náớ nguồn kinh phí khác theo quy đình của pháp luật
+
+### 4. Chính phủ quy định chi tiếu này
+
+## Điều 29. Trách nhiệm và quyền lợi của công chức trong đào tạo, bồi dưỡng
+
+### 1. Công chức có trách nhiệm tự nghiên cứu, học tập để nâng cao trình độ và tham gia các lớp đào tạo, bồi dưỡng theo kế hoạch
+
+### 2. Công chức tham gia đào tạo, bồi dưỡng phải chấp hành quy định về đảo tạo, bồi dưỡng của cơ sở đào tạo, bồi dưỡng và của cơ quan cử đi đào tạo, bồi dưỡng
+
+### 3. Công chức được cử tham gia đảo tạo, bôi dưỡng được hưởng chế độ chính sách theo quy định của pháp luật
+
+### 4 Công chức được đao tạo nêu tự ý bỏ việc, thôi việc phải đên bu chi phi đào tạo theo quy định của pháp luật
+
+### 5. Chính phủ quy định chi tiếu này.
+
+## Mục 5 ĐIỀU ĐỘNG, BỒ NHIỆM, LUÂN CHUYẾN, TỪ CHỨC MIỀN NHIỆM, CHO THÔI GIỮ CHỨC VỤ ĐỐI VỚI CÔNG CHỨC
+
+## Điều 30. Điều động, luân chuyển, biệt phái công chức Việc điều động, luân chuyển, biệt phái công chức phải căn cứ vào phâm chất chính trị, đạo đức, năng lực, trình độ chuyên môn, nghiệp vụ của công chức, nhu cầu của cơ quan, tổ chức, đơn vị
+
+### 2. Công chức được điều động thuộc biên chế của cơ quan, tổ chức, đơn vị nhận điều động, công chức biệt phái vẫn thuộc biên chế của cơ quan cử biệt phái Việc luân chuyển được thực hiện đối với công chức lãnh đạo, quản lý theo yêu cầu nhiệm vụ căn cứ vào quy hoạch cán bộ đã được cơ quan, tô chức có thầm quyền phê duyệt
+
+### 3. Chính phủ quy định chi tiếu này.
+
+## Điều 31. Bổ nhiệm, từ chức, miễn nhiệm, cho thôi giữ chức vụ đối với công chức lãnh đạo, quản lý
+
+### 1. Công chức được bô nhiệm giữ chức vụ lãnh đạo, quản lý được thực hiện bằng quyết định bố nhiệm của cấp có thẩm quyền Trường hợp được bổ nhiệm chức vụ lãnh đạo, quản lý mới thì đương nhiên thôi giữ chức vụ lãnh đạo, quản lý đang đảm nhiệm, trừ trường hợp kiêm nhiệm
+
+2, Thời hạn bổ nhiệm công chức giữ chức vụ lãnh đạo, quản lý là 05 năm Thời hạn bố nhiệm dưới 05 năm áp dựng đối với một số chức danh đặc thù theo quy định của pháp luật có liên quan hoặc quy định của cấp có thầm quyền Khi hết thời hạn bố nhiệm, cấp có thẩm quyền phải xem xét bố nhiệm lại hoặc không bố nhiêm lại, trừ trường hợp chưa được xem xét, bồ nhiệm lại theo quy định của pháp luật và quy định của cấp có thầm quyền
+
+### 3. Việc từ chức, miễn nhiệm, cho thôi giữ chức vụ và các nội dung khác có liên quan đối với công chức lãnh đạo, quản lý được thực hiện theo quy định của cấp có thầm quyền và của Chính phủ
+
+## Mục 6 THÔI VIỆC, NGHỈ HƯU ĐỐI VỚI CÔNG CHỨC
+
+## Điều 32. Thôi việc, nghi hưu đối với công chức
+
+### 1. Công chức thôi việc trong các trường hợp sau:
+
+#### a) Theo nguyện vọng cá nhân và được cơ quan, tổ chức có thầm quyền đồng ý Không giải quyết thôi việc đôi với công chức đang trong thời gian xem xét xử lý kỷ luật hoặc bị truy cứu trách nhiệm hình sự hoặc các trường hợp khác theo quy đinh của pháp luật hoặc của cấp có thẩm quyền,
+
+#### b) Không hoàn thành nhiệm vụ hoặc không đáp ứng yêu cầu nhiệm vụ theo quy định tại điểm c khoản 1 Điều 27 của Luật này đến mức phải cho thôi việc
+
+### 2. Công chức được nghi hưu theo quy định của Bộ luật Lao động, trừ trường hợp theo quy định của cấp có thầm quyền.
+
+### 3. Thấm quyên, trình tự, thủ tục cho thôi việc, nghi hưu và chế độ, chính sách đôi với công chức thôi việc, nghi hưu thực hiện theo quy định của cấp có thẩm quyền và của Chính phủ In
+
+# Chương V KHEN THƯỞNG, XỬ KÝ LUẬT
+
+## Điều 33. Khen thưởng cán bộ, công chức
+
+### 1. Cán bộ, công chức có thành tích trong công vu thi được khen thường theo quy định của pháp luật về thi đua, khen thưởng
+
+### 2. Cán bộ, công chức được khen thường do có thành tích xuất sắc hoặc công trạng thì được nâng lương trước thời hạn, được hưởng từ quỹ tiên thưởng của cơ quan, tổ chức, đơn vị, được ưu tiên khi xem xét bố nhiêm chức vụ cao hơn nếu cơ quan, tổ chức, đơn vị có nhu cầu theo quy định của cấp có thấm quyền và của Chính phủ
+
+## Điều 34. Loại trù, miễn, giảm trách nhiệm đội với cán bộ, công chức Cán bộ, công chức được xem xét loại trừ, miền, giảm trách nhiệm trong các trường hợp sau đây:
+
+#### a) Phải chấp hành quyết định trái pháp luật của cấp trên nhưng đã báo cáo theo quy định tại khoản 5 Điều 7 của Luật này;
+
+#### b) Đã thực hiện theo đúng quy định về thẩm quyên, trình tự, thủ tục, không vụ lợi trong quá trình thực hiện nhiệm vụ nhưng văn gây ra thiệt hại vì lý do khách quan;
+
+#### c) Thực hiện đề xuất về đổi mới, sáng tạo được cơ quan, tổ chức có thẩm quyên cho phép và được cấp có thẩm quyền xác định đã thực hiện đúng chủ trương, có động cơ trong sáng, vì lợi ích chung;
+
+#### d) Do bất khả kháng theo quy định của pháp luật;
+
+#### d) Các trường hợp khác theo quy định của pháp luật và của cấp có thẩm quyền
+
+### 2. Việc loại trừ, miễn, giảm trách nhiệm đối với cán bộ, công chức được thực hiện theo quy định của pháp luật có liên quan và của cấp có thẩm quyền
+
+## Điều 35. Hình thức kỷ luật đối với cán bộ
+
+### 1. Cán bộ vị phạm quy định của Luật này và các quy định khác của pháp luật có liên quan thì tùy theo tính chất, mức độ vi phạm phải chịu một trong những hình thức kỷ luật sau đây:
+
+#### a) Khiến trách;
+
+#### b) Cảnh cáo; cách chức, áp dụng đôi với cán bộ được phê chuân, bồ nhiệm hoặc chi định giữ chức vụ, chức danh;
+
+#### d) Bãi nhiệm
+
+### 2. Cán bộ bị Tòa án kết án phạt tù mà không được hưởng an treo hoặc bị kết án về tội phạm tham nhũng thì đương nhiên bị bãi nhiệm kể từ ngày bàn án, quyết định có hiệu lực pháp luật, cán bộ bị Tòa án kết án và bản án, quyết định đã có hiệu lực pháp luật thi đương nhiên thôi giữ chức vụ do bầu cử, phê chuân, chỉ định, bố nhiệm
+
+### 3. Việc áp dụng các hình thức kỳ luật, thầm quyên, trình tự, thủ tục xư lý kỳ luật cán bộ được thực hiện theo quy định của pháp luật, điều lệ của Đảng Công sản Việt Nam, Mặt trận Tổ quốc Việt Nam, tổ chức chính trị - xã hội và văn bản của cơ quan, tổ chức có thẩm quyền
+
+## Điều 36. Hình thức kỷ luật đối với công chức
+
+### 1 Công chức vi phạm quy định của Luật này và các quy định khác của pháp luật có liên quan thì tùy theo tính chất, mức độ vị phạm phải chịu một trong những hình thức kỷ luật sau đây:
+
+#### a) Khiến trách;
+
+#### b) Cảnh cáo;
+
+#### c) Cách chức, áp dụng đối với công chức lãnh đạo, quản lý;
+
+#### d) Buộc thôi việc.
+
+### 2. Công chức bị Tòa án kết án phạt tù mà không được hường án treo hoặc bị kết án về tội phạm tham nhũng thì đương nhiên bị buộc thôi việc kể từ ngày bản an, quyết định có hiệu lực pháp luật, công chức giữ chức vụ lãnh đạo, quản lý pham tội bị Tòa án kết án và bản án, quyết định đã có hiêu lực pháp luật thì đương nhiên thôi giữ chức vụ do bồ nhiệm.
+
+### 3. Chính phủ quy định chỉ tiết Điều này và các nội dung khác có liên quan đến xử lý kỷ luật
+
+## Điều 37. Thời hiệu, thời hạn xử luật
+
+### 1. Thời hiệu xứ lý kỷ luật là thời hạn mà khi hết thì cán bộ, công chức có hành vi vi phạm không bị xử lý kỷ luật, Thời hiêu xử lý kỷ luật được tính từ thời điểm có hành vi vi phạm Trừ trường hợp quy định tại khoản 2 Điều này, thời hiệu xử lý kỷ luật được quy đinh nhu sau:
+
+#### a) 05 năm đối với hành vi vi phạm đến mức phải kỳ luật bằng hình thức khiển trách;
+
+#### b) 10 năm đối với hành vi vi phạm không thuộc trường hợp quy định tại điểm a
+
+khoản này
+
+### 2. Các hành vi vi phạm không áp dụng thời hiệu xử lý kỷ luật:
+
+#### a) Cản bộ, công chức là đảng viên có hành vi vị phạm đến mức phải kỳ luật bằng hình thức khai trừ;
+
+#### b) Có hành vi vi phạm quy định về công tác bảo vệ chính trị nội bộ;
+
+#### c) Có hành vi xâm hại đến lợi ích quốc gia trong lĩnh vực quốc phòng, an ninh, đối ngoai;
+
+#### d) Sử dụng văn băng, chứng chi, giáy chứng nhận, xác nhận giả hoặc không hợp pháp
+
+### 33 Thời hạn xử lý kỷ luật đôi với cán bộ, công chức là khoảng thời gian từ khi phát hiện hành vi vị phạm kỳ luật của cán bộ, công chức đến khi có quyết định xử lý kỷ luật của cơ quan, tổ chức có thẩm quyền Thời hạn xứ lý kỷ luật không quá 90 ngày, trường hợp vụ việc có tình tiết phức tạp cần có thời gian thanh tra, kiểm tra để xác minh làm rõ thêm thì thời hạn xứ lý kỳ luật có thể kéo dài nhưng kuô 150 ngày
+
+### 4 Trường hợp cá nhân đã bị khởi tố, truy tố hoặc đã có quyết định đưa ra xét xử theo thủ tục tô tụng hình sự nhưng sau đó có quyết định đình chỉ điều tra hoặc đình chỉ vụ án mà hành vị vị phạm có dâu hiệu vi pham kỳ luật thì bị xem xét xử lý kỳ luật. Thời gian điều tra, truy tô, xét xử theo thủ tục tổ tụng hình sự không tính vào thời hiệu xử lý kỷ luật
+
+## Điều 38. Các quy định khác liên quan đến việc xử lý kỳ luật cán bộ, công chức
+
+### 1. Căn cứ vào mức độ vi phạm và hình thức xử lý kỷ luật, cán bộ, công chức bị xử lý kỳ luật còn bị áp dụng quy định tương ứng về việc bổ nhiệm vào chức vụ cao hơn, quy định về chế độ tuyển dụng, thôi việc, tiên lương, tiên thưởng và các quy định khác có liên quan
+
+### 2 Cán bộ, công chức đang trong thời hạn xử lý kỷ luật, đang bị điều tra, truy tổ, xét xử thì không được ứng cử, đề cử, bồ nhiệm, điều động, luân chuyển, biệt phái, đào tạo, bôi dưỡng theo quy định của pháp luật và quy đình của cấp có thẩm quyền
+
+### 3. Cán bộ, công chức bị kỳ luật cách chức do tham những thì không được bồ nhiệm vào vị trí lãnh đạo, quản lý
+
+### 4 Trường hợp bị xứ lý kỳ luật về hành vi không liên quan đến hoạt động công vụ thì không tính là căn cứ đề xếp loại chất lượng trong năm đánh giá
+
+### 5. Chính phủ quy định chi tiết điều này.
+
+## Điều 39. Tạm đình chỉ công tác đối với cán bộ, công chức Người đứng đầu cơ quan, tổ chức có thẩm quyền có thể quyết định tạm đình chỉ công tác đôi với cán bộ, công chức trong trường hợp phát hiên cán bộ, công chức có dấu hiệu vi phạm trong thi hành nhiệm vụ hoặc theo để nghị của cơ quan; tổ chức có thẩm quyền Chính phủ quy định chi tiết Điều này
+
+# Chương VI QUẢN LÝ CÁN BỘ, CÔNG CHỨC
+
+## Điều 40. Nội dung quản lý cán bộ, công chức
+
+### 1. Ban hành, trình cấp có thầm quyền ban hành và tô chức thực hiện văn bản quy phạm pháp luật về cán bộ, công chức.
+
+### 2.Quy định chức vụ, chức danh công chức, xây dựng, quản lý vị trí việc làm và tỷ lệ công chức cần bố trí theo từng vị trí việc làm
+
+### 3. Quản lý, sử dụng biên bộ, công chức
+
+### 4 Tuyền dụng, quy hoạch, bố nhiệm lại, giới thiệu ứng cử, tái cử chi định, điều động, luân chuyển, biệt phái, tạm đình chỉ chức vụ, cho thôi giữ chức vụ; từ chức, miễn nhiệm, cách chức, kỳ luật
+
+### 5 Sử dụng, phân công, bố tri, kiểm tra, đánh giá, tam đình chi công tác, đảo tao, bồi dưỡng, thi đua, khen thường, thực hiện lương, cho thôi việc, nghi hưu và các chế độ, chính sách khác
+
+### 6. Thanh tra, kiểm tra hoạt động công vụ và giái quyết khiếu nại, tổ cáo theo quy định của pháp luật
+
+### 7 Thực hiện nội dung quản lý khác trong công tác cán bộ theo thẩm quyền
+
+### 8. Thực hiện ứng dụng khoa học, công nghệ, chuyển đối số trong quản lý cán bộ, công chức, xây dựng, quản lý, khai thác cơ sở dữ liệu quốc gia về cán bộ, công chức
+
+### 9 Phân cấp, uy quyên thực hiện các nội dung quản lý cán bộ, công chức
+
+## Điều 41. Thẩm quyền quản lý cán bộ, công chức
+
+### 1. Việc quản lý cán bộ, công chức được thực hiện theo quy định của Luật này, các quy định khác của pháp luật có liên quan, điều lệ của Đảng Cộng sản Việt Nam, Mặt trận Tô quốc Việt Nam, tô chức chính trị - xã hội và văn bản của cơ quan, tổ chức có thẩm quyền
+
+### 2. Chính phủ thống nhất quản lý nhà nước về công chức, thực hiện quản lý cán bộ, công chức trong các cơ quan nhà nước
+
+### 3.Uy ban Thường vụ Quốc hội, cơ quan có thâm quyền của Đảng Cộng sản Việt Nam, Mặt trận Tố quốc Việt Nam, các tổ chức chính trị - xã hội trong pham vi chức năng, nhiệm vụ của mình thực hiện việc quản lý cán bộ, công chức theo phân cấp của cơ quan có thầm quyền và theo quy định của Chính phủ
+
+### 4. Cơ quan quản lý cán bộ, công chức thực hiện thâm quyền quy định tại Luật này và các thẩm quyền khác theo phân cấp của Chính phủ
+
+### 5. Cơ quan sử dụng cán bộ, công chức thực hiện thầm quyền quy định tại Luật này và các thẩm quyền khác theo phân cấp, ủy quyền của cơ quan quản lý cán bộ, công chức
+
+## Điều 42. Hồ sơ và quản lý hồ sơ cán bộ, công chức
+
+### 1. Hồ sơ cán bộ, công chức bao gồm hồ sơ giáy và hô sơ điện từ, được quản lý trên hệ thống thông tin về cán bộ, công chức và được phê duyệt, cập nhật vào cơ sở dữ liệu quốc gia về cán bộ, công chức Hồ sơ cán bộ, công chức phải có đầy đủ thành phân theo quy định, bảo đảm chính xác diễn biên, qua trình công tác của cán bộ, công chức và được lưu trữ theo quy định của pháp luật
+
+### 2. Cán bộ, công chức có trách nhiệm bổ sung thông tin cá nhân theo quy định khi có thay đối; cơ quan, tổ chức có thẩm quyện phê duyệt, cập nhật vào hồ sơ cán bộ, công chức và đông bộ với cơ sở dữ liệu quốc gia về cản bộ, công chức
+
+### 3 Cơ quan có thẩm quyền của Đảng Cộng sản Việt Nam hướng dẫn việc lập quản lý hồ sơ cán bộ, công chức thuộc quyền quản lý.
+
+### 4. Chính phủ quy định chi tiếu này
+
+# Chương VII
+
+ĐIỀU KHOẢN THI HÀNH
+
+## Điều 43. Áp dụng quy định của Luật Cán bộ, công chức đối với các đối tượng khác
+
+### 1 Cơ quan có thâm quyền của Đảng Cộng sản Việt Nam, Uy ban Thường vụ Quốc hội, Chính phú quy định cụ thể việc áp dụng Luật này đôi với những
+
+người được bầu cử nhưng không thuộc đối tượng quy định tại khoản 1 Điều 2 của Luật này, chế độ phụ cấp đối với người đã nghi hưu nhưng được bầu cử giữ chức vụ, chức danh cán bộ
+
+### 2.Cơ quan có thâm quyên của Đảng Cộng sản Việt Nam, Mặt trận Tổ quốc Việt Nam, Chính phú quy định cụ thể việc áp dụng Luật này đối với những người làm việc ở các hội do Đàng, Nhà nước giao nhiệm vụ
+
+### 3. Việc xử lý đối với hành vi vi phạm trong thời gian công tác của cán bộ, công chức đã nghi việc, nghi hưu được quy định như sau
+
+#### a) Mọi hành vi vi phạm trong thời gian công tác của cán bộ, công chức đã nghi việc, nghi hưu đệu br xứ lý theo quy định của pháp luật
+
+HA
+
+#### b) Căn cứ vào tính chất, mức độ nghiêm trọng, người có hành vị vi phạm có thể bị xứ lý hình sự, hành chính hoặc xử lý kỳ luật;
+
+hành vi vi phạm, trong thời giản công tác thi tùy theo tính chất, mức độ vi phạm phải chịu một trong những hình thức kỷ luật khiến trách, cảnh cáo, xóa tư cách chức vụ đã đảm nhiệm gắn với hệ quả pháp lý tương ứng với hình thức xử lý kỳ luật.
+
+Chính phủ quy định chi tiết khoản này
+
+## Điều 44. Điều khoản thi hành
+
+### 1. Luật này có hiệu lực thi hành từ ngày 01 tháng 7 năm 2025, trừ trường hợp quy định tại khoản 2 Điều này
+
+### 2.Quy định về đánh giá công chức tại Mục 3 Chương IV của Luật này được thực hiện từ ngày 01 tháng 01 năm 2026
+
+### 3. Luật Cán bộ, công chức số 22/2008/QH12 đổ được sửa đổi, bổ sung một số điều theo Luật số 52/2019/QH14 hết hiệu lực kể từ ngày Luật này có hiệu lực thi hành
+
+### 4. Ủy ban Thường vụ Quốc hội, Chính phủ và các cơ quan khác có thầm quyền quy định chi tiết các điều, khoàn được giao trong Luật
+
+## Điều 45. Quy định chuyển tiếp
+
+### 1. Cán bộ, công chức cấp xã được bầu hoặc tuyển dụng trước ngày Luật này có hiệu lực thi hành nếu đáp ứng đủ tiêu chuẩn về trình độ đảo tạo thi được chuyền thành cán bộ, công chức theo quy định của Luật này và được bố trí công thi các tại các cơ quan, tố chức, đơn vị thuộc hệ thông chính trị tại cấp xã hình thành sau sắp xếp, thuộc biên chế của địa phương nơi công tác và thực hiện tinh giản biên chế trong thời hạn 05 năm theo quy định của Chính phủ và hướng dẫn của cấp có thầm quyền
+
+### 2. Chậm nhất đến ngày 01 tháng 7 năm 2027, các Bộ, ngành, cơ quan trung ương, địa phương phải hoàn thành việc bô tri vào vị trí việc làm và xếp ngạch
+
+tương ứng với vị trí việc làm đói với công chức được tuyên dung trước ngày Luật này có hiệu lực thi hành thuộc phạm vi quản lý theo quy định của Luật này
+
+### 3. Kế từ ngày Luật này có hiệu lực thi hành, người đang tập sự theo quy định của Luật Cán bộ, công chức số 22/2008/QH12 đã được sửa đói, bố sung một số điều theo Luật số 52/2019/QH14 được xếp vào ngạch công chức tương ứng với vị trí việc làm tuyển dụng Luật này được Quốc hội nước Cộng hòa xã hội chủ nghĩa Việt Nam khóa XV kỳ họp thứ 9 thông qua ngày 24 tháng 6 năm 2025 TỊCH QUỐC HỘI Trần Thanh Mẫn
