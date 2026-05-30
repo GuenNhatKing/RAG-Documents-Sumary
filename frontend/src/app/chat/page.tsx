@@ -587,21 +587,18 @@ export default function ChatMasterPage() {
               </div>
             </header>
 
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 min-h-0 overflow-hidden relative h-full">
               {selectedDocLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-tertiary/50">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-400 dark:text-indigo-400" />
                 </div>
-              ) : viewMode === "md" ? (
+              ) : (
                 <DocumentViewerClient
                   docId={selectedDocId}
                   markdown={selectedDocMarkdown}
                   highlight={selectedDocHighlight}
-                />
-              ) : (
-                <iframe
-                  src={`${API}/documents/${selectedDocId}/raw`}
-                  className="w-full h-full border-none"
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
                 />
               )}
             </div>
