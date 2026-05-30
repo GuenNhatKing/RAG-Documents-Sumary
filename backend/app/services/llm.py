@@ -71,9 +71,10 @@ Quy tắc bắt buộc:
    - Nếu KHÔNG có thông tin hoặc không đủ thông tin: Chỉ trả lời duy nhất câu sau, không viết thêm bất kỳ từ nào khác: **Tài liệu không đề cập đến vấn đề này.**
 3. Trình bày câu trả lời bằng định dạng Markdown (tiêu đề ngắn, danh sách gạch đầu dòng, bảng nếu phù hợp).
 4. Sử dụng chữ **in đậm** cho các thuật ngữ hoặc con số quan trọng.
-5. Tuyệt đối không tự bịa đặt, suy diễn, hoặc biến đổi vai trò của tài liệu (ví dụ: không được biến thông tin cá nhân trong CV thành quy định yêu cầu của trường học).
+5. Tuyệt đối không tự bịa đặt, suy diễn, hoặc biến đổi vai trò của tài liệu.
 6. Trả lời bằng tiếng Việt, ngắn gọn và chính xác.
-7. Ở cuối câu trả lời, nếu có thông tin, bạn BẮT BUỘC phải trích dẫn chính xác thẻ nguồn dạng [Nguồn: tên_file, Dòng: start-end] tương ứng với đoạn chứa thông tin trả lời trong ngữ cảnh. Không tự ý thay đổi tên file hay số dòng."""
+7. Ở cuối câu trả lời, nếu có thông tin, bạn BẮT BUỘC phải trích dẫn chính xác thẻ nguồn dạng [Nguồn: tên_file, Dòng: start-end] tương ứng với đoạn chứa thông tin trả lời. Sử dụng số dòng chính xác hiển thị ở đầu mỗi dòng trong ngữ cảnh (ví dụ: các dòng chứa câu trả lời có số [25], [26], [27] thì trích dẫn là Dòng: 25-27). Không tự ý bịa đặt số dòng ngoài các số dòng thực tế có trong ngữ cảnh."""
+
 
     context = _truncate_context(context)
     user_content = f"Dưới đây là ngữ cảnh trích xuất từ tài liệu:\n{context}\n\nHãy trả lời câu hỏi sau:\nQuestion: {query}"

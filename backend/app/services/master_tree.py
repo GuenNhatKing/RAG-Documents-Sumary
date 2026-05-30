@@ -151,24 +151,28 @@ def search_master_tree(query: str) -> List[Dict[str, str]]:
     # Local vector similarity filtering
     doc_scores = []
     try:
-        import numpy as np
         from app.services.vector_db import get_embedding
         
         query_vector = get_embedding(query)
-        q = np.array(query_vector)
-        q_norm = np.linalg.norm(q)
-        if q_norm == 0:
-            q_norm = 1e-9
+        
+        def dot_product(v1, v2):
+            return sum(x * y for x, y in zip(v1, v2))
+
+        def magnitude(v):
+            return sum(x * x for x in v) ** 0.5
+
+        def cosine_similarity(v1, v2):
+            mag1 = magnitude(v1)
+            mag2 = magnitude(v2)
+            if mag1 == 0 or mag2 == 0:
+                return 0.0
+            return dot_product(v1, v2) / (mag1 * mag2)
             
         for doc_id, info in tree.items():
             score = 0.0
             vec = info.get("summary_vector")
             if vec and isinstance(vec, list) and len(vec) > 0:
-                c = np.array(vec)
-                c_norm = np.linalg.norm(c)
-                if c_norm == 0:
-                    c_norm = 1e-9
-                score = float(np.dot(c, q) / (q_norm * c_norm))
+                score = cosine_similarity(vec, query_vector)
             doc_scores.append((doc_id, score))
             
         # Sort documents by score descending
@@ -231,6 +235,14 @@ Rules:
         result = json.loads(cleaned)
         doc_ids = result.get("relevant_docs", [])
 
+        # If LLM returned empty list, or if the corpus is very small (<= 5 documents)
+        if len(tree) <= 5 or not doc_ids:
+            _log("Fallback/Direct: using local vector similarity ranking...")
+            valid_docs = [did for did, score in doc_scores if score > 0.35]
+            if not valid_docs and doc_scores:
+                valid_docs = [doc_scores[0][0]] # take top 1
+            doc_ids = valid_docs[:3]
+
         # Build results with info
         results = []
         for did in doc_ids:
@@ -245,9 +257,10 @@ Rules:
     except Exception as e:
         _log(f"Search error: {e}")
         # Fallback: return top_docs (let user pick)
+        fallback_ids = [did for did, _ in top_docs if did in tree]
         return [
             {"doc_id": did, "filename": tree[did]["filename"], "summary": tree[did]["summary"]}
-            for did, _ in top_docs if did in tree
+            for did in fallback_ids[:3]
         ]
 
 
