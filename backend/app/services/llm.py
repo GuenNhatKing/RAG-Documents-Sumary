@@ -66,14 +66,18 @@ def generate_final_answer(context: str, query: str) -> str:
 
 Quy tắc bắt buộc:
 1. CHỈ trả lời dựa trên ngữ cảnh (context) được cung cấp. Không tự ý sử dụng kiến thức bên ngoài tài liệu.
-2. Nếu ngữ cảnh không có thông tin hoặc không đủ để trả lời câu hỏi, bạn BẮT BUỘC phải trả lời chính xác câu sau: **Tài liệu không đề cập đến vấn đề này.**
+2. Kiểm tra kỹ xem ngữ cảnh có chứa thông tin để trả lời cho câu hỏi hay không:
+   - Nếu CÓ thông tin: Trả lời câu hỏi một cách ngắn gọn, chính xác dựa trên ngữ cảnh. Tuyệt đối KHÔNG viết thêm câu "Tài liệu không đề cập đến vấn đề này." vào bất kỳ vị trí nào trong câu trả lời.
+   - Nếu KHÔNG có thông tin hoặc không đủ thông tin: Chỉ trả lời duy nhất câu sau, không viết thêm bất kỳ từ nào khác: **Tài liệu không đề cập đến vấn đề này.**
 3. Trình bày câu trả lời bằng định dạng Markdown (tiêu đề ngắn, danh sách gạch đầu dòng, bảng nếu phù hợp).
 4. Sử dụng chữ **in đậm** cho các thuật ngữ hoặc con số quan trọng.
 5. Tuyệt đối không tự bịa đặt, suy diễn, hoặc biến đổi vai trò của tài liệu (ví dụ: không được biến thông tin cá nhân trong CV thành quy định yêu cầu của trường học).
-6. Trả lời bằng tiếng Việt, ngắn gọn và chính xác."""
+6. Trả lời bằng tiếng Việt, ngắn gọn và chính xác.
+7. Ở cuối câu trả lời, nếu có thông tin, bạn BẮT BUỘC phải trích dẫn chính xác thẻ nguồn dạng [Nguồn: tên_file, Dòng: start-end] tương ứng với đoạn chứa thông tin trả lời trong ngữ cảnh. Không tự ý thay đổi tên file hay số dòng."""
 
     context = _truncate_context(context)
-    prompt_text = system_prompt + context + "\n\nQuestion: " + query
+    user_content = f"Dưới đây là ngữ cảnh trích xuất từ tài liệu:\n{context}\n\nHãy trả lời câu hỏi sau:\nQuestion: {query}"
+    prompt_text = system_prompt + user_content
     max_tokens = _get_groq_capped_max_tokens(prompt_text, max_tokens)
 
     extra_body = _get_extra_body()
@@ -81,7 +85,7 @@ Quy tắc bắt buộc:
         model=model_name,
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": context + "\n\nQuestion: " + query},
+            {"role": "user", "content": user_content},
         ],
         temperature=0.0,
         max_tokens=max_tokens,

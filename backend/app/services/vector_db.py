@@ -16,6 +16,11 @@ def get_model() -> SentenceTransformer:
         os.makedirs(model_dir, exist_ok=True)
         # Suppress symlink warning on Windows if not running as admin
         os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+        # Suppress HF unauthenticated Hub request warnings and disable telemetry
+        os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+        import warnings
+        warnings.filterwarnings("ignore", message=".*unauthenticated requests.*")
+        warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
         _model = SentenceTransformer(MODEL_NAME, cache_folder=model_dir)
     return _model
 

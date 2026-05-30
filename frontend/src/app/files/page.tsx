@@ -42,9 +42,9 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
     dot: "bg-emerald-400" 
   },
   vector_processed: { 
-    label: "Hoàn thành (Vector DB)", 
-    color: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20", 
-    dot: "bg-indigo-400" 
+    label: "Hoàn thành", 
+    color: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", 
+    dot: "bg-emerald-400" 
   },
   error: { 
     label: "Lỗi", 

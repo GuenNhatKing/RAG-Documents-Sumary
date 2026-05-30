@@ -107,6 +107,15 @@ def add_doc_to_master_tree(
     clean_top_titles = [t.strip() for t in top_titles if t.strip()]
     top_headings = ", ".join(clean_top_titles[:8]) # Limit to top 8 headings
 
+    # Generate summary vector
+    summary_vector = []
+    try:
+        from app.services.vector_db import get_embedding
+        summary_text = f"{filename}. {summary}. Topics: {top_headings}."
+        summary_vector = get_embedding(summary_text)
+    except Exception as ev:
+        _log(f"Warning: Failed to generate summary vector: {ev}")
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
@@ -114,6 +123,7 @@ def add_doc_to_master_tree(
         "summary": summary.strip(),
         "node_count": node_count,
         "top_headings": top_headings,
+        "summary_vector": summary_vector,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)
@@ -138,9 +148,46 @@ def search_master_tree(query: str) -> List[Dict[str, str]]:
     if not tree:
         return []
 
-    # Build catalog for LLM
+    # Local vector similarity filtering
+    doc_scores = []
+    try:
+        import numpy as np
+        from app.services.vector_db import get_embedding
+        
+        query_vector = get_embedding(query)
+        q = np.array(query_vector)
+        q_norm = np.linalg.norm(q)
+        if q_norm == 0:
+            q_norm = 1e-9
+            
+        for doc_id, info in tree.items():
+            score = 0.0
+            vec = info.get("summary_vector")
+            if vec and isinstance(vec, list) and len(vec) > 0:
+                c = np.array(vec)
+                c_norm = np.linalg.norm(c)
+                if c_norm == 0:
+                    c_norm = 1e-9
+                score = float(np.dot(c, q) / (q_norm * c_norm))
+            doc_scores.append((doc_id, score))
+            
+        # Sort documents by score descending
+        doc_scores.sort(key=lambda x: x[1], reverse=True)
+    except Exception as e:
+        _log(f"Warning: Local vector search failed: {e}")
+        doc_scores = [(doc_id, 0.0) for doc_id in tree.keys()]
+
+    # Fallback to all docs if no vector score is available
+    if not any(score > 0 for _, score in doc_scores):
+        top_docs = [(doc_id, 0.0) for doc_id in tree.keys()]
+    else:
+        # Take the top 5 most relevant documents
+        top_docs = doc_scores[:5]
+
+    # Build catalog for LLM (only using top documents to fit in context window)
     catalog_lines = []
-    for doc_id, info in tree.items():
+    for doc_id, score in top_docs:
+        info = tree[doc_id]
         entry = f"- [{doc_id}] {info['filename']}: {info['summary']}"
         if "top_headings" in info and info["top_headings"]:
             entry += f" (Chủ đề chính: {info['top_headings']})"
@@ -197,10 +244,10 @@ Rules:
 
     except Exception as e:
         _log(f"Search error: {e}")
-        # Fallback: return all docs (let user pick)
+        # Fallback: return top_docs (let user pick)
         return [
-            {"doc_id": did, "filename": info["filename"], "summary": info["summary"]}
-            for did, info in tree.items()
+            {"doc_id": did, "filename": tree[did]["filename"], "summary": tree[did]["summary"]}
+            for did, _ in top_docs if did in tree
         ]
 
 
@@ -231,6 +278,15 @@ def add_vector_doc_to_master_tree(
                     
     top_headings = ", ".join(top_titles)
     
+    # Generate summary vector
+    summary_vector = []
+    try:
+        from app.services.vector_db import get_embedding
+        summary_text = f"{filename}. {summary}. Topics: {top_headings}."
+        summary_vector = get_embedding(summary_text)
+    except Exception as ev:
+        _log(f"Warning: Failed to generate summary vector: {ev}")
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
@@ -238,6 +294,7 @@ def add_vector_doc_to_master_tree(
         "summary": summary.strip(),
         "node_count": len(top_titles),
         "top_headings": top_headings,
+        "summary_vector": summary_vector,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)

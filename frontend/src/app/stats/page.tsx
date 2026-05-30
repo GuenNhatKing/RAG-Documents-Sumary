@@ -15,6 +15,7 @@ const STATUS_LABELS: Record<string, string> = {
   processing: "Đang xử lý",
   pending_review: "Chờ duyệt",
   processed: "Hoàn thành",
+  vector_processed: "Hoàn thành",
   error: "Lỗi",
 };
 
@@ -29,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
   processing: "#fbbf24",       // vibrant amber
   pending_review: "#c084fc",   // vibrant purple
   processed: "#34d399",        // vibrant emerald
+  vector_processed: "#34d399", // vibrant emerald
   error: "#f87171",            // vibrant red
 };
 

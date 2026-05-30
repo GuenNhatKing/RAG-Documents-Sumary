@@ -364,19 +364,57 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
             )
 
         doc.status = DocumentStatus.PROCESSING
         db.commit()
 
-        # Build semantic tree từ .md đã được review
-        tree_path = await generate_semantic_tree(document_id)
+        # Đọc nội dung markdown
+        if not doc.markdown_path:
+            raise HTTPException(status_code=400, detail="Document markdown path is missing")
+            
+        md_path = Path(doc.markdown_path)
+        if not md_path.exists():
+            raise HTTPException(status_code=404, detail="Markdown file not found on disk")
 
-        doc.status = DocumentStatus.PROCESSED
+        markdown_text = md_path.read_text(encoding="utf-8")
+
+        # Định nghĩa hàm index vector chạy bất đồng bộ
+        async def index_vectors():
+            from app.services.vector_db import chunk_markdown, get_embeddings
+            chunks = chunk_markdown(markdown_text)
+            chunk_texts = [c["text"] for c in chunks]
+            
+            loop = asyncio.get_event_loop()
+            embeddings = await loop.run_in_executor(None, get_embeddings, chunk_texts)
+            return chunks, embeddings
+
+        # Chạy song song tạo cây ngữ nghĩa và tính toán vector embeddings
+        tree_path, (chunks, embeddings) = await asyncio.gather(
+            generate_semantic_tree(document_id),
+            index_vectors()
+        )
+
+        # Xóa các chunk cũ nếu có để tránh trùng lặp
+        from app.models import DocumentChunk
+        db.query(DocumentChunk).filter(DocumentChunk.doc_id == document_id).delete()
+
+        # Lưu các chunk mới vào Database
+        for chunk, vector in zip(chunks, embeddings):
+            db_chunk = DocumentChunk(
+                doc_id=document_id,
+                text=chunk["text"],
+                line_num=chunk["line_num"],
+                vector=json.dumps(vector)
+            )
+            db.add(db_chunk)
+
+        # Cập nhật thông tin tài liệu và trạng thái hoàn thành là VECTOR_PROCESSED
+        doc.status = DocumentStatus.VECTOR_PROCESSED
         doc.json_tree_path = str(tree_path)
         db.commit()
 
@@ -384,7 +422,8 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
             "status": "ok",
             "document_id": document_id,
             "tree_path": str(tree_path),
-            "message": "Document fully processed."
+            "chunks_count": len(chunks),
+            "message": "Tài liệu đã được tạo cây cấu trúc và lập chỉ mục Vector DB thành công."
         }
 
     except Exception as e:
