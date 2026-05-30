@@ -293,13 +293,13 @@ def extract_json_object(content: str) -> dict[str, Any]:
 VI_LOWER = "a-zàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ"
 
 def starts_lower(s: str) -> bool: return bool(re.match(rf"^[{VI_LOWER}]", s.strip()))
-def dash_bullet(s: str) -> bool: return bool(re.match(r"^[-–•+]\s+", s.strip()))
-def numbered(s: str) -> bool: return bool(re.match(r"^\d+[.)]\s+", s.strip()))
-def decimal(s: str) -> bool: return bool(re.match(r"^\d+(?:\.\d+)+[.)]?\s+", s.strip()))
-def lettered(s: str) -> bool: return bool(re.match(r"^[A-Za-zÀ-ỹĐđ][.)]\s+", s.strip(), re.I))
-def roman(s: str) -> bool: return bool(re.match(r"^[IVXLCDM]+[.)]\s+", s.strip(), re.I))
-def article(s: str) -> bool: return bool(re.match(r"^Điều\s+\d+[.:]?\s+", s.strip(), re.I))
-def chapter(s: str) -> bool: return bool(re.match(r"^(PHẦN|CHƯƠNG|MỤC|TIỂU\s+MỤC)\s+", s.strip(), re.I))
+def dash_bullet(s: str) -> bool: return bool(re.match(r"^[-–•+]\s*", s.strip()))
+def numbered(s: str) -> bool: return bool(re.match(r"^\d+[.)]\s*", s.strip()))
+def decimal(s: str) -> bool: return bool(re.match(r"^\d+(?:\.\d+)+[.)]?\s*", s.strip()))
+def lettered(s: str) -> bool: return bool(re.match(r"^[A-Za-zÀ-ỹĐđ][.)]\s*", s.strip(), re.I))
+def roman(s: str) -> bool: return bool(re.match(r"^[IVXLCDM]+[.)]\s*", s.strip(), re.I))
+def article(s: str) -> bool: return bool(re.match(r"^Điều\s+\d+[.:]?\s*", s.strip(), re.I))
+def chapter(s: str) -> bool: return bool(re.match(r"^(PHẦN|CHƯƠNG|MỤC|TIỂU\s+MỤC)\s*", s.strip(), re.I))
 
 def marker_kind(s: str) -> str:
     x = s.strip()

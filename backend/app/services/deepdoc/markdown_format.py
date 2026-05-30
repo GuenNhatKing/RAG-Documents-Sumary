@@ -28,6 +28,14 @@ def _is_heading_line(line: str) -> int | None:
     # "Về ..." subject line following a doc type → NOT a heading, handled via merging
     # (not detected here, will be merged with previous doc type in paragraph grouping)
 
+    # Major administrative sections: PHẦN, CHƯƠNG, MỤC, TIỂU MỤC (H2)
+    if re.match(r'^(PHẦN|CHƯƠNG|MỤC|TIỂU\s+MỤC)\s+([IVXLCDM\d]+|THỨ\s+\w+)', stripped, re.I):
+        return 2
+
+    # Articles: Điều 1, Điều 2... (H3)
+    if re.match(r'^Điều\s+\d+', stripped, re.I):
+        return 3
+
     # "Nhằm..." section intro (H2)
     if re.match(r'^Nhằm\s', stripped):
         return 2
@@ -42,15 +50,15 @@ def _is_heading_line(line: str) -> int | None:
     if re.match(r'^[1-9]\d*\.', stripped):
         return 3
     # Roman numeral: I., II. (H2)
-    if re.match(r'^[IVXLCDM]+\.\s', stripped):
+    if re.match(r'^[IVXLCDM]+\.\s*', stripped):
         return 2
     # Sub-numbered: a), b), c), đ) (H4) — both lowercase and uppercase
-    if re.match(r'^[a-zđ]\)\s', stripped):
+    if re.match(r'^[a-zđ]\)\s*', stripped):
         return 4
-    if re.match(r'^[A-Z]\)\s', stripped):
+    if re.match(r'^[A-Z]\)\s*', stripped):
         return 4
     # Roman numeral lower: i), ii) (H5)
-    if re.match(r'^[ivxlcdm]+\)\s', stripped):
+    if re.match(r'^[ivxlcdm]+\)\s*', stripped):
         return 5
 
     return None
@@ -116,6 +124,7 @@ _ARTIFACT_PATTERNS = [
     re.compile(r'^Trang\s+\d+', re.IGNORECASE),
     re.compile(r'^#\s*TDT\s*$', re.IGNORECASE),
     re.compile(r'^TDT\s*$', re.IGNORECASE),
+    re.compile(r'^\d+$'), # Standalone page numbers
 ]
 
 

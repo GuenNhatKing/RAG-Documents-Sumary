@@ -198,7 +198,6 @@ export default function ChatPage({ params }: PageProps) {
 
     const lengthLabels: Record<SummaryLength, string> = {
       short: "Ngắn (chỉ ý quan trọng)",
-      medium: "Vừa",
       long: "Chi tiết (Dài)",
     };
 
