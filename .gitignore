@@ -5,8 +5,26 @@
 __pycache__/
 *.pyc
 
-data/
+# Ignore databases by default
 *.db
+# Allow specific databases
+!rag.db
+!database.db
+!backend/data/rag.db
+
+# Ignore all contents in data folders, but not the folder itself (so we can unignore children)
+data/*
+backend/data/*
+
+# Allow specific data folders and files
+!backend/data/raw/
+!backend/data/master_tree.json
+!backend/data/markdown_docs/
+!backend/data/semantic_trees/
+!data/raw/
+!data/master_tree.json
+!data/markdown_docs/
+!data/semantic_trees/
 
 /.*/
 

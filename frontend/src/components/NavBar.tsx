@@ -67,10 +67,10 @@ export default function NavBar() {
 
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-red-400 border border-transparent hover:border-red-500/20 rounded-lg px-3 py-1.5 hover:bg-red-500/5 transition-all duration-200 cursor-pointer"
+              className="flex items-center gap-1.5 text-sm font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/10 border border-rose-500/20 dark:border-rose-500/30 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white hover:border-rose-600 dark:hover:border-rose-600 rounded-lg px-3.5 py-1.5 transition-all duration-250 cursor-pointer shadow-sm shadow-rose-500/5 hover:scale-105 active:scale-95"
               title="Đăng xuất"
             >
-              <LogOut size={15} />
+              <LogOut size={14} className="stroke-[2.5]" />
               <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </>

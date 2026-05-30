@@ -438,27 +438,32 @@ def _parse_numbering(s: str) -> tuple[str | None, int]:
     """
     s = s.strip()
     # Chapter markers
-    m = re.match(r"^(PHẦN|CHƯƠNG|MỤC|TIỂU\s+MỤC)", s, re.I)
+    # Chapter markers: PHẦN, CHƯƠNG → level 1
+    m = re.match(r"^(PHẦN|CHƯƠNG)", s, re.I)
     if m:
         return m.group(0), 1
-    # Article: Điều 1.
+    # MỤC, TIỂU MỤC → level 2
+    m = re.match(r"^(MỤC|TIỂU\s+MỤC)", s, re.I)
+    if m:
+        return m.group(0), 2
+    # Article: Điều 1. → level 2
     m = re.match(r"^(Điều\s+\d+[.:]?\s*)", s, re.I)
     if m:
         return m.group(1).strip(), 2
-    # Decimal: 1.1.1 or 1.1.1)
+    # Decimal: 1.1.1 or 1.1.1) → level 3
     m = re.match(r"^(\d+(?:\.\d+)+[.)]?\s*)", s)
     if m:
         depth = m.group(1).count(".")
-        return m.group(1).strip(), min(depth + 1, 4)
-    # Numbered: 1. or 1)
+        return m.group(1).strip(), min(depth + 2, 4)
+    # Numbered: 1. or 1) → level 3 (Khoản)
     m = re.match(r"^(\d+[.)]\s*)", s)
     if m:
-        return m.group(1).strip(), 2
-    # Roman: I. or IV)
+        return m.group(1).strip(), 3
+    # Roman: I. or IV) → level 3
     m = re.match(r"^([IVXLCDM]+[.)]\s*)", s, re.I)
     if m:
         return m.group(1).strip(), 3
-    # Lettered: A. or a)
+    # Lettered: a) or b) → level 4 (Điểm)
     m = re.match(r"^([A-Za-zÀ-ỹĐđ][.)]\s*)", s, re.I)
     if m:
         return m.group(1).strip(), 4
@@ -651,7 +656,8 @@ Rules:
 - MARK_NOISE: chunk is noise and should be removed from output.
 - REVIEW: need human review.
 - is_node=true only for TITLE and HEADING chunks.
-- level=1 for document title, level=2 for major sections, level=3 for articles/numbered units, level=4 for lettered sub-units.
+- Document title is NOT a heading node (is_node=false).
+- level=1 for PHẦN/CHƯƠNG, level=2 for MỤC/Điều, level=3 for numbered units (khoản: 1., 2., I., 1.1), level=4 for lettered sub-units (điểm: a), b), c)).
 - summary: 1 sentence, max 40 Vietnamese words, describing what the chunk is about.
 - risk_flags: list any concerns (possible_heading, possible_body, possible_continuation, possible_noise, unclear_level, header_content_mismatch, numbering_level_mismatch).
 - If unsure about anything, choose REVIEW.
@@ -1356,9 +1362,9 @@ def export_audit_log(
 # PARSE + FALLBACKS
 # =========================================================
 ROLES={"DOCUMENT_TITLE","DOCUMENT_SUBJECT","METADATA","PREAMBLE","BACKGROUND","LEGAL_BASIS","SECTION_INTRO","MAIN_CONTENT_UNIT","SUB_CONTENT_UNIT","BODY_DETAIL","LIST_ITEM","ADDRESSEE_ITEM","FOOTER_SECTION","FOOTER_ITEM","SIGNATURE_BLOCK","APPENDIX_SECTION","NOISE","UNKNOWN"}
-NON_NODE={"METADATA","PREAMBLE","BODY_DETAIL","LIST_ITEM","ADDRESSEE_ITEM","FOOTER_ITEM","SIGNATURE_BLOCK","NOISE","UNKNOWN"}
-ROUGH_LEVEL={"ROOT":1,"MAJOR":2,"MAIN":3,"SUB":4}
-ROLE_LEVEL={"DOCUMENT_TITLE":1,"DOCUMENT_SUBJECT":2,"FOOTER_SECTION":2,"APPENDIX_SECTION":2,"SECTION_INTRO":2,"MAIN_CONTENT_UNIT":3,"SUB_CONTENT_UNIT":4}
+NON_NODE={"DOCUMENT_TITLE","METADATA","PREAMBLE","BODY_DETAIL","LIST_ITEM","ADDRESSEE_ITEM","FOOTER_ITEM","SIGNATURE_BLOCK","NOISE","UNKNOWN"}
+ROUGH_LEVEL={"ROOT":1,"MAJOR":1,"MAIN":2,"SUB":3}
+ROLE_LEVEL={"DOCUMENT_SUBJECT":1,"FOOTER_SECTION":1,"APPENDIX_SECTION":1,"SECTION_INTRO":1,"MAIN_CONTENT_UNIT":2,"SUB_CONTENT_UNIT":4}
 
 def py_role(b: BlockRecord, i: int, total: int, in_footer=False) -> str:
     f=b.features["first_line_features"]; pos=i/max(total,1); s=b.first_line
@@ -1557,16 +1563,19 @@ def parse_candidates(obj, roles, byid):
 
 def structural_level(n: OutlineNode) -> int|None:
     k=marker_kind(n.first_line)
-    if n.role=="DOCUMENT_TITLE": return 1
-    if n.role in {"DOCUMENT_SUBJECT","FOOTER_SECTION","APPENDIX_SECTION"}: return 2
-    if k in {"PHẦN","CHƯƠNG"}: return 2
-    if k in {"MỤC","TIỂU_MỤC","ARTICLE","NUMBER","DECIMAL","ROMAN"}: return 3
+    if n.role=="DOCUMENT_TITLE": return None  # Title is not a heading node
+    if k in {"PHẦN","CHƯƠNG"}: return 1
+    if n.role in {"DOCUMENT_SUBJECT","FOOTER_SECTION","APPENDIX_SECTION"}: return 1
+    if k in {"MỤC","TIỂU_MỤC"}: return 2
+    if k=="ARTICLE": return 2
+    if k in {"NUMBER","DECIMAL","ROMAN"}: return 3
     if k=="LETTER": return 4
     return None
 
 def nodes_from_candidates(cands, byid, secid, levels=None):
     levels=levels or {}; nodes=[]
     for c in cands:
+        if c.role=="DOCUMENT_TITLE": continue  # Title is not a heading node
         b=byid[c.block_id]; lv=int(levels.get(c.block_id) or ROUGH_LEVEL.get(c.rough_level) or ROLE_LEVEL.get(c.role) or 3)
         tmp=OutlineNode(c.block_id,b.start_line_id,lv,b.first_line,b.line_ids,c.role,secid)
         lv=structural_level(tmp) or lv
@@ -1584,7 +1593,7 @@ def parse_levels(obj,cands,byid,secid):
     return nodes_from_candidates(cands,byid,secid,levels)
 
 def structural_postprocess(nodes, byid):
-    out={n.block_id:n for n in nodes}
+    out={n.block_id:n for n in nodes if n.role!="DOCUMENT_TITLE"}
     # Add obvious structural headings that LLM missed.
     for b in sorted(byid.values(), key=lambda x:x.start_line_id):
         if b.block_id in out: continue
@@ -1592,15 +1601,14 @@ def structural_postprocess(nodes, byid):
         if k in {"ARTICLE","NUMBER","DECIMAL","ROMAN","LETTER"} or chapter(b.first_line) or footer_section_like(b.first_line):
             role="SUB_CONTENT_UNIT" if k=="LETTER" else "MAIN_CONTENT_UNIT"
             if footer_section_like(b.first_line): role="FOOTER_SECTION"
-            tmp=OutlineNode(b.block_id,b.start_line_id,3,b.first_line,b.line_ids,role,None)
-            lv=structural_level(tmp) or 3
+            tmp=OutlineNode(b.block_id,b.start_line_id,2,b.first_line,b.line_ids,role,None)
+            lv=structural_level(tmp) or 2
             out[b.block_id]=OutlineNode(b.block_id,b.start_line_id,lv,b.first_line,b.line_ids,role,None)
-    has_h1=any(n.level==1 for n in out.values())
     fixed=[]
     for n in sorted(out.values(), key=lambda x:x.line_id):
+        if n.role=="DOCUMENT_TITLE": continue  # Title is not a heading node
         lv=structural_level(n) or n.level
-        if has_h1 and n.role in {"FOOTER_SECTION","APPENDIX_SECTION"}: lv=max(2,lv)
-        fixed.append(OutlineNode(n.block_id,n.line_id,max(1,min(4,lv)),n.first_line,n.line_ids,n.role,n.section_id))
+        fixed.append(OutlineNode(n.block_id,n.line_id,max(1,min(MD_MAX_HEADING_LEVEL,lv)),n.first_line,n.line_ids,n.role,n.section_id))
     return fixed
 
 def hierarchical_validation(nodes):
@@ -1616,9 +1624,12 @@ def hierarchical_validation(nodes):
         if kinds.count("LETTER")>=2:
             for k in kids:
                 if marker_kind(k.first_line)=="LETTER": byid[k.block_id]=OutlineNode(k.block_id,k.line_id,4,k.first_line,k.line_ids,"SUB_CONTENT_UNIT",k.section_id)
-        if sum(1 for x in kinds if x in {"NUMBER","ARTICLE","ROMAN","DECIMAL"})>=2:
+        if sum(1 for x in kinds if x in {"NUMBER","ROMAN","DECIMAL"})>=2:
             for k in kids:
-                if marker_kind(k.first_line) in {"NUMBER","ARTICLE","ROMAN","DECIMAL"}: byid[k.block_id]=OutlineNode(k.block_id,k.line_id,3,k.first_line,k.line_ids,"MAIN_CONTENT_UNIT",k.section_id)
+                if marker_kind(k.first_line) in {"NUMBER","ROMAN","DECIMAL"}: byid[k.block_id]=OutlineNode(k.block_id,k.line_id,3,k.first_line,k.line_ids,"MAIN_CONTENT_UNIT",k.section_id)
+        if kinds.count("ARTICLE")>=2:
+            for k in kids:
+                if marker_kind(k.first_line)=="ARTICLE": byid[k.block_id]=OutlineNode(k.block_id,k.line_id,2,k.first_line,k.line_ids,"MAIN_CONTENT_UNIT",k.section_id)
     return sorted(byid.values(),key=lambda x:x.line_id)
 
 # =========================================================

@@ -72,32 +72,12 @@ export async function confirmDocumentMd(docId: string): Promise<boolean> {
   return res.ok;
 }
 
-export async function rebuildTree(docId: string): Promise<boolean> {
-  const res = await fetch(`${API}/documents/${docId}/build-tree`, {
-    method: "POST",
-    headers: authHeaders(),
-  });
-  return res.ok;
-}
-
 export async function renameDocument(docId: string, filename: string): Promise<boolean> {
   try {
     const res = await fetch(`${API}/documents/${docId}/filename`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ filename }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-export async function saveDocumentVectorDb(docId: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${API}/documents/${docId}/save-vector-db`, {
-      method: "POST",
-      headers: authHeaders(),
     });
     return res.ok;
   } catch {

@@ -256,7 +256,18 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
 
     markdown_path = doc.markdown_path
     json_path = doc.json_tree_path
-    is_vector_db = (doc.status == DocumentStatus.VECTOR_PROCESSED)
+    is_vector_db = (doc.status in (DocumentStatus.VECTOR_PROCESSED, DocumentStatus.PROCESSED))
+
+    # Pre-load chunks to check if vector DB is populated
+    from app.models import DocumentChunk
+    chunks_in_db = []
+    if is_vector_db:
+        chunks_in_db = db.query(DocumentChunk).filter(DocumentChunk.doc_id == request.doc_id).all()
+        if not chunks_in_db:
+            if json_path and os.path.exists(json_path):
+                is_vector_db = False
+            else:
+                raise HTTPException(status_code=404, detail="Tài liệu chưa được xử lý (thiếu cả vector và tree).")
 
     if is_vector_db:
         if not markdown_path or not os.path.exists(markdown_path):
@@ -287,10 +298,8 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
         sources = []
     else:
         if is_vector_db:
-            from app.models import DocumentChunk
             from app.services.vector_db import search_similar_chunks
             
-            chunks_in_db = db.query(DocumentChunk).filter(DocumentChunk.doc_id == request.doc_id).all()
             chunks_dicts = [
                 {
                     "text": c.text,
@@ -306,18 +315,22 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
             # Build context
             context_parts = []
             sources = []
-            seen_files = set()
             filename = doc.filename
             
-            for chunk in matched_chunks:
+            for idx, chunk in enumerate(matched_chunks):
                 start_l = chunk["line_num"]
-                end_l = start_l + len(chunk["text"].split("\n")) - 1
-                source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
-                context_parts.append(f"{source_tag}\n{chunk['text'].strip()}")
+                lines_list = chunk["text"].split("\n")
+                prefixed_lines = [f"[{start_l + i}] {line}" for i, line in enumerate(lines_list)]
+                chunk_text_with_lines = "\n".join(prefixed_lines)
                 
-                # Check lines citation format
-                line_range = f"{start_l}-{end_l}"
-                sources.append(SourceDetail(file=doc.id, lines=line_range))
+                end_l = start_l + len(lines_list) - 1
+                source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
+                context_parts.append(f"{source_tag}\n{chunk_text_with_lines}")
+                
+                # Only add the single most relevant chunk (index 0) to sources
+                if idx == 0:
+                    line_range = f"{start_l}-{end_l}"
+                    sources.append(SourceDetail(file=doc.id, lines=line_range))
                 
             context = "\n\n---\n\n".join(context_parts) if context_parts else ""
         else:
@@ -326,14 +339,23 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
 
             sources = []
             if context:
-                seen_files: set[str] = set()
-                for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context):
-                    filename = match[0].strip()
-                    if filename not in seen_files:
-                        seen_files.add(filename)
-                        sources.append(SourceDetail(file=doc.id, lines=match[1].strip()))
+                # Only add the single most relevant matched citation
+                match = re.search(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context, re.IGNORECASE)
+                if match:
+                    sources.append(SourceDetail(file=doc.id, lines=match.group(2).strip()))
 
         answer = generate_final_answer(context, search_query)
+
+        # Trích xuất nguồn trực tiếp từ câu trả lời của LLM để đảm bảo chính xác nhất
+        llm_sources = []
+        match = re.search(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", answer, re.IGNORECASE)
+        if match:
+            lines = match.group(2).strip()
+            llm_sources.append(SourceDetail(file=doc.id, lines=lines))
+            # Xóa thẻ nguồn trong câu trả lời để hiển thị sạch sẽ
+            answer = re.sub(r"\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?", "", answer, flags=re.IGNORECASE).strip()
+            sources = llm_sources
+
 
     if session:
         db.add(ChatMessage(session_id=request.session_id, role="user", content=request.question))
@@ -377,104 +399,103 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
         sources = []
         relevant_docs = []
     else:
-        relevant_docs = search_master_tree(search_query)
-        if not relevant_docs:
+        from app.models import Document, DocumentStatus, DocumentChunk
+        from app.services.vector_db import search_similar_chunks
+        
+        docs = db.query(Document).filter(
+            Document.status.in_([DocumentStatus.VECTOR_PROCESSED, DocumentStatus.PROCESSED])
+        ).all()
+        
+        if not docs:
             return GlobalAskResponse(answer="Không tìm thấy tài liệu nào liên quan.", sources=[], relevant_docs=[])
-
-        # Build context from top docs
+            
+        ranked_docs = []
+        for doc in docs:
+            chunks_in_db = db.query(DocumentChunk).filter(DocumentChunk.doc_id == doc.id).all()
+            if not chunks_in_db:
+                continue
+                
+            chunks_dicts = [
+                {
+                    "text": c.text,
+                    "line_num": c.line_num,
+                    "vector": c.vector
+                }
+                for c in chunks_in_db
+            ]
+            
+            matched_chunks = search_similar_chunks(search_query, chunks_dicts, top_k=5)
+            if matched_chunks:
+                max_score = matched_chunks[0]["score"]
+                ranked_docs.append({
+                    "doc": doc,
+                    "score": max_score,
+                    "chunks": matched_chunks
+                })
+                
+        # Sort documents by their max chunk score descending
+        ranked_docs.sort(key=lambda x: x["score"], reverse=True)
+        
+        if not ranked_docs or ranked_docs[0]["score"] < 0.35:
+            return GlobalAskResponse(answer="Không tìm thấy tài liệu nào liên quan.", sources=[], relevant_docs=[])
+            
+        best_item = ranked_docs[0]
+        best_doc = best_item["doc"]
+        best_doc_score = best_item["score"]
+        best_doc_chunks = best_item["chunks"]
+        
+        # Build context from best doc
         context_parts = []
-        from app.models import Document, DocumentStatus
-        import concurrent.futures
-
-        # Query documents from Database in main thread for thread-safety
-        docs_to_process = []
-        filename_to_id = {}
-        for doc_info in relevant_docs[:3]:
-            doc_id = doc_info["doc_id"]
-            doc = db.query(Document).filter(Document.id == doc_id).first()
-            if doc and doc.markdown_path and os.path.exists(doc.markdown_path):
-                # Allow if either VECTOR_PROCESSED or both tree_path and tree file exists
-                if doc.status == DocumentStatus.VECTOR_PROCESSED or (doc.json_tree_path and os.path.exists(doc.json_tree_path)):
-                    docs_to_process.append({
-                        "doc_id": doc_id,
-                        "filename": doc_info["filename"],
-                        "status": doc.status,
-                        "json_path": doc.json_tree_path,
-                        "markdown_path": doc.markdown_path,
-                        "question": search_query
-                    })
-                    filename_to_id[doc_info["filename"]] = doc_id
-
-        def process_doc_thread(doc_item: dict) -> Optional[str]:
-            try:
-                from app.models import DocumentStatus
-                if doc_item["status"] == DocumentStatus.VECTOR_PROCESSED:
-                    from app.models import DocumentChunk
-                    from app.services.vector_db import search_similar_chunks
-                    
-                    # Create a new session for the thread to avoid concurrent DB access on same session
-                    thread_db = SessionLocal()
-                    try:
-                        chunks_in_db = thread_db.query(DocumentChunk).filter(DocumentChunk.doc_id == doc_item["doc_id"]).all()
-                        chunks_dicts = [
-                            {
-                                "text": c.text,
-                                "line_num": c.line_num,
-                                "vector": c.vector
-                            }
-                            for c in chunks_in_db
-                        ]
-                        matched_chunks = search_similar_chunks(doc_item["question"], chunks_dicts, top_k=5)
-                        
-                        context_parts = []
-                        filename = doc_item["filename"]
-                        for chunk in matched_chunks:
-                            start_l = chunk["line_num"]
-                            end_l = start_l + len(chunk["text"].split("\n")) - 1
-                            source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
-                            context_parts.append(f"{source_tag}\n{chunk['text'].strip()}")
-                        
-                        if context_parts:
-                            return f"=== Tài liệu: {filename} ===\n" + "\n\n---\n\n".join(context_parts)
-                    finally:
-                        thread_db.close()
-                else:
-                    with open(doc_item["json_path"], 'r', encoding='utf-8') as f:
-                        tree_data = json.load(f)
-                    node_list = reasoning_search_tree(tree_data, doc_item["question"])
-                    if node_list:
-                        ctx = build_context_from_markdown(tree_data, node_list, doc_item["markdown_path"])
-                        if ctx:
-                            return f"=== Tài liệu: {doc_item['filename']} ===\n{ctx}"
-            except Exception as e:
-                print(f"Error processing doc {doc_item['filename']} in thread: {e}", flush=True)
-            return None
-
-        if docs_to_process:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(docs_to_process)) as executor:
-                # executor.map preserves the original order of items
-                thread_results = list(executor.map(process_doc_thread, docs_to_process))
-                for res in thread_results:
-                    if res:
-                        context_parts.append(res)
-
-        combined_context = "\n\n".join(context_parts)
-
+        filename = best_doc.filename
+        for chunk in best_doc_chunks:
+            start_l = chunk["line_num"]
+            lines_list = chunk["text"].split("\n")
+            prefixed_lines = [f"[{start_l + i}] {line}" for i, line in enumerate(lines_list)]
+            chunk_text_with_lines = "\n".join(prefixed_lines)
+            
+            end_l = start_l + len(lines_list) - 1
+            source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
+            context_parts.append(f"{source_tag}\n{chunk_text_with_lines}")
+            
+        combined_context = f"=== Tài liệu: {filename} ===\n" + "\n\n---\n\n".join(context_parts)
+        
+        # Build source details
         sources = []
-        if combined_context:
-            seen_files: set[str] = set()
-            for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", combined_context):
-                filename = match[0].strip()
-                if filename not in seen_files:
-                    seen_files.add(filename)
-                    # Resolve to doc_id (UUID)
-                    doc_id = filename_to_id.get(filename, filename)
-                    sources.append(SourceDetail(file=doc_id, lines=match[1].strip()))
-
+        if best_doc_chunks:
+            most_relevant = best_doc_chunks[0]
+            start_l = most_relevant["line_num"]
+            end_l = start_l + len(most_relevant["text"].split("\n")) - 1
+            sources.append(SourceDetail(file=best_doc.id, lines=f"{start_l}-{end_l}"))
+            
         try:
+            from app.services.llm import generate_final_answer
             answer = generate_final_answer(combined_context, search_query)
+            
+            # Trích xuất nguồn trực tiếp từ câu trả lời của LLM để đảm bảo chính xác nhất
+            llm_sources = []
+            match = re.search(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", answer, re.IGNORECASE)
+            if match:
+                lines = match.group(2).strip()
+                llm_sources.append(SourceDetail(file=best_doc.id, lines=lines))
+                # Xóa thẻ nguồn trong câu trả lời để hiển thị sạch sẽ
+                answer = re.sub(r"\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?", "", answer, flags=re.IGNORECASE).strip()
+                sources = llm_sources
         except Exception:
             answer = "Lỗi khi tạo câu trả lời."
+
+            
+        # Build relevant_docs list for response
+        relevant_docs = []
+        from app.services.master_tree import load_master_tree
+        tree = load_master_tree()
+        for item in ranked_docs:
+            doc = item["doc"]
+            summary = tree.get(doc.id, {}).get("summary", "Tài liệu tương đồng.")
+            relevant_docs.append(DocResult(
+                doc_id=doc.id,
+                filename=doc.filename,
+                summary=summary
+            ))
 
     # Save messages to session if session_id provided
     if session:
@@ -491,8 +512,9 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
     return GlobalAskResponse(
         answer=answer,
         sources=sources,
-        relevant_docs=[DocResult(**d) for d in relevant_docs],
+        relevant_docs=relevant_docs,
     )
+
 
 
 # ============================================================

@@ -1,0 +1,39 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+tenacity
+openai
+redis
+celery
+pymupdf
+pillow
+litellm
+PyPDF2
+python-dotenv
+pyyaml
+passlib
+PyJWT
+pycryptodome
+python-multipart
+cryptography
+underthesea
+symspellpy
+sentence-transformers
+botocore
+
+# DeepDoc VietOCR dependencies
+opencv-python
+pdfplumber
+huggingface_hub
+shapely
+pyclipper
+ruamel.yaml
+cachetools
+vietocr
+
+# GPU/CUDA pytorch (CUDA 12.4)
+--index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+onnxruntime-gpu==1.26.0

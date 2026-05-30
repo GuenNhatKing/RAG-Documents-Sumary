@@ -16,7 +16,7 @@ from .env import load_backend_env
 load_backend_env()
 
 from sqlalchemy import func
-from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User
+from .models import Document, Base, DocumentStatus, ChatSession, ChatMessage, User, DocumentChunk
 from .database import SessionLocal, engine
 from celery import Celery
 
@@ -324,10 +324,10 @@ def edit_document_markdown(doc_id: str, body: dict, current_user: TokenData = De
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
             )
 
         new_markdown = body.get("markdown")
@@ -364,19 +364,57 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED):
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
             raise HTTPException(
                 status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review' or 'processed'"
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
             )
 
         doc.status = DocumentStatus.PROCESSING
         db.commit()
 
-        # Build semantic tree từ .md đã được review
-        tree_path = await generate_semantic_tree(document_id)
+        # Đọc nội dung markdown
+        if not doc.markdown_path:
+            raise HTTPException(status_code=400, detail="Document markdown path is missing")
+            
+        md_path = Path(doc.markdown_path)
+        if not md_path.exists():
+            raise HTTPException(status_code=404, detail="Markdown file not found on disk")
 
-        doc.status = DocumentStatus.PROCESSED
+        markdown_text = md_path.read_text(encoding="utf-8")
+
+        # Định nghĩa hàm index vector chạy bất đồng bộ
+        async def index_vectors():
+            from app.services.vector_db import chunk_markdown, get_embeddings
+            chunks = chunk_markdown(markdown_text)
+            chunk_texts = [c["text"] for c in chunks]
+            
+            loop = asyncio.get_event_loop()
+            embeddings = await loop.run_in_executor(None, get_embeddings, chunk_texts)
+            return chunks, embeddings
+
+        # Chạy song song tạo cây ngữ nghĩa và tính toán vector embeddings
+        tree_path, (chunks, embeddings) = await asyncio.gather(
+            generate_semantic_tree(document_id),
+            index_vectors()
+        )
+
+        # Xóa các chunk cũ nếu có để tránh trùng lặp
+        from app.models import DocumentChunk
+        db.query(DocumentChunk).filter(DocumentChunk.doc_id == document_id).delete()
+
+        # Lưu các chunk mới vào Database
+        for chunk, vector in zip(chunks, embeddings):
+            db_chunk = DocumentChunk(
+                doc_id=document_id,
+                text=chunk["text"],
+                line_num=chunk["line_num"],
+                vector=json.dumps(vector)
+            )
+            db.add(db_chunk)
+
+        # Cập nhật thông tin tài liệu và trạng thái hoàn thành là VECTOR_PROCESSED
+        doc.status = DocumentStatus.VECTOR_PROCESSED
         doc.json_tree_path = str(tree_path)
         db.commit()
 
@@ -384,7 +422,8 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
             "status": "ok",
             "document_id": document_id,
             "tree_path": str(tree_path),
-            "message": "Document fully processed."
+            "chunks_count": len(chunks),
+            "message": "Tài liệu đã được tạo cây cấu trúc và lập chỉ mục Vector DB thành công."
         }
 
     except Exception as e:
@@ -397,127 +436,7 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
         db.close()
 
 
-# =========================================================
-# SAVE TO VECTOR DATABASE (Song song với confirm-md)
-# =========================================================
-@app.post("/documents/{document_id}/save-vector-db")
-async def save_vector_db_api(document_id: str, current_user: TokenData = Depends(get_current_user)):
-    db = SessionLocal()
-    try:
-        doc = db.query(Document).filter(Document.id == document_id).first()
-        if not doc:
-            raise HTTPException(status_code=404, detail="Document not found")
-
-        # Allow from PENDING_REVIEW, PROCESSED (tree), or already VECTOR_PROCESSED
-        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
-            )
-
-        doc.status = DocumentStatus.PROCESSING
-        db.commit()
-
-        # 1. Đọc nội dung markdown
-        if not doc.markdown_path:
-            raise HTTPException(status_code=400, detail="Document markdown path is missing")
-            
-        md_path = Path(doc.markdown_path)
-        if not md_path.exists():
-            raise HTTPException(status_code=404, detail="Markdown file not found on disk")
-
-        markdown_text = md_path.read_text(encoding="utf-8")
-
-        # 2. Thực hiện chunking và tính toán vector
-        from app.services.vector_db import chunk_markdown, get_embeddings
-        from app.models import DocumentChunk
-
-        chunks = chunk_markdown(markdown_text)
-        chunk_texts = [c["text"] for c in chunks]
-
-        # Sinh embeddings hàng loạt sử dụng thread pool executor
-        loop = asyncio.get_event_loop()
-        embeddings = await loop.run_in_executor(None, get_embeddings, chunk_texts)
-
-        # 3. Xóa các chunk cũ nếu có để tránh trùng lặp
-        db.query(DocumentChunk).filter(DocumentChunk.doc_id == document_id).delete()
-
-        # 4. Lưu các chunk mới vào Database
-        for chunk, vector in zip(chunks, embeddings):
-            db_chunk = DocumentChunk(
-                doc_id=document_id,
-                text=chunk["text"],
-                line_num=chunk["line_num"],
-                vector=json.dumps(vector)
-            )
-            db.add(db_chunk)
-
-        doc.status = DocumentStatus.VECTOR_PROCESSED
-        db.commit()
-
-        # Add to master tree for cross-document search
-        try:
-            from app.services.master_tree import add_vector_doc_to_master_tree
-            await loop.run_in_executor(
-                None,
-                add_vector_doc_to_master_tree,
-                document_id,
-                doc.filename,
-                markdown_text
-            )
-        except Exception as e:
-            print(f"Warning: Failed to add vector doc to master tree: {e}", flush=True)
-
-        return {
-            "status": "ok",
-            "document_id": document_id,
-            "chunks_count": len(chunks),
-            "message": "Tài liệu đã được lưu vào Vector Database thành công."
-        }
-
-    except Exception as e:
-        db.rollback()
-        if doc:
-            doc.status = DocumentStatus.ERROR
-            db.commit()
-        raise HTTPException(status_code=500, detail=f"Lưu Vector DB thất bại: {str(e)}")
-    finally:
-        db.close()
-
-
-
-
-# =========================================================
-# BUILD TREE ENDPOINT (Legacy - kept for backward compatibility)
-# =========================================================
-@app.post("/documents/{document_id}/build-tree")
-async def build_tree(document_id: str, current_user: TokenData = Depends(get_current_user)):
-    try:
-        normalized_path = generate_normalized_text(document_id)
-
-        markdown_path = generate_markdown_doc(
-            document_id=document_id,
-            normalized_path=normalized_path,
-        )
-
-        tree_path = await generate_semantic_tree(document_id)
-
-        return {
-            "status": "ok",
-            "document_id": document_id,
-            "normalized_path": str(normalized_path),
-            "markdown_path": str(markdown_path),
-            "tree_path": str(tree_path),
-        }
-
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=f"Required file not found: {str(e)}")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid input or configuration: {str(e)}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Tree generation failed: {str(e)}")
-
-
+# End of confirm-md API
 # =========================================================
 # GET DOCUMENT DETAIL (auth required)
 # =========================================================
@@ -621,6 +540,9 @@ def delete_document(doc_id: str, current_user: TokenData = Depends(get_current_u
             remove_doc_from_master_tree(doc_id)
         except Exception:
             pass
+
+        # Delete all document chunks for this document
+        db.query(DocumentChunk).filter(DocumentChunk.doc_id == doc_id).delete()
 
         # Delete document DB record
         db.delete(doc)

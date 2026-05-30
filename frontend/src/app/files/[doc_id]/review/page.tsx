@@ -8,7 +8,6 @@ import {
   getDocumentMarkdown,
   saveDocumentMarkdown,
   confirmDocumentMd,
-  saveDocumentVectorDb,
 } from "@/lib/documents";
 import { API, getToken } from "@/lib/auth";
 import { ArrowLeft } from "lucide-react";
@@ -140,25 +139,6 @@ export default function ReviewPage() {
     }
   };
 
-  const handleSaveVectorDb = async () => {
-    setStatus("confirming");
-    setErrorMsg("");
-    const saved = await saveDocumentMarkdown(docId, markdown);
-    if (!saved) {
-      setErrorMsg("Lưu thất bại.");
-      setStatus("error");
-      return;
-    }
-    const confirmed = await saveDocumentVectorDb(docId);
-    if (confirmed) {
-      setDocStatus("vector_processed");
-      setStatus("done");
-    } else {
-      setErrorMsg("Lưu vào Vector DB thất bại.");
-      setStatus("error");
-    }
-  };
-
   return (
     <ProtectedRoute requiredRole={["admin", "can_bo"]}>
       <div className="min-h-[calc(100vh-64px)] flex flex-col py-8 max-w-6xl mx-auto px-4">
@@ -200,35 +180,19 @@ export default function ReviewPage() {
                 Lưu lại
               </button>
               {docStatus === "pending_review" ? (
-                <>
-                  <button
-                    onClick={handleConfirm}
-                    className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/10 hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    Xác nhận & Tạo cây
-                  </button>
-                  <button
-                    onClick={handleSaveVectorDb}
-                    className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-500/10 hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    Lưu vào Vector DB
-                  </button>
-                </>
+                <button
+                  onClick={handleConfirm}
+                  className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/10 hover:shadow-lg transition-all cursor-pointer"
+                >
+                  Xác nhận & Tạo cây
+                </button>
               ) : (
-                <>
-                  <button
-                    onClick={handleRebuild}
-                    className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 dark:from-indigo-600 to-emerald-600 dark:to-indigo-600 hover:from-emerald-500 dark:hover:from-indigo-500 hover:to-emerald-500 dark:hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-500/10 dark:shadow-indigo-500/10 hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    Lưu & Tạo lại cây
-                  </button>
-                  <button
-                    onClick={handleSaveVectorDb}
-                    className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-500/10 hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    Lưu & Cập nhật Vector DB
-                  </button>
-                </>
+                <button
+                  onClick={handleRebuild}
+                  className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 dark:from-indigo-600 to-emerald-600 dark:to-indigo-600 hover:from-emerald-500 dark:hover:from-indigo-500 hover:to-emerald-500 dark:hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-500/10 dark:shadow-indigo-500/10 hover:shadow-lg transition-all cursor-pointer"
+                >
+                  Lưu & Tạo lại cây
+                </button>
               )}
             </div>
           )}

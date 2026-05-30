@@ -6,7 +6,7 @@ import { API } from "@/lib/auth";
 import { Sparkles, User, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,6 +15,10 @@ export default function RegisterPage() {
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (form.password !== form.confirmPassword) {
+      setError("Mật khẩu nhập lại không khớp.");
+      return;
+    }
     setLoading(true);
     try {
       const registerBody = { ...form, role: "nguoi_dung" };
@@ -119,6 +123,25 @@ export default function RegisterPage() {
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-secondary ml-1" htmlFor="confirmPassword">
+                Nhập lại mật khẩu
+              </label>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-emerald-500 dark:group-focus-within:text-indigo-500 transition-colors duration-200" />
+                <input
+                  id="confirmPassword"
+                  required
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Nhập lại mật khẩu để xác nhận"
+                  className="w-full h-11 pl-10 pr-10 bg-secondary border border-theme hover:border-emerald-400/30 dark:hover:border-indigo-400/30 focus:border-emerald-500 dark:focus:border-indigo-500 rounded-xl text-sm text-primary placeholder-muted font-medium outline-none transition-all duration-200 focus:ring-[3px] focus:ring-emerald-500/15 dark:focus:ring-indigo-500/15"
+                  value={form.confirmPassword}
+                  onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+                  disabled={loading}
+                />
               </div>
             </div>
 

@@ -16,6 +16,11 @@ def get_model() -> SentenceTransformer:
         os.makedirs(model_dir, exist_ok=True)
         # Suppress symlink warning on Windows if not running as admin
         os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+        # Suppress HF unauthenticated Hub request warnings and disable telemetry
+        os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+        import warnings
+        warnings.filterwarnings("ignore", message=".*unauthenticated requests.*")
+        warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
         _model = SentenceTransformer(MODEL_NAME, cache_folder=model_dir)
     return _model
 
@@ -85,53 +90,64 @@ def chunk_markdown(text: str, max_chunk_size: int = 1000, overlap: int = 150) ->
     return chunks
 
 
+def keyword_overlap_score(query: str, text: str) -> float:
+    """Calculates the percentage of unique query words that appear in the chunk text."""
+    import re
+    words = re.findall(r'\w+', query.lower())
+    query_words = set(w for w in words if len(w) >= 2)
+    if not query_words:
+        return 0.0
+    text_lower = text.lower()
+    match_count = sum(1 for w in query_words if w in text_lower)
+    return match_count / len(query_words)
+
+
 def search_similar_chunks(query: str, chunks: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
-    """Searches and ranks chunks using cosine similarity on generated embeddings."""
+    """Searches and ranks chunks using hybrid scoring (cosine similarity + 0.5 * keyword overlap)."""
     if not chunks:
         return []
         
     query_vector = get_embedding(query)
     
-    chunk_vectors = []
-    valid_chunks = []
-    
+    # Pure Python helpers for cosine similarity to avoid NumPy Windows thread crashes
+    def dot_product(v1, v2):
+        return sum(x * y for x, y in zip(v1, v2))
+
+    def magnitude(v):
+        return sum(x * x for x in v) ** 0.5
+
+    def cosine_similarity(v1, v2):
+        mag1 = magnitude(v1)
+        mag2 = magnitude(v2)
+        if mag1 == 0 or mag2 == 0:
+            return 0.0
+        return dot_product(v1, v2) / (mag1 * mag2)
+
+    results = []
     for chunk in chunks:
         vec_str = chunk.get("vector")
-        if vec_str:
-            try:
+        if not vec_str:
+            continue
+            
+        try:
+            if isinstance(vec_str, str):
                 vec = json.loads(vec_str)
-                chunk_vectors.append(vec)
-                valid_chunks.append(chunk)
-            except Exception:
-                pass
-                
-    if not chunk_vectors:
-        return []
-        
-    # Compute similarity matrix
-    q = np.array(query_vector)
-    c = np.array(chunk_vectors)
-    
-    dot_products = np.dot(c, q)
-    q_norm = np.linalg.norm(q)
-    c_norms = np.linalg.norm(c, axis=1)
-    
-    c_norms[c_norms == 0] = 1e-9
-    if q_norm == 0:
-        q_norm = 1e-9
-        
-    similarities = dot_products / (q_norm * c_norms)
-    
+            else:
+                vec = vec_str
+            
+            cos = cosine_similarity(vec, query_vector)
+            kw = keyword_overlap_score(query, chunk["text"])
+            hybrid = cos + 0.5 * kw
+            
+            chunk_data = chunk.copy()
+            if "vector" in chunk_data:
+                del chunk_data["vector"]
+            chunk_data["score"] = hybrid
+            results.append(chunk_data)
+        except Exception:
+            pass
+            
     # Sort and take top_k
-    indices = np.argsort(similarities)[::-1][:top_k]
-    
-    results = []
-    for idx in indices:
-        chunk_data = valid_chunks[idx].copy()
-        # Remove raw vector from response to save bandwidth
-        if "vector" in chunk_data:
-            del chunk_data["vector"]
-        chunk_data["score"] = float(similarities[idx])
-        results.append(chunk_data)
-        
-    return results
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:top_k]
+

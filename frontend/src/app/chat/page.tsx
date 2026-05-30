@@ -445,25 +445,7 @@ export default function ChatMasterPage() {
                   </ReactMarkdown>
                 </div>
 
-                {msg.relevantDocs && msg.relevantDocs.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-theme-light">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 dark:text-indigo-400">Tài liệu tham khảo:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {msg.relevantDocs.map((doc) => (
-                          <button
-                            key={doc.doc_id}
-                            onClick={(e) => handleDocClick(doc.doc_id, e)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 dark:bg-indigo-500/10 border border-emerald-500/20 dark:border-indigo-500/20 text-xs font-semibold text-emerald-600 dark:text-indigo-300 hover:bg-emerald-500/20 dark:hover:bg-indigo-500/20 hover:scale-[1.02] transition-all cursor-pointer truncate text-left"
-                          >
-                            <BookOpen className="w-3 h-3 text-emerald-500 dark:text-indigo-400" />
-                            {docNameMap.get(doc.doc_id) || doc.filename}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {msg.sources && msg.sources.length > 0 && (
                   <div className="mt-2.5 pt-2 border-t border-theme-light">

@@ -19,6 +19,8 @@ python-multipart
 cryptography
 underthesea
 symspellpy
+sentence-transformers
+botocore
 
 # DeepDoc VietOCR dependencies
 torch

@@ -107,6 +107,15 @@ def add_doc_to_master_tree(
     clean_top_titles = [t.strip() for t in top_titles if t.strip()]
     top_headings = ", ".join(clean_top_titles[:8]) # Limit to top 8 headings
 
+    # Generate summary vector
+    summary_vector = []
+    try:
+        from app.services.vector_db import get_embedding
+        summary_text = f"{filename}. {summary}. Topics: {top_headings}."
+        summary_vector = get_embedding(summary_text)
+    except Exception as ev:
+        _log(f"Warning: Failed to generate summary vector: {ev}")
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
@@ -114,6 +123,7 @@ def add_doc_to_master_tree(
         "summary": summary.strip(),
         "node_count": node_count,
         "top_headings": top_headings,
+        "summary_vector": summary_vector,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)
@@ -138,9 +148,50 @@ def search_master_tree(query: str) -> List[Dict[str, str]]:
     if not tree:
         return []
 
-    # Build catalog for LLM
+    # Local vector similarity filtering
+    doc_scores = []
+    try:
+        from app.services.vector_db import get_embedding
+        
+        query_vector = get_embedding(query)
+        
+        def dot_product(v1, v2):
+            return sum(x * y for x, y in zip(v1, v2))
+
+        def magnitude(v):
+            return sum(x * x for x in v) ** 0.5
+
+        def cosine_similarity(v1, v2):
+            mag1 = magnitude(v1)
+            mag2 = magnitude(v2)
+            if mag1 == 0 or mag2 == 0:
+                return 0.0
+            return dot_product(v1, v2) / (mag1 * mag2)
+            
+        for doc_id, info in tree.items():
+            score = 0.0
+            vec = info.get("summary_vector")
+            if vec and isinstance(vec, list) and len(vec) > 0:
+                score = cosine_similarity(vec, query_vector)
+            doc_scores.append((doc_id, score))
+            
+        # Sort documents by score descending
+        doc_scores.sort(key=lambda x: x[1], reverse=True)
+    except Exception as e:
+        _log(f"Warning: Local vector search failed: {e}")
+        doc_scores = [(doc_id, 0.0) for doc_id in tree.keys()]
+
+    # Fallback to all docs if no vector score is available
+    if not any(score > 0 for _, score in doc_scores):
+        top_docs = [(doc_id, 0.0) for doc_id in tree.keys()]
+    else:
+        # Take the top 5 most relevant documents
+        top_docs = doc_scores[:5]
+
+    # Build catalog for LLM (only using top documents to fit in context window)
     catalog_lines = []
-    for doc_id, info in tree.items():
+    for doc_id, score in top_docs:
+        info = tree[doc_id]
         entry = f"- [{doc_id}] {info['filename']}: {info['summary']}"
         if "top_headings" in info and info["top_headings"]:
             entry += f" (Chủ đề chính: {info['top_headings']})"
@@ -184,6 +235,14 @@ Rules:
         result = json.loads(cleaned)
         doc_ids = result.get("relevant_docs", [])
 
+        # If LLM returned empty list, or if the corpus is very small (<= 5 documents)
+        if len(tree) <= 5 or not doc_ids:
+            _log("Fallback/Direct: using local vector similarity ranking...")
+            valid_docs = [did for did, score in doc_scores if score > 0.35]
+            if not valid_docs and doc_scores:
+                valid_docs = [doc_scores[0][0]] # take top 1
+            doc_ids = valid_docs[:3]
+
         # Build results with info
         results = []
         for did in doc_ids:
@@ -197,10 +256,11 @@ Rules:
 
     except Exception as e:
         _log(f"Search error: {e}")
-        # Fallback: return all docs (let user pick)
+        # Fallback: return top_docs (let user pick)
+        fallback_ids = [did for did, _ in top_docs if did in tree]
         return [
-            {"doc_id": did, "filename": info["filename"], "summary": info["summary"]}
-            for did, info in tree.items()
+            {"doc_id": did, "filename": tree[did]["filename"], "summary": tree[did]["summary"]}
+            for did in fallback_ids[:3]
         ]
 
 
@@ -231,6 +291,15 @@ def add_vector_doc_to_master_tree(
                     
     top_headings = ", ".join(top_titles)
     
+    # Generate summary vector
+    summary_vector = []
+    try:
+        from app.services.vector_db import get_embedding
+        summary_text = f"{filename}. {summary}. Topics: {top_headings}."
+        summary_vector = get_embedding(summary_text)
+    except Exception as ev:
+        _log(f"Warning: Failed to generate summary vector: {ev}")
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
@@ -238,6 +307,7 @@ def add_vector_doc_to_master_tree(
         "summary": summary.strip(),
         "node_count": len(top_titles),
         "top_headings": top_headings,
+        "summary_vector": summary_vector,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)

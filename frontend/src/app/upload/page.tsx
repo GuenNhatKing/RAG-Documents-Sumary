@@ -95,7 +95,7 @@ export default function UploadPage() {
   }, [pdfUrl]);
 
   useEffect(() => {
-    if ((status !== "extracting" && status !== "building_tree") || !docId) return;
+    if (status !== "extracting" || !docId) return;
     const interval = setInterval(async () => {
       try {
         const res = await axios.get(`${API}/documents/${docId}/extract-progress`, {
@@ -103,11 +103,8 @@ export default function UploadPage() {
         });
         const data = res.data;
         console.log("[Poll]", status, data);
-        if (status === "extracting" && data.current_page && data.total_pages) {
+        if (data.current_page && data.total_pages) {
           setOcrProgress({ current_page: data.current_page, total_pages: data.total_pages });
-        }
-        if (status === "building_tree" && data.message) {
-          setTreeProgress({ message: data.message });
         }
       } catch (e) {
         console.warn("[Poll error]", e);
@@ -156,7 +153,7 @@ export default function UploadPage() {
   const handleConfirmMarkdown = async () => {
     if (!docId) return;
     setStatus("building_tree");
-    setTreeProgress({ message: "Đang khởi tạo..." });
+    setTreeProgress({ message: "Đang phân tích cấu trúc cây ngữ nghĩa..." });
     setErrorMsg("");
     try {
       await axios.patch(
@@ -170,29 +167,7 @@ export default function UploadPage() {
       setStatus("processed");
     } catch (e: any) {
       console.error(e);
-      setErrorMsg(e?.response?.data?.detail || "Xác nhận thất bại.");
-      setStatus("error");
-    }
-  };
-
-  const handleSaveVectorDb = async () => {
-    if (!docId) return;
-    setStatus("building_tree");
-    setTreeProgress({ message: "Đang phân tách đoạn văn và tạo embeddings..." });
-    setErrorMsg("");
-    try {
-      await axios.patch(
-        `${API}/documents/${docId}/markdown`,
-        { markdown },
-        { headers: authHeaders() }
-      );
-      await axios.post(`${API}/documents/${docId}/save-vector-db`, null, {
-        headers: authHeaders(),
-      });
-      setStatus("processed");
-    } catch (e: any) {
-      console.error(e);
-      setErrorMsg(e?.response?.data?.detail || "Lưu vào Vector DB thất bại.");
+      setErrorMsg(e?.response?.data?.detail || "Tạo cấu trúc cây ngữ nghĩa thất bại.");
       setStatus("error");
     }
   };
@@ -273,7 +248,7 @@ export default function UploadPage() {
               {status === "pending" && "Đang tải tệp tin..."}
               {status === "extracting" && "Đang nhận dạng OCR..."}
               {status === "generating_md" && "Đang trích xuất cấu trúc Markdown..."}
-              {status === "building_tree" && "Đang lập chỉ mục Vector RAG..."}
+              {status === "building_tree" && "Đang phân tích và tạo cây ngữ nghĩa..."}
             </h3>
             {status === "extracting" && ocrProgress.total_pages > 0 && (
               <div className="mt-4 space-y-2">
@@ -343,14 +318,7 @@ export default function UploadPage() {
                     onClick={handleConfirmMarkdown}
                     className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-green-400 active:scale-95 transition-all duration-200 cursor-pointer"
                   >
-                    Xác nhận & Cấu trúc
-                  </button>
-
-                  <button
-                    onClick={handleSaveVectorDb}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:from-indigo-400 hover:to-purple-400 active:scale-95 transition-all duration-200 cursor-pointer"
-                  >
-                    Lưu vào Vector DB
+                    Xác nhận & Tạo cây
                   </button>
                 </div>
               </div>
