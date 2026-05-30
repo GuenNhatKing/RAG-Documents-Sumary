@@ -31,21 +31,14 @@ export default function SessionList({
     setLoading(true);
     try {
       const data = await getSessions(docId);
-      if (data.length === 0) {
-        if (creatingRef.current) return;
-        creatingRef.current = true;
-        try {
-          const session = await createSession(docId);
-          setSessions([session]);
-          onSelect(session.id);
-        } finally {
-          creatingRef.current = false;
-        }
-      } else {
-        setSessions(data);
-        if (!currentSessionId && data.length > 0) {
+      setSessions(data);
+      if (data.length > 0) {
+        const hasCurrent = data.some((s) => s.id === currentSessionId);
+        if (!currentSessionId || !hasCurrent) {
           onSelect(data[0].id);
         }
+      } else {
+        onSelect("");
       }
     } catch (err) {
       console.error("Failed to load sessions:", err);

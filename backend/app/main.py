@@ -86,7 +86,7 @@ def list_documents(
         query = db.query(Document).order_by(Document.created_at.desc())
         # nguoi_dung only see processed documents
         if current_user.role not in ("admin", "can_bo"):
-            query = query.filter(Document.status == DocumentStatus.PROCESSED)
+            query = query.filter(Document.status.in_([DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED]))
         total = query.count()
         docs = query.offset((page - 1) * page_size).limit(page_size).all()
         return {
@@ -265,6 +265,8 @@ def get_document_markdown(doc_id: str, current_user: TokenData = Depends(get_cur
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            doc = db.query(Document).filter(Document.filename == doc_id).first()
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
 
@@ -453,6 +455,19 @@ async def save_vector_db_api(document_id: str, current_user: TokenData = Depends
         doc.status = DocumentStatus.VECTOR_PROCESSED
         db.commit()
 
+        # Add to master tree for cross-document search
+        try:
+            from app.services.master_tree import add_vector_doc_to_master_tree
+            await loop.run_in_executor(
+                None,
+                add_vector_doc_to_master_tree,
+                document_id,
+                doc.filename,
+                markdown_text
+            )
+        except Exception as e:
+            print(f"Warning: Failed to add vector doc to master tree: {e}", flush=True)
+
         return {
             "status": "ok",
             "document_id": document_id,
@@ -511,6 +526,8 @@ def get_document_detail(doc_id: str, current_user: TokenData = Depends(get_curre
     db = SessionLocal()
     try:
         doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            doc = db.query(Document).filter(Document.filename == doc_id).first()
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
         return {

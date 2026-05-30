@@ -30,7 +30,8 @@ def is_general_conversational(text: str) -> bool:
         "cam on", "cam on ban", "cam on ad", "cam on tro ly", "thank you", "thanks",
         "tam biet", "tam biet ban", "bye", "goodbye",
         "ban la ai", "ban ten la gi", "who are you", "what is your name",
-        "ban co khoe khong", "khoe khong", "how are you"
+        "ban co khoe khong", "khoe khong", "how are you",
+        "alo", "helo", "ad oi"
     }
     if s in greetings:
         return True
@@ -166,7 +167,13 @@ def create_session(
     current_user: TokenData = Depends(get_current_user),
 ):
     user_id = _get_user_id(current_user, db)
-    session = ChatSession(doc_id=req.doc_id, title=req.title, user_id=user_id)
+    from app.models import Document
+    doc = db.query(Document).filter(Document.id == req.doc_id).first()
+    if not doc:
+        doc = db.query(Document).filter(Document.filename == req.doc_id).first()
+    real_doc_id = doc.id if doc else req.doc_id
+
+    session = ChatSession(doc_id=real_doc_id, title=req.title, user_id=user_id)
     db.add(session)
     db.commit()
     db.refresh(session)
@@ -186,7 +193,12 @@ def list_sessions(
     user_id = _get_user_id(current_user, db)
     query = db.query(ChatSession).filter(ChatSession.user_id == user_id).order_by(ChatSession.updated_at.desc())
     if doc_id:
-        query = query.filter(ChatSession.doc_id == doc_id)
+        from app.models import Document
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            doc = db.query(Document).filter(Document.filename == doc_id).first()
+        real_doc_id = doc.id if doc else doc_id
+        query = query.filter(ChatSession.doc_id == real_doc_id)
     return [
         SessionResponse(id=s.id, user_id=s.user_id, doc_id=s.doc_id, title=s.title,
                         created_at=s.created_at.isoformat(), updated_at=s.updated_at.isoformat())
@@ -237,6 +249,8 @@ def get_messages(session_id: str, db: Session = Depends(get_db), current_user: T
 async def ask_document(request: ChatRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     from app.models import Document, DocumentStatus
     doc = db.query(Document).filter(Document.id == request.doc_id).first()
+    if not doc:
+        doc = db.query(Document).filter(Document.filename == request.doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
 
@@ -303,7 +317,7 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
                 
                 # Check lines citation format
                 line_range = f"{start_l}-{end_l}"
-                sources.append(SourceDetail(file=filename, lines=line_range))
+                sources.append(SourceDetail(file=doc.id, lines=line_range))
                 
             context = "\n\n---\n\n".join(context_parts) if context_parts else ""
         else:
@@ -317,7 +331,7 @@ async def ask_document(request: ChatRequest, db: Session = Depends(get_db), curr
                     filename = match[0].strip()
                     if filename not in seen_files:
                         seen_files.add(filename)
-                        sources.append(SourceDetail(file=filename, lines=match[1].strip()))
+                        sources.append(SourceDetail(file=doc.id, lines=match[1].strip()))
 
         answer = generate_final_answer(context, search_query)
 
@@ -369,11 +383,12 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
 
         # Build context from top docs
         context_parts = []
-        from app.models import Document
+        from app.models import Document, DocumentStatus
         import concurrent.futures
 
         # Query documents from Database in main thread for thread-safety
         docs_to_process = []
+        filename_to_id = {}
         for doc_info in relevant_docs[:3]:
             doc_id = doc_info["doc_id"]
             doc = db.query(Document).filter(Document.id == doc_id).first()
@@ -388,6 +403,7 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
                         "markdown_path": doc.markdown_path,
                         "question": search_query
                     })
+                    filename_to_id[doc_info["filename"]] = doc_id
 
         def process_doc_thread(doc_item: dict) -> Optional[str]:
             try:
@@ -451,7 +467,9 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
                 filename = match[0].strip()
                 if filename not in seen_files:
                     seen_files.add(filename)
-                    sources.append(SourceDetail(file=filename, lines=match[1].strip()))
+                    # Resolve to doc_id (UUID)
+                    doc_id = filename_to_id.get(filename, filename)
+                    sources.append(SourceDetail(file=doc_id, lines=match[1].strip()))
 
         try:
             answer = generate_final_answer(combined_context, search_query)
@@ -485,6 +503,8 @@ def summarize_document(req: SummarizeRequest, db: Session = Depends(get_db), cur
     """Summarize a document with user-selected length: short, medium, or long."""
     from app.models import Document
     doc = db.query(Document).filter(Document.id == req.doc_id).first()
+    if not doc:
+        doc = db.query(Document).filter(Document.filename == req.doc_id).first()
     if not doc or not doc.markdown_path:
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
     markdown_path = doc.markdown_path

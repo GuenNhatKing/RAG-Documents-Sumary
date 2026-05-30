@@ -202,3 +202,43 @@ Rules:
             {"doc_id": did, "filename": info["filename"], "summary": info["summary"]}
             for did, info in tree.items()
         ]
+
+
+def add_vector_doc_to_master_tree(
+    doc_id: str,
+    filename: str,
+    markdown_text: str,
+):
+    """Generate summary from full markdown text and add vector doc to master tree."""
+    _log(f"Adding vector doc {doc_id} to master tree...")
+    
+    from app.services.llm import generate_summary
+    try:
+        summary = generate_summary(markdown_text, length="medium")
+    except Exception as e:
+        _log(f"Warning: generate_summary failed: {e}")
+        summary = filename
+        
+    # Extract top headings from markdown headings (lines starting with # or ##)
+    top_titles = []
+    for line in markdown_text.splitlines():
+        if line.startswith("# ") or line.startswith("## "):
+            title = line.lstrip("#").strip()
+            if title:
+                top_titles.append(title)
+                if len(top_titles) >= 8:
+                    break
+                    
+    top_headings = ", ".join(top_titles)
+    
+    # Load and update
+    tree = load_master_tree()
+    tree[doc_id] = {
+        "filename": filename,
+        "summary": summary.strip(),
+        "node_count": len(top_titles),
+        "top_headings": top_headings,
+        "created_at": datetime.now().isoformat(),
+    }
+    save_master_tree(tree)
+    _log(f"Vector doc {doc_id} added. Total docs: {len(tree)}")
