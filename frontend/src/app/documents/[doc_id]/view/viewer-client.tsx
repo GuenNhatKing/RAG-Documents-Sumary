@@ -112,7 +112,7 @@ export default function DocumentViewerClient({
   const lines = (markdown ?? "").split("\n");
 
   return (
-    <div className="flex-1 min-h-0 bg-primary text-primary">
+    <div className="flex-1 min-h-0 h-full bg-primary text-primary">
       {viewMode === "md" ? (
         <div className="h-full overflow-auto">
           <main className="bg-primary px-10 py-8 text-secondary">

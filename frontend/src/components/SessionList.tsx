@@ -1,6 +1,6 @@
 "use client";
  
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChatSession, createSession, getSessions, deleteSession } from "@/lib/chat";
 import { Plus, Trash2, MessageSquare, History } from "lucide-react";
  
@@ -21,6 +21,7 @@ export default function SessionList({
 }: SessionListProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const creatingRef = useRef(false);
  
   useEffect(() => {
     loadSessions();
@@ -30,15 +31,14 @@ export default function SessionList({
     setLoading(true);
     try {
       const data = await getSessions(docId);
-      if (data.length === 0) {
-        const session = await createSession(docId);
-        setSessions([session]);
-        onSelect(session.id);
-      } else {
-        setSessions(data);
-        if (!currentSessionId && data.length > 0) {
+      setSessions(data);
+      if (data.length > 0) {
+        const hasCurrent = data.some((s) => s.id === currentSessionId);
+        if (!currentSessionId || !hasCurrent) {
           onSelect(data[0].id);
         }
+      } else {
+        onSelect("");
       }
     } catch (err) {
       console.error("Failed to load sessions:", err);

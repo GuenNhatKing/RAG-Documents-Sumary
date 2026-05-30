@@ -27,11 +27,22 @@ load_backend_env()
 MASTER_TREE_PATH = Path("data/master_tree.json")
 
 _client = OpenAI(
-    api_key=os.getenv("LLM_API_KEY"),
-    base_url=os.getenv("LLM_BASE_URL"),
+    api_key=os.getenv("RAG_API_KEY") or os.getenv("LLM_API_KEY"),
+    base_url=os.getenv("RAG_BASE_URL") or os.getenv("LLM_BASE_URL"),
 )
 
-LLM_MODEL = os.getenv("LLM_MODEL")
+
+def _get_extra_body() -> dict | None:
+    """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    rag_base_url = os.getenv("RAG_BASE_URL")
+    if rag_base_url and "groq.com" in rag_base_url:
+        return None
+    llm_think = os.getenv("LLM_THINK", "true").lower()
+    if llm_think == "false":
+        return {"think": False}
+    return None
+
+LLM_MODEL = os.getenv("RAG_MODEL") or os.getenv("LLM_MODEL")
 
 
 def _log(msg: str):
@@ -86,12 +97,23 @@ def add_doc_to_master_tree(
     nodes = structure_to_list(structure) if structure else []
     node_count = len(nodes)
 
+    # Extract top headings (depth=0 node titles)
+    top_titles = []
+    if isinstance(structure, list):
+        top_titles = [node.get("title", "") for node in structure if node.get("title")]
+    elif isinstance(structure, dict):
+        top_titles = [structure.get("title", "")] if structure.get("title") else []
+    
+    clean_top_titles = [t.strip() for t in top_titles if t.strip()]
+    top_headings = ", ".join(clean_top_titles[:8]) # Limit to top 8 headings
+
     # Load and update
     tree = load_master_tree()
     tree[doc_id] = {
         "filename": filename,
         "summary": summary.strip(),
         "node_count": node_count,
+        "top_headings": top_headings,
         "created_at": datetime.now().isoformat(),
     }
     save_master_tree(tree)
@@ -119,9 +141,10 @@ def search_master_tree(query: str) -> List[Dict[str, str]]:
     # Build catalog for LLM
     catalog_lines = []
     for doc_id, info in tree.items():
-        catalog_lines.append(
-            f"- [{doc_id}] {info['filename']}: {info['summary']}"
-        )
+        entry = f"- [{doc_id}] {info['filename']}: {info['summary']}"
+        if "top_headings" in info and info["top_headings"]:
+            entry += f" (Chủ đề chính: {info['top_headings']})"
+        catalog_lines.append(entry)
     catalog = "\n".join(catalog_lines)
 
     prompt = f"""You are a document search assistant. Given a catalog of documents and a user query, find the most relevant documents.
@@ -143,11 +166,13 @@ Rules:
 """
 
     try:
+        extra_body = _get_extra_body()
         response = _client.chat.completions.create(
             model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.0,
+            extra_body=extra_body if extra_body else None,
         )
         content = response.choices[0].message.content
         if not content:
@@ -177,3 +202,43 @@ Rules:
             {"doc_id": did, "filename": info["filename"], "summary": info["summary"]}
             for did, info in tree.items()
         ]
+
+
+def add_vector_doc_to_master_tree(
+    doc_id: str,
+    filename: str,
+    markdown_text: str,
+):
+    """Generate summary from full markdown text and add vector doc to master tree."""
+    _log(f"Adding vector doc {doc_id} to master tree...")
+    
+    from app.services.llm import generate_summary
+    try:
+        summary = generate_summary(markdown_text, length="medium")
+    except Exception as e:
+        _log(f"Warning: generate_summary failed: {e}")
+        summary = filename
+        
+    # Extract top headings from markdown headings (lines starting with # or ##)
+    top_titles = []
+    for line in markdown_text.splitlines():
+        if line.startswith("# ") or line.startswith("## "):
+            title = line.lstrip("#").strip()
+            if title:
+                top_titles.append(title)
+                if len(top_titles) >= 8:
+                    break
+                    
+    top_headings = ", ".join(top_titles)
+    
+    # Load and update
+    tree = load_master_tree()
+    tree[doc_id] = {
+        "filename": filename,
+        "summary": summary.strip(),
+        "node_count": len(top_titles),
+        "top_headings": top_headings,
+        "created_at": datetime.now().isoformat(),
+    }
+    save_master_tree(tree)
+    _log(f"Vector doc {doc_id} added. Total docs: {len(tree)}")

@@ -137,11 +137,10 @@ export async function askGlobal(
 // ============================================================
 // DOCUMENT SUMMARIZATION
 // ============================================================
-export type SummaryLength = "short" | "medium" | "long";
+export type SummaryLength = "short" | "long";
 
 export const SUMMARY_LENGTH_OPTIONS: { value: SummaryLength; label: string }[] = [
   { value: "short", label: "Ngắn (chỉ ý quan trọng)" },
-  { value: "medium", label: "Vừa" },
   { value: "long", label: "Chi tiết" },
 ];
 

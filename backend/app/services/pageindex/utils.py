@@ -49,6 +49,8 @@ def llm_completion(model, prompt, chat_history=None, return_finish_reason=False)
                 kwargs["api_base"] = api_base
             if api_key:
                 kwargs["api_key"] = api_key
+            if os.getenv("LLM_THINK", "true").lower() == "false":
+                kwargs["extra_body"] = {"think": False}
             response = litellm.completion(**kwargs)
             content = response.choices[0].message.content
             if return_finish_reason:
@@ -86,6 +88,8 @@ async def llm_acompletion(model, prompt):
                 kwargs["api_base"] = api_base
             if api_key:
                 kwargs["api_key"] = api_key
+            if os.getenv("LLM_THINK", "true").lower() == "false":
+                kwargs["extra_body"] = {"think": False}
             response = await litellm.acompletion(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
@@ -652,36 +656,61 @@ async def generate_summaries_for_structure(structure, model=None):
     return structure
 
 
-def create_clean_structure_for_description(structure):
+def create_clean_structure_for_description(structure, current_depth=0, max_depth=2):
     """
     Create a clean structure for document description generation,
-    excluding unnecessary fields like 'text'.
+    excluding unnecessary fields like 'text', and limit depth to avoid context overflow.
     """
     if isinstance(structure, dict):
         clean_node = {}
-        # Only include essential fields for description
-        for key in ['title', 'node_id', 'summary', 'prefix_summary']:
+        # Only include title and node_id for description
+        for key in ['title', 'node_id']:
             if key in structure:
                 clean_node[key] = structure[key]
         
+        # Only include summary at top levels (depth 0 or 1)
+        if current_depth < 1:
+            for key in ['summary', 'prefix_summary']:
+                if key in structure:
+                    clean_node[key] = structure[key]
+        
         # Recursively process child nodes
-        if 'nodes' in structure and structure['nodes']:
-            clean_node['nodes'] = create_clean_structure_for_description(structure['nodes'])
+        if 'nodes' in structure and structure['nodes'] and current_depth < max_depth:
+            clean_node['nodes'] = create_clean_structure_for_description(
+                structure['nodes'], current_depth + 1, max_depth
+            )
         
         return clean_node
     elif isinstance(structure, list):
-        return [create_clean_structure_for_description(item) for item in structure]
+        return [create_clean_structure_for_description(item, current_depth, max_depth) for item in structure]
     else:
         return structure
 
 
 def generate_doc_description(structure, model=None):
-    prompt = f"""Your are an expert in generating descriptions for a document.
-    You are given a structure of a document. Your task is to generate a one-sentence description for the document, which makes it easy to distinguish the document from other documents.
-        
-    Document Structure: {structure}
+    # Try converting to clean structure with standard max_depth=2
+    cleaned_struct = create_clean_structure_for_description(structure, max_depth=2)
+    struct_str = json.dumps(cleaned_struct, ensure_ascii=False)
     
-    Directly return the description, do not include any other text.
+    # If the JSON representation is still too long, progressively reduce depth
+    if len(struct_str) > 8000:
+        cleaned_struct = create_clean_structure_for_description(structure, max_depth=1)
+        struct_str = json.dumps(cleaned_struct, ensure_ascii=False)
+    
+    if len(struct_str) > 8000:
+        cleaned_struct = create_clean_structure_for_description(structure, max_depth=0)
+        struct_str = json.dumps(cleaned_struct, ensure_ascii=False)
+        
+    if len(struct_str) > 8000:
+        # Absolute fallback: truncate
+        struct_str = struct_str[:8000] + "..."
+        
+    prompt = f"""Bạn là một chuyên gia tạo mô tả (tóm tắt) tổng quan cho tài liệu.
+    Dưới đây là cấu trúc của tài liệu. Nhiệm vụ của bạn là tạo ra một câu mô tả ngắn gọn (một câu duy nhất) bằng tiếng Việt cho tài liệu này, giúp dễ dàng phân biệt tài liệu này với các tài liệu khác và chứa các từ khóa cốt lõi của tài liệu.
+        
+    Cấu trúc tài liệu (Document Structure): {struct_str}
+    
+    Hãy trả về trực tiếp câu mô tả ngắn gọn bằng tiếng Việt, không kèm theo bất kỳ văn bản giải thích nào khác.
     """
     response = llm_completion(model, prompt)
     return response

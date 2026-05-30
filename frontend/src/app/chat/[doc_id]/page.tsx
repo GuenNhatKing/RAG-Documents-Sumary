@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -49,7 +49,6 @@ export default function ChatPage({ params }: PageProps) {
   const initialSessionId = searchParams.get("session") || undefined;
   const initialHighlight = searchParams.get("highlight") || "";
 
-  const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,12 +58,10 @@ export default function ChatPage({ params }: PageProps) {
   const [markdown, setMarkdown] = useState<string>("");
   const [docLoading, setDocLoading] = useState(true);
   const [docFilename, setDocFilename] = useState(doc_id);
-  const [showSummaryMenu, setShowSummaryMenu] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("md");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDocLoading(true);
@@ -88,6 +85,13 @@ export default function ChatPage({ params }: PageProps) {
     }
   }, [initialSessionId]);
 
+  useEffect(() => {
+    const hl = searchParams.get("highlight") || "";
+    if (hl) {
+      setHighlight(hl);
+    }
+  }, [searchParams]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -96,18 +100,12 @@ export default function ChatPage({ params }: PageProps) {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (!showSummaryMenu) return;
-    const handleClickOutside = () => setShowSummaryMenu(false);
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [showSummaryMenu]);
-
   const loadSession = useCallback(async (sid: string) => {
+    if (!sid) {
+      setSessionId(undefined);
+      setMessages([]);
+      return;
+    }
     setSessionId(sid);
     setError("");
     try {
@@ -137,26 +135,24 @@ export default function ChatPage({ params }: PageProps) {
     [loadSession]
   );
 
-  const sendQuestion = async () => {
-    if (!question.trim() || loading) return;
+  const sendQuestion = useCallback(async (q: string) => {
+    if (!q.trim() || loading) return;
 
-    const userMsg: Message = { role: "user", content: question };
+    const userMsg: Message = { role: "user", content: q };
     setMessages((prev) => [...prev, userMsg]);
-    const currentQuestion = question;
-    setQuestion("");
     setLoading(true);
     setError("");
 
     try {
       let activeSessionId = sessionId;
       if (!activeSessionId) {
-        const newSession = await createSession(doc_id, currentQuestion.slice(0, 100));
+        const newSession = await createSession(doc_id, q.slice(0, 100));
         activeSessionId = newSession.id;
         setSessionId(activeSessionId);
         setRefreshTrigger((prev) => prev + 1);
       }
 
-      const data = await askQuestion(doc_id, currentQuestion, activeSessionId);
+      const data = await askQuestion(doc_id, q, activeSessionId);
 
       const cleanAnswer = data.answer
         .replace(/\s*\[Nguồn:\s*.*?,\s*Dòng:\s*.*?\]\.?/g, "")
@@ -177,28 +173,18 @@ export default function ChatPage({ params }: PageProps) {
       console.error(err);
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
     }
-  };
+  }, [loading, sessionId, doc_id]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendQuestion();
-    }
-  };
-
-  const handleSourceClick = (src: SourceTag) => {
+  const handleSourceClick = useCallback((src: SourceTag) => {
     setHighlight(src.lines);
-  };
+  }, []);
 
-  const handleSummarize = async (length: SummaryLength) => {
+  const handleSummarize = useCallback(async (length: SummaryLength) => {
     if (loading) return;
-    setShowSummaryMenu(false);
 
     const lengthLabels: Record<SummaryLength, string> = {
       short: "Ngắn (chỉ ý quan trọng)",
-      medium: "Vừa",
       long: "Chi tiết (Dài)",
     };
 
@@ -231,7 +217,113 @@ export default function ChatPage({ params }: PageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, sessionId, doc_id]);
+
+  const memoizedDocViewer = useMemo(() => {
+    if (docLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="animate-spin h-8 w-8 text-emerald-400 dark:text-indigo-400" />
+        </div>
+      );
+    }
+    return (
+      <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} viewMode={viewMode} onViewModeChange={setViewMode} />
+    );
+  }, [docLoading, markdown, highlight, doc_id, viewMode]);
+
+  const memoizedMessagesList = useMemo(() => {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+        {messages.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 flex items-center justify-center mb-4">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-secondary">Trợ lý Phân tích AI</h3>
+            <p className="text-xs text-muted mt-1.5 max-w-[240px] leading-relaxed">
+              Đã sẵn sàng phân tích tài liệu. Nhập câu hỏi hoặc để bắt đầu.
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg, idx) => (
+          msg.role === "assistant" ? (
+            /* AI Message */
+            <div key={idx} className="flex flex-col items-start gap-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
+                  <Bot className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
+              </div>
+              <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-emerald-500/40 dark:border-indigo-500/40">
+                <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-primary">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+
+                {msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-3 pt-2.5 border-t border-theme-light">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 mr-1">Tham chiếu dòng:</span>
+                      {msg.sources.map((src, sIdx) => (
+                        <button
+                          key={sIdx}
+                          onClick={() => handleSourceClick(src)}
+                          className={`text-xs px-3 py-1 rounded-lg border font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${highlight === src.lines
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 shadow-sm"
+                            : "bg-primary border-theme-light text-muted hover:text-secondary hover:border-theme-accent"
+                            }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                          {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* User Message */
+            <div key={idx} className="flex flex-col items-end gap-1">
+              <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-emerald-500/10 dark:shadow-indigo-500/10">
+                <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          )
+        ))}
+
+        {loading && (
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
+                <Bot className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
+            </div>
+            <div className="ai-bubble rounded-2xl rounded-tl-none px-4 py-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl px-4 py-3">
+            {error}
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+    );
+  }, [messages, loading, error, highlight, docFilename, doc_id, handleSourceClick]);
 
   return (
     <ProtectedRoute>
@@ -292,13 +384,7 @@ export default function ChatPage({ params }: PageProps) {
           </header>
 
           <div className="flex-1 overflow-hidden flex flex-col">
-            {docLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="animate-spin h-8 w-8 text-emerald-400 dark:text-indigo-400" />
-              </div>
-            ) : (
-              <DocumentViewerClient markdown={markdown} highlight={highlight} docId={doc_id} viewMode={viewMode} onViewModeChange={setViewMode} />
-            )}
+            {memoizedDocViewer}
           </div>
         </div>
 
@@ -307,153 +393,108 @@ export default function ChatPage({ params }: PageProps) {
           {/* Chat Header */}
           <header className="h-14 flex items-center px-4 border-b border-theme-light bg-tertiary">
             <span className="text-sm font-semibold text-primary">Trợ lý Phân tích AI</span>
-
           </header>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-            {messages.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-indigo-500/10 text-emerald-400 dark:text-indigo-400 flex items-center justify-center mb-4">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-semibold text-secondary">Trợ lý Phân tích AI</h3>
-                <p className="text-xs text-muted mt-1.5 max-w-[240px] leading-relaxed">
-                  Đã sẵn sàng phân tích tài liệu. Nhập câu hỏi hoặc để bắt đầu.
-                </p>
-              </div>
-            )}
-
-            {messages.map((msg, idx) => (
-              msg.role === "assistant" ? (
-                /* AI Message */
-                <div key={idx} className="flex flex-col items-start gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
-                      <Bot className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
-                  </div>
-                  <div className="max-w-[92%] ai-bubble rounded-2xl rounded-tl-none px-4 py-3 ai-glow border-l-2 border-emerald-500/40 dark:border-indigo-500/40">
-                    <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 leading-relaxed text-primary">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-
-                    {msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-theme-light">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 mr-1">Tham chiếu dòng:</span>
-                          {msg.sources.map((src, sIdx) => (
-                            <button
-                              key={sIdx}
-                              onClick={() => handleSourceClick(src)}
-                              className={`text-xs px-3 py-1 rounded-lg border font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${highlight === src.lines
-                                ? "bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 shadow-sm"
-                                : "bg-primary border-theme-light text-muted hover:text-secondary hover:border-theme-accent"
-                                }`}
-                            >
-                              <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />
-                              {src.file.replace(/\.md$/i, "").replace(doc_id, docFilename)}:{src.lines}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* User Message */
-                <div key={idx} className="flex flex-col items-end gap-1">
-                  <div className="max-w-[85%] user-bubble rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-emerald-500/10 dark:shadow-indigo-500/10">
-                    <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                </div>
-              )
-            ))}
-
-            {loading && (
-              <div className="flex flex-col items-start gap-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 dark:bg-indigo-500/20 flex items-center justify-center text-emerald-400 dark:text-indigo-400">
-                    <Bot className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-xs font-medium text-emerald-400 dark:text-indigo-400">AI Assistant</span>
-                </div>
-                <div className="ai-bubble rounded-2xl rounded-tl-none px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-emerald-400 dark:bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl px-4 py-3">
-                {error}
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
+          {memoizedMessagesList}
 
           {/* Chat Input */}
-          <div className="px-4 py-3 border-t border-theme-light space-y-2.5">
-            <div className="flex items-center gap-2">
-              <div className="relative group flex-1">
-                <div className="chat-input flex items-center gap-2 px-4 py-1.5">
-                  <MessageSquare className="w-4 h-4 text-emerald-400/60 dark:text-indigo-400/60 flex-shrink-0" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    name="doc_question"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Đặt câu hỏi về tài liệu..."
-                    className="flex-1 bg-transparent text-sm text-primary placeholder-slate-500 outline-none py-1"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <div className="relative">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
-                  disabled={loading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 btn-accent-violet rounded-full text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap hover:scale-110 hover:bg-emerald-600 dark:hover:bg-indigo-500 hover:text-white transition-all duration-200"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                </button>
-                {showSummaryMenu && (
-                  <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-44 glass-panel border border-theme-light rounded-xl overflow-hidden shadow-2xl z-30">
-                    {SUMMARY_LENGTH_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => handleSummarize(opt.value)}
-                        className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 hover:text-emerald-700 dark:hover:text-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={sendQuestion}
-                disabled={loading || !question.trim()}
-                className="send-btn"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <ChatInput onSend={sendQuestion} loading={loading} onSummarize={handleSummarize} />
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+interface ChatInputProps {
+  onSend: (question: string) => void;
+  loading: boolean;
+  onSummarize: (length: SummaryLength) => void;
+}
+
+function ChatInput({ onSend, loading, onSummarize }: ChatInputProps) {
+  const [value, setValue] = useState("");
+  const [showSummaryMenu, setShowSummaryMenu] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!showSummaryMenu) return;
+    const handleClickOutside = () => setShowSummaryMenu(false);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showSummaryMenu]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleSend = () => {
+    if (!value.trim() || loading) return;
+    onSend(value.trim());
+    setValue("");
+  };
+
+  return (
+    <div className="px-4 py-3 border-t border-theme-light space-y-2.5">
+      <div className="flex items-center gap-2">
+        <div className="relative group flex-1">
+          <div className="chat-input flex items-center gap-2 px-4 py-1.5">
+            <MessageSquare className="w-4 h-4 text-emerald-400/60 dark:text-indigo-400/60 flex-shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              name="doc_question"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Đặt câu hỏi về tài liệu..."
+              className="flex-1 bg-transparent text-sm text-primary placeholder-slate-500 outline-none py-1"
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowSummaryMenu(!showSummaryMenu); }}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 btn-accent-violet rounded-full text-xs font-medium disabled:opacity-40 cursor-pointer whitespace-nowrap hover:scale-110 hover:bg-emerald-600 dark:hover:bg-indigo-500 hover:text-white transition-all duration-200"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+          </button>
+          {showSummaryMenu && (
+            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-full right-0 mb-2 w-44 glass-panel border border-theme-light rounded-xl overflow-hidden shadow-2xl z-30">
+              {SUMMARY_LENGTH_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    onSummarize(opt.value);
+                    setShowSummaryMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-emerald-500/10 dark:hover:bg-indigo-500/10 hover:text-emerald-700 dark:hover:text-indigo-300 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={handleSend}
+          disabled={loading || !value.trim()}
+          className="send-btn"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   );
 }

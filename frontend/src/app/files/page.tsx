@@ -41,6 +41,11 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
     color: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", 
     dot: "bg-emerald-400" 
   },
+  vector_processed: { 
+    label: "Hoàn thành (Vector DB)", 
+    color: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20", 
+    dot: "bg-indigo-400" 
+  },
   error: { 
     label: "Lỗi", 
     color: "bg-rose-500/10 text-rose-400 border border-rose-500/20", 
@@ -124,7 +129,7 @@ export default function FilesPage() {
   };
 
   // Metrics counters
-  const countProcessed = docs.filter(d => d.status === "processed").length;
+  const countProcessed = docs.filter(d => d.status === "processed" || d.status === "vector_processed").length;
   const countPending = docs.filter(d => d.status === "pending" || d.status === "processing").length;
   const countErrors = docs.filter(d => d.status === "error").length;
 
@@ -240,7 +245,7 @@ export default function FilesPage() {
                           <Edit2 className="w-4 h-4" />
                         </Link>
                       )}
-                      {doc.status === "processed" && (
+                      {(doc.status === "processed" || doc.status === "vector_processed") && (
                         <Link
                           href={`/documents/${doc.id}/view`}
                           className="p-1.5 hover:bg-emerald-500/10 text-emerald-400 rounded-xl hover:scale-105 active:scale-95 transition-all"

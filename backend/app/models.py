@@ -13,6 +13,7 @@ class DocumentStatus(enum.Enum):
     PROCESSING = "processing"
     PENDING_REVIEW = "pending_review"  # .md đã tạo, chờ cán bộ xác nhận
     PROCESSED = "processed"
+    VECTOR_PROCESSED = "vector_processed"
     ERROR = "error"
 
 class User(Base):
@@ -89,3 +90,16 @@ class ChatMessage(Base):
 
     def __repr__(self) -> str:
         return f"<ChatMessage(id={self.id}, role='{self.role}', session_id='{self.session_id}')>"
+
+
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    doc_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    text = Column(Text, nullable=False)
+    line_num = Column(Integer, nullable=True)
+    vector = Column(Text, nullable=True)  # JSON string of serialized float list of embeddings
+
+    def __repr__(self) -> str:
+        return f"<DocumentChunk(id={self.id}, doc_id='{self.doc_id}')>"
