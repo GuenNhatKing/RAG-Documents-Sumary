@@ -23,9 +23,6 @@ sentence-transformers
 botocore
 
 # DeepDoc VietOCR dependencies
-torch
-torchvision
-onnxruntime
 opencv-python
 pdfplumber
 huggingface_hub
@@ -34,3 +31,9 @@ pyclipper
 ruamel.yaml
 cachetools
 vietocr
+
+# GPU/CUDA pytorch (CUDA 12.4)
+--index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+onnxruntime-gpu==1.26.0

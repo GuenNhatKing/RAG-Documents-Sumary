@@ -156,7 +156,7 @@ export default function UploadPage() {
   const handleConfirmMarkdown = async () => {
     if (!docId) return;
     setStatus("building_tree");
-    setTreeProgress({ message: "Đang tạo cây cấu trúc và lập chỉ mục Vector RAG..." });
+    setTreeProgress({ message: "Đang phân tích cấu trúc cây ngữ nghĩa..." });
     setErrorMsg("");
     try {
       await axios.patch(
@@ -170,7 +170,7 @@ export default function UploadPage() {
       setStatus("processed");
     } catch (e: any) {
       console.error(e);
-      setErrorMsg(e?.response?.data?.detail || "Tạo cấu trúc cây và lập chỉ mục thất bại.");
+      setErrorMsg(e?.response?.data?.detail || "Tạo cấu trúc cây ngữ nghĩa thất bại.");
       setStatus("error");
     }
   };
@@ -251,7 +251,7 @@ export default function UploadPage() {
               {status === "pending" && "Đang tải tệp tin..."}
               {status === "extracting" && "Đang nhận dạng OCR..."}
               {status === "generating_md" && "Đang trích xuất cấu trúc Markdown..."}
-              {status === "building_tree" && "Đang lập chỉ mục Vector RAG..."}
+              {status === "building_tree" && "Đang phân tích và tạo cây ngữ nghĩa..."}
             </h3>
             {status === "extracting" && ocrProgress.total_pages > 0 && (
               <div className="mt-4 space-y-2">

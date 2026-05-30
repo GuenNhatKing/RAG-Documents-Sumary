@@ -8,7 +8,6 @@ import {
   getDocumentMarkdown,
   saveDocumentMarkdown,
   confirmDocumentMd,
-  saveDocumentVectorDb,
 } from "@/lib/documents";
 import { API, getToken } from "@/lib/auth";
 import { ArrowLeft } from "lucide-react";
@@ -136,25 +135,6 @@ export default function ReviewPage() {
       setStatus("done");
     } else {
       setErrorMsg("Tạo lại cây thất bại.");
-      setStatus("error");
-    }
-  };
-
-  const handleSaveVectorDb = async () => {
-    setStatus("confirming");
-    setErrorMsg("");
-    const saved = await saveDocumentMarkdown(docId, markdown);
-    if (!saved) {
-      setErrorMsg("Lưu thất bại.");
-      setStatus("error");
-      return;
-    }
-    const confirmed = await saveDocumentVectorDb(docId);
-    if (confirmed) {
-      setDocStatus("vector_processed");
-      setStatus("done");
-    } else {
-      setErrorMsg("Lưu vào Vector DB thất bại.");
       setStatus("error");
     }
   };
