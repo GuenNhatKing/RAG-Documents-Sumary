@@ -396,6 +396,83 @@ async def confirm_md_api(document_id: str, current_user: TokenData = Depends(get
 
 
 # =========================================================
+# SAVE TO VECTOR DATABASE (Song song với confirm-md)
+# =========================================================
+@app.post("/documents/{document_id}/save-vector-db")
+async def save_vector_db_api(document_id: str, current_user: TokenData = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        doc = db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        # Allow from PENDING_REVIEW, PROCESSED (tree), or already VECTOR_PROCESSED
+        if doc.status not in (DocumentStatus.PENDING_REVIEW, DocumentStatus.PROCESSED, DocumentStatus.VECTOR_PROCESSED):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document status is '{doc.status.value}', expected 'pending_review', 'processed', or 'vector_processed'"
+            )
+
+        doc.status = DocumentStatus.PROCESSING
+        db.commit()
+
+        # 1. Đọc nội dung markdown
+        if not doc.markdown_path:
+            raise HTTPException(status_code=400, detail="Document markdown path is missing")
+            
+        md_path = Path(doc.markdown_path)
+        if not md_path.exists():
+            raise HTTPException(status_code=404, detail="Markdown file not found on disk")
+
+        markdown_text = md_path.read_text(encoding="utf-8")
+
+        # 2. Thực hiện chunking và tính toán vector
+        from app.services.vector_db import chunk_markdown, get_embeddings
+        from app.models import DocumentChunk
+
+        chunks = chunk_markdown(markdown_text)
+        chunk_texts = [c["text"] for c in chunks]
+
+        # Sinh embeddings hàng loạt sử dụng thread pool executor
+        loop = asyncio.get_event_loop()
+        embeddings = await loop.run_in_executor(None, get_embeddings, chunk_texts)
+
+        # 3. Xóa các chunk cũ nếu có để tránh trùng lặp
+        db.query(DocumentChunk).filter(DocumentChunk.doc_id == document_id).delete()
+
+        # 4. Lưu các chunk mới vào Database
+        for chunk, vector in zip(chunks, embeddings):
+            db_chunk = DocumentChunk(
+                doc_id=document_id,
+                text=chunk["text"],
+                line_num=chunk["line_num"],
+                vector=json.dumps(vector)
+            )
+            db.add(db_chunk)
+
+        doc.status = DocumentStatus.VECTOR_PROCESSED
+        db.commit()
+
+        return {
+            "status": "ok",
+            "document_id": document_id,
+            "chunks_count": len(chunks),
+            "message": "Tài liệu đã được lưu vào Vector Database thành công."
+        }
+
+    except Exception as e:
+        db.rollback()
+        if doc:
+            doc.status = DocumentStatus.ERROR
+            db.commit()
+        raise HTTPException(status_code=500, detail=f"Lưu Vector DB thất bại: {str(e)}")
+    finally:
+        db.close()
+
+
+
+
+# =========================================================
 # BUILD TREE ENDPOINT (Legacy - kept for backward compatibility)
 # =========================================================
 @app.post("/documents/{document_id}/build-tree")

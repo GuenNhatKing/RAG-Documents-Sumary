@@ -92,3 +92,15 @@ export async function renameDocument(docId: string, filename: string): Promise<b
     return false;
   }
 }
+
+export async function saveDocumentVectorDb(docId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API}/documents/${docId}/save-vector-db`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

@@ -20,7 +20,7 @@ def _is_heading_line(line: str) -> int | None:
         r'^(CÔNG ĐIỆN|CHỈ THỊ|QUYẾT ĐỊNH|THÔNG BÁO|THÔNG TƯ|'
         r'NGHỊ ĐỊNH|NGHỊ QUYẾT|CÔNG VĂN|BÁO CÁO|TỜ TRÌNH|'
         r'THÔNG CÁO|KẾ HOẠCH|PHÁP LỆNH|LUẬT|HIẾN PHÁP|'
-        r'CHƯƠNG TRÌNH|PHƯƠNG ÁN|ĐỀ ÁN)',
+        r'CHƯƠNG TRÌNH|PHƯƠNG ÁN|ĐỀ ÁN|QUY ĐỊNH|QUY CHẾ|PHỤ LỤC)',
         stripped,
     ):
         return 1
@@ -48,6 +48,9 @@ def _is_heading_line(line: str) -> int | None:
 
     # Numbered headings: 1., 2., ... (H3) — with or without space after dot
     if re.match(r'^[1-9]\d*\.', stripped):
+        return 3
+    # Numbered headings without dot: 1 Công dân, 2 Người, ... (H3)
+    if re.match(r'^[1-9]\d*\s+[A-ZÀ-Ỹ]', stripped):
         return 3
     # Roman numeral: I., II. (H2)
     if re.match(r'^[IVXLCDM]+\.\s*', stripped):
@@ -79,6 +82,10 @@ def _starts_new_para(line: str, prev_line: str | None) -> bool:
 
     # Current line is a heading → break
     if _is_heading_line(line) is not None:
+        return True
+
+    # Check for short legal structural keywords to prevent merging split headers
+    if re.match(r'^(Điều|Khoản|Chương|Mục|Phần|Trang|Điểm)\b', stripped, re.I) and len(stripped) < 20:
         return True
 
     # Starts lowercase → continuation
@@ -139,10 +146,24 @@ def _is_artifact(line: str) -> bool:
 
 
 def _split_midline_headings(text: str) -> str:
+    # If a keyword is at the end of a line and followed by a number/id on the next line, move it to the start of the next line
+    text = re.sub(r'\s+\b(Điều|Khoản|Chương|Mục|Phần|Trang|Điểm)\n+(\d+|[IVXLCDM]+|[a-zđĐ])', r'\n\1 \2', text, flags=re.I)
+
     # Insert \n before heading patterns that appear mid-line.
     # Lookahead is used so trailing whitespace/formatting is preserved.
     # 1. Numbered: "ra 4.Yêu" or "ra 4. Yêu" → "ra\n4.Yêu"
-    text = re.sub(r'\s+(\d+\.)(?=\s*[A-ZÀ-Ỹ])', r'\n\1', text)
+    exclusions = (
+        r'(?<!\n)(?<!\r)(?<!#)'
+        r'(?<!\b[Đđ]iều)(?<!\b[Kk]hoản)(?<!\b[Cc]hương)(?<!\b[Mm]ục)'
+        r'(?<!\b[Pp]hần)(?<!\b[Tt]rang)(?<!\b[Đđ]iểm)(?<!\b[Qq]uận)'
+        r'(?<!\b[Pp]hường)(?<!\b[Đđ]ường)(?<!\b[Kk]ênh)(?<!\b[Nn]hóm)'
+        r'(?<!\b[Tt]ổ)(?<!\b[Ll]ớp)(?<!\b[Kk]hóa)(?<!\b[Tt]hế hệ)'
+        r'(?<!\b[Nn]ăm)(?<!\b[Tt]háng)(?<!\b[Nn]gày)(?<!\b[Ss]ố)'
+        r'(?<!\b[Nn]ghị quyết)(?<!\b[Qq]uyết định)(?<!\b[Tt]hông tư)'
+        r'(?<!\b[Nn]ghị định)(?<!\b[Ll]uật)(?<!\b[Cc]hỉ thị)'
+        r'(?<!\b[Qq]uy định)(?<!\b[Qq]uy chế)(?<!\b[Pp]hụ lục)'
+    )
+    text = re.sub(exclusions + r'\s+(\d{1,2}\.?)(?=\s+[A-ZÀ-Ỹ])', r'\n\1', text, flags=re.I)
     # 2. Lowercase letter+paren: "quy a) Bộ" → "quy\na) Bộ"
     text = re.sub(r'\s+([a-zđ]\))(?=\s+[A-ZÀ-Ỹ])', r'\n\1', text)
     # 3. Uppercase letter+paren: "định C) Đề" → "định\nC) Đề"

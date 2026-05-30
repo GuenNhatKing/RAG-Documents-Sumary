@@ -235,43 +235,93 @@ def get_messages(session_id: str, db: Session = Depends(get_db), current_user: T
 # ============================================================
 @router.post("/ask", response_model=ChatResponse)
 async def ask_document(request: ChatRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
-    from app.models import Document
+    from app.models import Document, DocumentStatus
     doc = db.query(Document).filter(Document.id == request.doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Không tìm thấy tài liệu.")
 
     markdown_path = doc.markdown_path
     json_path = doc.json_tree_path
-    if not markdown_path or not json_path or not os.path.exists(json_path) or not os.path.exists(markdown_path):
-        raise HTTPException(status_code=404, detail="Tài liệu chưa được xử lý.")
+    is_vector_db = (doc.status == DocumentStatus.VECTOR_PROCESSED)
 
-    with open(json_path, 'r', encoding='utf-8') as f:
-        tree_data = json.load(f)
-
-    if is_general_conversational(request.question):
-        answer = generate_conversational_response(request.question)
-        sources = []
+    if is_vector_db:
+        if not markdown_path or not os.path.exists(markdown_path):
+            raise HTTPException(status_code=404, detail="Tài liệu chưa được xử lý (thiếu markdown).")
     else:
-        node_list = reasoning_search_tree(tree_data, request.question)
-        context = build_context_from_markdown(tree_data, node_list, markdown_path) if node_list else ""
+        if not markdown_path or not json_path or not os.path.exists(json_path) or not os.path.exists(markdown_path):
+            raise HTTPException(status_code=404, detail="Tài liệu chưa được xử lý.")
 
-        sources = []
-        if context:
-            seen_files: set[str] = set()
-            for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context):
-                filename = match[0].strip()
-                if filename not in seen_files:
-                    seen_files.add(filename)
-                    sources.append(SourceDetail(file=filename, lines=match[1].strip()))
+    tree_data = None
+    if not is_vector_db:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            tree_data = json.load(f)
 
-        answer = generate_final_answer(context, request.question)
-
+    session = None
+    search_query = request.question
     if request.session_id:
         user_id = _get_user_id(current_user, db)
         session = db.query(ChatSession).filter(ChatSession.id == request.session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         _check_ownership(session, user_id)
+        history = db.query(ChatMessage).filter(ChatMessage.session_id == request.session_id).order_by(ChatMessage.created_at.asc()).all()
+        from app.services.llm import condense_query
+        search_query = condense_query(request.question, history)
+
+    if is_general_conversational(request.question):
+        answer = generate_conversational_response(request.question)
+        sources = []
+    else:
+        if is_vector_db:
+            from app.models import DocumentChunk
+            from app.services.vector_db import search_similar_chunks
+            
+            chunks_in_db = db.query(DocumentChunk).filter(DocumentChunk.doc_id == request.doc_id).all()
+            chunks_dicts = [
+                {
+                    "text": c.text,
+                    "line_num": c.line_num,
+                    "vector": c.vector
+                }
+                for c in chunks_in_db
+            ]
+            
+            # Retrieve top 5 similar chunks
+            matched_chunks = search_similar_chunks(search_query, chunks_dicts, top_k=5)
+            
+            # Build context
+            context_parts = []
+            sources = []
+            seen_files = set()
+            filename = doc.filename
+            
+            for chunk in matched_chunks:
+                start_l = chunk["line_num"]
+                end_l = start_l + len(chunk["text"].split("\n")) - 1
+                source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
+                context_parts.append(f"{source_tag}\n{chunk['text'].strip()}")
+                
+                # Check lines citation format
+                line_range = f"{start_l}-{end_l}"
+                sources.append(SourceDetail(file=filename, lines=line_range))
+                
+            context = "\n\n---\n\n".join(context_parts) if context_parts else ""
+        else:
+            node_list = reasoning_search_tree(tree_data, search_query)
+            context = build_context_from_markdown(tree_data, node_list, markdown_path) if node_list else ""
+
+            sources = []
+            if context:
+                seen_files: set[str] = set()
+                for match in re.findall(r"\[Nguồn:\s*(.*?),\s*Dòng:\s*(.*?)\]", context):
+                    filename = match[0].strip()
+                    if filename not in seen_files:
+                        seen_files.add(filename)
+                        sources.append(SourceDetail(file=filename, lines=match[1].strip()))
+
+        answer = generate_final_answer(context, search_query)
+
+    if session:
         db.add(ChatMessage(session_id=request.session_id, role="user", content=request.question))
         sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
         db.add(ChatMessage(session_id=request.session_id, role="assistant", content=answer, sources=sources_json))
@@ -298,13 +348,22 @@ def search_docs(req: SearchRequest, current_user: TokenData = Depends(get_curren
 @router.post("/ask-global", response_model=GlobalAskResponse)
 def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     from app.services.master_tree import search_master_tree
+    session = None
+    search_query = req.question
+    if req.session_id:
+        user_id = _get_user_id(current_user, db)
+        session = db.query(ChatSession).filter(ChatSession.id == req.session_id).first()
+        if session and session.user_id == user_id:
+            history = db.query(ChatMessage).filter(ChatMessage.session_id == req.session_id).order_by(ChatMessage.created_at.asc()).all()
+            from app.services.llm import condense_query
+            search_query = condense_query(req.question, history)
 
     if is_general_conversational(req.question):
         answer = generate_conversational_response(req.question)
         sources = []
         relevant_docs = []
     else:
-        relevant_docs = search_master_tree(req.question)
+        relevant_docs = search_master_tree(search_query)
         if not relevant_docs:
             return GlobalAskResponse(answer="Không tìm thấy tài liệu nào liên quan.", sources=[], relevant_docs=[])
 
@@ -318,24 +377,59 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
         for doc_info in relevant_docs[:3]:
             doc_id = doc_info["doc_id"]
             doc = db.query(Document).filter(Document.id == doc_id).first()
-            if doc and doc.json_tree_path and doc.markdown_path:
-                if os.path.exists(doc.json_tree_path) and os.path.exists(doc.markdown_path):
+            if doc and doc.markdown_path and os.path.exists(doc.markdown_path):
+                # Allow if either VECTOR_PROCESSED or both tree_path and tree file exists
+                if doc.status == DocumentStatus.VECTOR_PROCESSED or (doc.json_tree_path and os.path.exists(doc.json_tree_path)):
                     docs_to_process.append({
+                        "doc_id": doc_id,
                         "filename": doc_info["filename"],
+                        "status": doc.status,
                         "json_path": doc.json_tree_path,
                         "markdown_path": doc.markdown_path,
-                        "question": req.question
+                        "question": search_query
                     })
 
         def process_doc_thread(doc_item: dict) -> Optional[str]:
             try:
-                with open(doc_item["json_path"], 'r', encoding='utf-8') as f:
-                    tree_data = json.load(f)
-                node_list = reasoning_search_tree(tree_data, doc_item["question"])
-                if node_list:
-                    ctx = build_context_from_markdown(tree_data, node_list, doc_item["markdown_path"])
-                    if ctx:
-                        return f"=== Tài liệu: {doc_item['filename']} ===\n{ctx}"
+                from app.models import DocumentStatus
+                if doc_item["status"] == DocumentStatus.VECTOR_PROCESSED:
+                    from app.models import DocumentChunk
+                    from app.services.vector_db import search_similar_chunks
+                    
+                    # Create a new session for the thread to avoid concurrent DB access on same session
+                    thread_db = SessionLocal()
+                    try:
+                        chunks_in_db = thread_db.query(DocumentChunk).filter(DocumentChunk.doc_id == doc_item["doc_id"]).all()
+                        chunks_dicts = [
+                            {
+                                "text": c.text,
+                                "line_num": c.line_num,
+                                "vector": c.vector
+                            }
+                            for c in chunks_in_db
+                        ]
+                        matched_chunks = search_similar_chunks(doc_item["question"], chunks_dicts, top_k=5)
+                        
+                        context_parts = []
+                        filename = doc_item["filename"]
+                        for chunk in matched_chunks:
+                            start_l = chunk["line_num"]
+                            end_l = start_l + len(chunk["text"].split("\n")) - 1
+                            source_tag = f"[Nguồn: {filename}, Dòng: {start_l}-{end_l}]"
+                            context_parts.append(f"{source_tag}\n{chunk['text'].strip()}")
+                        
+                        if context_parts:
+                            return f"=== Tài liệu: {filename} ===\n" + "\n\n---\n\n".join(context_parts)
+                    finally:
+                        thread_db.close()
+                else:
+                    with open(doc_item["json_path"], 'r', encoding='utf-8') as f:
+                        tree_data = json.load(f)
+                    node_list = reasoning_search_tree(tree_data, doc_item["question"])
+                    if node_list:
+                        ctx = build_context_from_markdown(tree_data, node_list, doc_item["markdown_path"])
+                        if ctx:
+                            return f"=== Tài liệu: {doc_item['filename']} ===\n{ctx}"
             except Exception as e:
                 print(f"Error processing doc {doc_item['filename']} in thread: {e}", flush=True)
             return None
@@ -360,25 +454,21 @@ def ask_global(req: GlobalAskRequest, db: Session = Depends(get_db), current_use
                     sources.append(SourceDetail(file=filename, lines=match[1].strip()))
 
         try:
-            answer = generate_final_answer(combined_context, req.question)
+            answer = generate_final_answer(combined_context, search_query)
         except Exception:
             answer = "Lỗi khi tạo câu trả lời."
 
     # Save messages to session if session_id provided
-    if req.session_id:
-        user_id = _get_user_id(current_user, db)
-        session = db.query(ChatSession).filter(ChatSession.id == req.session_id).first()
-        if session and session.user_id == user_id:
-            db.add(ChatMessage(session_id=req.session_id, role="user", content=req.question))
-            sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
-            relevant_json = json.dumps([{"doc_id": d["doc_id"], "filename": d["filename"]} for d in relevant_docs[:3]])
-            db.add(ChatMessage(
-                session_id=req.session_id, role="assistant", content=answer,
-                sources=sources_json,
-            ))
-            if not session.title:
-                session.title = req.question[:100]
-            db.commit()
+    if session:
+        db.add(ChatMessage(session_id=req.session_id, role="user", content=req.question))
+        sources_json = json.dumps([{"file": s.file, "lines": s.lines} for s in sources]) if sources else None
+        db.add(ChatMessage(
+            session_id=req.session_id, role="assistant", content=answer,
+            sources=sources_json,
+        ))
+        if not session.title:
+            session.title = req.question[:100]
+        db.commit()
 
     return GlobalAskResponse(
         answer=answer,

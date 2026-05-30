@@ -27,19 +27,22 @@ load_backend_env()
 MASTER_TREE_PATH = Path("data/master_tree.json")
 
 _client = OpenAI(
-    api_key=os.getenv("LLM_API_KEY"),
-    base_url=os.getenv("LLM_BASE_URL"),
+    api_key=os.getenv("RAG_API_KEY") or os.getenv("LLM_API_KEY"),
+    base_url=os.getenv("RAG_BASE_URL") or os.getenv("LLM_BASE_URL"),
 )
 
 
 def _get_extra_body() -> dict | None:
     """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    rag_base_url = os.getenv("RAG_BASE_URL")
+    if rag_base_url and "groq.com" in rag_base_url:
+        return None
     llm_think = os.getenv("LLM_THINK", "true").lower()
     if llm_think == "false":
         return {"think": False}
     return None
 
-LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_MODEL = os.getenv("RAG_MODEL") or os.getenv("LLM_MODEL")
 
 
 def _log(msg: str):

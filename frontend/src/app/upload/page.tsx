@@ -175,6 +175,28 @@ export default function UploadPage() {
     }
   };
 
+  const handleSaveVectorDb = async () => {
+    if (!docId) return;
+    setStatus("building_tree");
+    setTreeProgress({ message: "Đang phân tách đoạn văn và tạo embeddings..." });
+    setErrorMsg("");
+    try {
+      await axios.patch(
+        `${API}/documents/${docId}/markdown`,
+        { markdown },
+        { headers: authHeaders() }
+      );
+      await axios.post(`${API}/documents/${docId}/save-vector-db`, null, {
+        headers: authHeaders(),
+      });
+      setStatus("processed");
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e?.response?.data?.detail || "Lưu vào Vector DB thất bại.");
+      setStatus("error");
+    }
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
@@ -322,6 +344,13 @@ export default function UploadPage() {
                     className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-green-400 active:scale-95 transition-all duration-200 cursor-pointer"
                   >
                     Xác nhận & Cấu trúc
+                  </button>
+
+                  <button
+                    onClick={handleSaveVectorDb}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:from-indigo-400 hover:to-purple-400 active:scale-95 transition-all duration-200 cursor-pointer"
+                  >
+                    Lưu vào Vector DB
                   </button>
                 </div>
               </div>

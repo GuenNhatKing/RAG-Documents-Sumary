@@ -9,9 +9,9 @@ from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential, re
 load_backend_env()
 
 # Read LLM configuration from environment
-LLM_API_KEY = os.getenv("LLM_API_KEY")
-LLM_BASE_URL = os.getenv("LLM_BASE_URL")
-LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_API_KEY = os.getenv("RAG_API_KEY") or os.getenv("LLM_API_KEY")
+LLM_BASE_URL = os.getenv("RAG_BASE_URL") or os.getenv("LLM_BASE_URL")
+LLM_MODEL = os.getenv("RAG_MODEL") or os.getenv("LLM_MODEL")
 _client = OpenAI(
     api_key=LLM_API_KEY,
     base_url=LLM_BASE_URL,
@@ -20,6 +20,9 @@ _client = OpenAI(
 
 def _get_extra_body() -> dict | None:
     """Trả về extra_body để bật/tắt chế độ suy nghĩ của mô hình tùy thuộc vào LLM_THINK."""
+    rag_base_url = os.getenv("RAG_BASE_URL")
+    if rag_base_url and "groq.com" in rag_base_url:
+        return None
     llm_think = os.getenv("LLM_THINK", "true").lower()
     if llm_think == "false":
         return {"think": False}
@@ -159,7 +162,7 @@ def _call_reasoning_llm(prompt: str) -> Dict[str, Any]:
     return result
 
 
-def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0, max_depth: int = 99) -> str:
+def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0, max_depth: int = 99, include_summary: bool = True) -> str:
     """Chuyển đổi cây đã được chuẩn hóa thành dạng outline thụt lề bằng văn bản gọn nhẹ."""
     if indent_level > max_depth:
         return ""
@@ -168,18 +171,24 @@ def _tree_to_text_outline(nodes: List[Dict[str, Any]], indent_level: int = 0, ma
     for node in nodes:
         node_id = node.get("id")
         title = node.get("title", "")
-        summary = node.get("summary", "")
+        summary = node.get("summary", "") if include_summary else ""
         
+        # Giới hạn độ dài tiêu đề để tránh tiêu đề quá dài
+        if len(title) > 150:
+            title = title[:150] + "..."
+            
         line = f"{indent}- [{node_id}] {title}"
         if summary:
             # Rút gọn khoảng trắng thừa trong tóm tắt để giảm kích thước token
             clean_summary = " ".join(summary.split())
+            if len(clean_summary) > 150:
+                clean_summary = clean_summary[:150] + "..."
             line += f": {clean_summary}"
           
         lines.append(line)
         
         if "children" in node and node["children"]:
-            child_outline = _tree_to_text_outline(node["children"], indent_level + 1, max_depth)
+            child_outline = _tree_to_text_outline(node["children"], indent_level + 1, max_depth, include_summary)
             if child_outline:
                 lines.append(child_outline)
             
@@ -200,16 +209,29 @@ def reasoning_search_tree(tree_data: Any, query: str) -> List[str]:
         ]
     }
 
-    # Giới hạn kích thước outline để tránh vượt quá context window của LLM cục bộ (~4k tokens)
+    # Chiến lược tìm outline phù hợp:
+    # 1. Thử hiển thị đầy đủ (có summary) từ độ sâu 5 xuống 1, giới hạn 24000 ký tự (~6k tokens)
+    # 2. Nếu vẫn quá dài, thử ẩn summary và duyệt lại độ sâu 5 xuống 1
+    # 3. Cuối cùng, cắt chuỗi trực tiếp nếu vẫn vượt giới hạn
     outline = ""
+    limit = 24000
+    
+    # Bước 1: Thử có summary
     for depth in [5, 4, 3, 2, 1]:
-        outline = _tree_to_text_outline(normalized_tree["nodes"], max_depth=depth)
-        if len(outline) <= 6000:
+        outline = _tree_to_text_outline(normalized_tree["nodes"], max_depth=depth, include_summary=True)
+        if len(outline) <= limit:
             break
             
-    # Dự phòng cuối cùng nếu vẫn quá dài: cắt chuỗi trực tiếp
-    if len(outline) > 6000:
-        outline = outline[:6000] + "\n...[TRUNCATED Outline due to size limit]..."
+    # Bước 2: Thử không có summary
+    if len(outline) > limit:
+        for depth in [5, 4, 3, 2, 1]:
+            outline = _tree_to_text_outline(normalized_tree["nodes"], max_depth=depth, include_summary=False)
+            if len(outline) <= limit:
+                break
+                
+    # Bước 3: Cắt chuỗi trực tiếp
+    if len(outline) > limit:
+        outline = outline[:limit] + "\n...[TRUNCATED Outline due to size limit]..."
 
     prompt = f"""You are a document navigation expert. Find the IDs of the nodes that are most likely to contain the answer to the user's question.
 
